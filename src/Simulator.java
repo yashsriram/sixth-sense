@@ -23,8 +23,8 @@ public class Simulator {
     final static int NUM_LASERS = 181;
     final static double MIN_THETA = -Math.PI / 2;
     final static double MAX_THETA = Math.PI / 2;
-    final static double MAX_LASER_DISTANCE = 150.0;
-    final static double LASER_DIST_OVER_DIST_VAL = 155.0;
+    final static double MAX_LASER_DISTANCE = 5.0;
+    final static double LASER_DIST_OVER_DIST_VAL = 6.0;
     final static double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / NUM_LASERS;
     int laserScanFreq = 10;  // How many iterations to wait between updates
     final static LaserScanData currentLaserScan = new LaserScanData();
@@ -37,8 +37,8 @@ public class Simulator {
     double robotLength = 0;
     private Vec3 truePose = Vec3.zero();
     private Vector<LineSegmentFeature> lineFeatures = new Vector<>();
-    final static double MAX_LINEAR_ACCELERATION = 10;
-    final static double MAX_ANGULAR_ACCELERATION = 5;
+    final static double MAX_LINEAR_ACCELERATION = 0.5;
+    final static double MAX_ANGULAR_ACCELERATION = 0.5;
     final static Vec2 goalControl = Vec2.zero();
     final static Vec2 currentControl = Vec2.zero();
     private boolean running = true;

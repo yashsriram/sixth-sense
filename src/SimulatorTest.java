@@ -7,6 +7,7 @@ import java.util.Vector;
 public class SimulatorTest extends PApplet {
     public static final int WIDTH = 800;
     public static final int HEIGHT = 800;
+    public static int SCALE = 5;
 
     Simulator sim;
 
@@ -20,7 +21,7 @@ public class SimulatorTest extends PApplet {
         rectMode(CENTER);
         noStroke();
 
-        String scene_name = "/home/pandu/school/10/Sensing&Estimation/project/data/simple_rectangle_scaled.scn";
+        String scene_name = "/home/pandu/school/10/Sensing&Estimation/project/data/apartment.scn";
 
         sim = new Simulator(scene_name);
     }
@@ -38,17 +39,17 @@ public class SimulatorTest extends PApplet {
 
         // Draw the building
         for (LineSegmentFeature l : sim.getLineFeatures()) {
-            line((float) l.p1.x, (float) l.p1.y, (float) l.p2.x, (float) l.p2.y);
+            line((float) l.p1.x * SCALE + WIDTH / 2f, (float) l.p1.y * SCALE + HEIGHT / 2f, (float) l.p2.x * SCALE + WIDTH / 2f, (float) l.p2.y * SCALE + HEIGHT / 2f);
         }
 
         // Draw the Laser scan:
         Vector<Vec2> lines = new Vector<>();
-        Vec2 position = Vec2.of(pose.x, pose.y);
+        Vec2 position = Vec2.of(pose.x, pose.y).scaleInPlace(SCALE).plusInPlace(Vec2.of(WIDTH / 2.0, HEIGHT / 2.0));
         Vec2 laserEnd = position.minus(
-                Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * sim.robotLength)
+                Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * sim.robotLength * SCALE)
         );
         Vec2 otherEnd = position.plus(
-                Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * sim.robotLength)
+                Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * sim.robotLength * SCALE)
         );
         for (int i = 0; i < Simulator.NUM_LASERS; ++i) {
             if (scan.lengths.size() == 0 || scan.lengths.get(i) == Simulator.LASER_DIST_OVER_DIST_VAL) {
@@ -57,7 +58,7 @@ public class SimulatorTest extends PApplet {
             double percentage = i / (Simulator.NUM_LASERS - 1.0);
             double theta = Simulator.MIN_THETA + (Simulator.MAX_THETA - Simulator.MIN_THETA) * percentage;
 
-            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + pose.z), Math.sin(theta + pose.z)).scaleInPlace(scan.lengths.get(i)));
+            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + pose.z), Math.sin(theta + pose.z)).scaleInPlace(scan.lengths.get(i) * SCALE));
             lines.add(scan_pt_i);
         }
         stroke(1, 0, 0);
@@ -77,16 +78,22 @@ public class SimulatorTest extends PApplet {
             sim.sendControl(Vec2.zero());
         }
         if (keyCode == UP) {
-            sim.sendControl(Vec2.of(50, 0));
+            sim.sendControl(Vec2.of(30, 0));
         }
         if (keyCode == DOWN) {
-            sim.sendControl(Vec2.of(-50, 0));
+            sim.sendControl(Vec2.of(-30, 0));
         }
         if (keyCode == LEFT) {
             sim.sendControl(Vec2.of(0, -0.5));
         }
         if (keyCode == RIGHT) {
             sim.sendControl(Vec2.of(0, 0.5));
+        }
+        if (key == '+') {
+            SCALE++;
+        }
+        if (key == '-') {
+            SCALE--;
         }
     }
 
