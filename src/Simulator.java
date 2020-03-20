@@ -19,41 +19,36 @@ class OdometryData {
 }
 
 public class Simulator {
-    // Laser Scanner Parameters:
+    // Laser Scanner Parameters
     final static int NUM_LASERS = 181;
     final static double MIN_THETA = -Math.PI / 2;
     final static double MAX_THETA = Math.PI / 2;
     final static double MAX_LASER_DISTANCE = 150.0;
-    final static double LASER_DIST_OVER_DIST_VAL = 170.0;
+    final static double LASER_DIST_OVER_DIST_VAL = 155.0;
     final static double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / NUM_LASERS;
+    int laserScanFreq = 10;  // How many iterations to wait between updates
+    final static LaserScanData currentLaserScan = new LaserScanData();
+
+    // Odometry Data Parameters
+    int controlFreq = 1; // How many iterations to wait between updates
+    final static OdometryData currentOdometryData = new OdometryData();
 
     // Robot Parameters:
     double robotLength = 0;
     private Vec3 truePose = Vec3.zero();
     private Vector<LineSegmentFeature> lineFeatures = new Vector<>();
+    final static double MAX_LINEAR_ACCELERATION = 10;
+    final static double MAX_ANGULAR_ACCELERATION = 5;
+    final static Vec2 goalControl = Vec2.zero();
+    final static Vec2 currentControl = Vec2.zero();
+    private boolean running = true;
 
     // Random Distributions
-    private static final double LASER_ANGLE_ERROR_LIMIT = 0.5;
+    private static final double LASER_ANGLE_ERROR_LIMIT = 0.05;
     private static final double LASER_DISTANCE_ERROR_LIMIT = 0.05;
     private static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.1;
     private static final double ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
 
-    // Laser Scanner Parameters
-    int laser_scan_freq = 10;  // How many iterations to wait between updates
-    final static LaserScanData currentLaserScan = new LaserScanData();
-
-    // Odometry Data Parameters
-    int control_freq = 1; // How many iterations to wait between updates
-    final static OdometryData currentOdometryData = new OdometryData();
-
-    //    std:: thread main_loop;
-    private boolean running = true;
-
-    // Robot Parameters:
-    final static double MAX_LINEAR_ACCELERATION = 3;
-    final static double MAX_ANGULAR_ACCELERATION = 3;
-    final static Vec2 goalControl = Vec2.zero();
-    final static Vec2 currentControl = Vec2.zero();
 
     private static Vector<Vector<String>> loadFileByToken(final String filepath, final int nSkip, final String delimiter) throws FileNotFoundException {
         Vector<Vector<String>> fileContents = new Vector<>();
@@ -151,18 +146,19 @@ public class Simulator {
             rayDistances.add(LASER_DIST_OVER_DIST_VAL);
         }
         // Move the center of the scanner back from the center of the robot
-        Vec2 true_position = Vec2.of(truePose.x, truePose.y);
-        Vec2 scanner_center = true_position.minus(
-                Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength)
-        );
+        Vec2 truePosition = Vec2.of(truePose.x, truePose.y);
+        Vec2 laserCenter = truePosition.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength));
+
+        // The laser beam
         for (int i = 0; i < NUM_LASERS; ++i) {
-            double perc = i / (NUM_LASERS - 1.0);
-            double laser_th_err = ThreadLocalRandom.current().nextDouble(-LASER_ANGLE_ERROR_LIMIT * LASER_ANGULAR_RESOLUTION, LASER_ANGLE_ERROR_LIMIT * LASER_ANGULAR_RESOLUTION);
-            double th = MIN_THETA + (MAX_THETA - MIN_THETA) * perc + truePose.z + laser_th_err;
-            Vec2 v = Vec2.of(Math.cos(th), Math.sin(th));
-//            System.out.println(th);
+            double percentage = i / (NUM_LASERS - 1.0);
+            double laserThErr = ThreadLocalRandom.current().nextDouble(-LASER_ANGLE_ERROR_LIMIT * LASER_ANGULAR_RESOLUTION, LASER_ANGLE_ERROR_LIMIT * LASER_ANGULAR_RESOLUTION);
+            double theta = MIN_THETA + (MAX_THETA - MIN_THETA) * percentage + truePose.z + laserThErr;
+            Vec2 v = Vec2.of(Math.cos(theta), Math.sin(theta));
+
+            // Check intersection for each line feature
             for (LineSegmentFeature line : lineFeatures) {
-                double rayDistance = line.checkIntersection(scanner_center, v);
+                double rayDistance = line.checkIntersection(laserCenter, v);
                 if (rayDistance >= 0 && rayDistance < MAX_LASER_DISTANCE) {
                     rayDistances.set(i, rayDistance);
                 }
@@ -186,36 +182,36 @@ public class Simulator {
     }
 
     void updateCurrentControl(double dt) {
-        Vec2 tmp_control = Vec2.zero();
+        Vec2 tmpControl = Vec2.zero();
         synchronized (currentControl) {
             // Only allow so much acceleration per timestep
             Vec2 control_diff = goalControl.minus(currentControl);
             if (Math.abs(control_diff.x) > MAX_LINEAR_ACCELERATION * dt) {
-                control_diff.x = control_diff.x / Math.abs(control_diff.x) * MAX_LINEAR_ACCELERATION * dt;
+                control_diff.x = Math.signum(control_diff.x) * MAX_LINEAR_ACCELERATION * dt;
             }
             if (Math.abs(control_diff.y) > MAX_ANGULAR_ACCELERATION * dt) {
-                control_diff.y = control_diff.y / Math.abs(control_diff.y) * MAX_ANGULAR_ACCELERATION * dt;
+                control_diff.y = Math.signum(control_diff.y) * MAX_ANGULAR_ACCELERATION * dt;
             }
             currentControl.plusInPlace(control_diff);
-            tmp_control = currentControl;
+            tmpControl = currentControl;
         }
 
         // Only apply noise if we're trying to move
-        if (tmp_control.sqauredNorm() != 0.0) {
-            tmp_control.x *= (1.0 + ThreadLocalRandom.current().nextDouble(-LINEAR_VELOCITY_ERROR_LIMIT, LINEAR_VELOCITY_ERROR_LIMIT));
-            tmp_control.y *= (1.0 + ThreadLocalRandom.current().nextDouble(-ANGULAR_VELOCITY_ERROR_LIMIT, ANGULAR_VELOCITY_ERROR_LIMIT));
+        if (tmpControl.sqauredNorm() != 0.0) {
+            tmpControl.x *= (1.0 + ThreadLocalRandom.current().nextDouble(-LINEAR_VELOCITY_ERROR_LIMIT, LINEAR_VELOCITY_ERROR_LIMIT));
+            tmpControl.y *= (1.0 + ThreadLocalRandom.current().nextDouble(-ANGULAR_VELOCITY_ERROR_LIMIT, ANGULAR_VELOCITY_ERROR_LIMIT));
         }
 
         // Run the dynamics via RK4
         Vec3 k1, k2, k3, k4;
         Vec3 x2, x3, x4;
-        k1 = contDynamics(truePose, tmp_control);
+        k1 = contDynamics(truePose, tmpControl);
         x2 = truePose.plus(k1.scale(0.5f * dt));
-        k2 = contDynamics(x2, tmp_control);
+        k2 = contDynamics(x2, tmpControl);
         x3 = truePose.plus(k2.scale(0.5f * dt));
-        k3 = contDynamics(x3, tmp_control);
+        k3 = contDynamics(x3, tmpControl);
         x4 = truePose.plus(k3.scale(dt));
-        k4 = contDynamics(x4, tmp_control);
+        k4 = contDynamics(x4, tmpControl);
 
         Vec3 dtrue_pose = Vec3.zero();
         dtrue_pose
@@ -225,8 +221,6 @@ public class Simulator {
                 .plusInPlace(k4)
                 .scaleInPlace(dt / 6.0);
         truePose.plusInPlace(dtrue_pose);
-
-//        System.out.println(true_pose);
 
         for (LineSegmentFeature line : lineFeatures) {
             if (line.shortestDistance(Vec2.of(truePose.x, truePose.y)) < robotLength) {
@@ -243,10 +237,9 @@ public class Simulator {
         int iter = 0;
 
         while (running) {
-            if (iter % control_freq == 0) {
+            if (iter % controlFreq == 0) {
                 // Do a control update
                 updateCurrentControl(loop_dt);
-
                 synchronized (currentOdometryData) {
                     synchronized (currentControl) {
                         currentOdometryData.odom = currentControl;
@@ -254,7 +247,7 @@ public class Simulator {
                     currentOdometryData.odomTime = System.currentTimeMillis();
                 }
             }
-            if (iter % laser_scan_freq == 0) {
+            if (iter % laserScanFreq == 0) {
                 // Update the laser scan
                 Vector<Double> tmp_scan = computeLaserScan();
                 synchronized (currentLaserScan) {

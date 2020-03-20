@@ -44,25 +44,30 @@ public class SimulatorTest extends PApplet {
         // Draw the Laser scan:
         Vector<Vec2> lines = new Vector<>();
         Vec2 position = Vec2.of(pose.x, pose.y);
-        Vec2 base = position.minus(
+        Vec2 laserEnd = position.minus(
                 Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * sim.robotLength)
         );
-        lines.add(base);
+        Vec2 otherEnd = position.plus(
+                Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * sim.robotLength)
+        );
         for (int i = 0; i < Simulator.NUM_LASERS; ++i) {
             if (scan.lengths.size() == 0 || scan.lengths.get(i) == Simulator.LASER_DIST_OVER_DIST_VAL) {
                 continue;
             }
-            double perc = i / (Simulator.NUM_LASERS - 1.0);
-            double th = Simulator.MIN_THETA + (Simulator.MAX_THETA - Simulator.MIN_THETA) * perc;
+            double percentage = i / (Simulator.NUM_LASERS - 1.0);
+            double theta = Simulator.MIN_THETA + (Simulator.MAX_THETA - Simulator.MIN_THETA) * percentage;
 
-            Vec2 scan_pt_i = base.plus(Vec2.of(Math.cos(th + pose.z), Math.sin(th + pose.z)).scaleInPlace(scan.lengths.get(i)));
+            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + pose.z), Math.sin(theta + pose.z)).scaleInPlace(scan.lengths.get(i)));
             lines.add(scan_pt_i);
         }
-
         stroke(1, 0, 0);
         for (Vec2 l : lines) {
-            line((float) l.x, (float) l.y, (float) position.x, (float) position.y);
+            line((float) laserEnd.x, (float) laserEnd.y, (float) l.x, (float) l.y);
         }
+
+        // Draw robot
+        stroke(1);
+        line((float) laserEnd.x, (float) laserEnd.y, (float) otherEnd.x, (float) otherEnd.y);
 
         surface.setTitle("Processing - FPS: " + Math.round(frameRate));
     }
@@ -72,7 +77,16 @@ public class SimulatorTest extends PApplet {
             sim.sendControl(Vec2.zero());
         }
         if (keyCode == UP) {
-            sim.sendControl(Vec2.of(10, 0));
+            sim.sendControl(Vec2.of(50, 0));
+        }
+        if (keyCode == DOWN) {
+            sim.sendControl(Vec2.of(-50, 0));
+        }
+        if (keyCode == LEFT) {
+            sim.sendControl(Vec2.of(0, -0.5));
+        }
+        if (keyCode == RIGHT) {
+            sim.sendControl(Vec2.of(0, 0.5));
         }
     }
 
