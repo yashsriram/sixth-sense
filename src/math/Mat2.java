@@ -1,3 +1,5 @@
+package math;
+
 import java.util.Objects;
 
 public class Mat2 {
@@ -87,7 +89,7 @@ public class Mat2 {
 
     @Override
     public String toString() {
-        return "Mat2\n" +
+        return "math.Mat2\n" +
                 "["
                 + a + ", " + b +
                 "\n"

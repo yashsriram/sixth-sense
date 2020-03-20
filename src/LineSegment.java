@@ -1,3 +1,6 @@
+import math.Mat2;
+import math.Vec2;
+
 public class LineSegment {
     Vec2 p1;
     Vec2 p2;

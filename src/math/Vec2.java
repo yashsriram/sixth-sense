@@ -1,3 +1,5 @@
+package math;
+
 import java.util.Objects;
 
 public class Vec2 {

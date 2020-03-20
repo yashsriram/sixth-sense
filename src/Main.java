@@ -1,3 +1,5 @@
+import math.Vec2;
+
 public class Main {
     public static void main(String[] args) {
         LineSegment ls = new LineSegment(Vec2.of(-10, 0), Vec2.of(1, 0));
