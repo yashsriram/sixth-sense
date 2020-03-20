@@ -85,7 +85,11 @@ public class Vec2 {
     }
 
     public double norm() {
-        return (double) Math.sqrt(this.x * this.x + this.y * this.y);
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+
+    public double sqauredNorm() {
+        return this.x * this.x + this.y * this.y;
     }
 
     @Override

@@ -50,4 +50,12 @@ public class LineSegmentFeature {
             return p31.minus(p21Normed.scale(projectionLength)).norm();
         }
     }
+
+    @Override
+    public String toString() {
+        return "LineSegmentFeature{" +
+                "p1=" + p1 +
+                ", p2=" + p2 +
+                '}';
+    }
 }
