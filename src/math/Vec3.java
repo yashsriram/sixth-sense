@@ -3,17 +3,17 @@ package math;
 import java.util.Objects;
 
 public class Vec3 {
-    public float x, y, z;
+    public double x, y, z;
 
     public static Vec3 zero() {
         return new Vec3(0, 0, 0);
     }
 
-    public static Vec3 of(float c) {
+    public static Vec3 of(double c) {
         return new Vec3(c, c, c);
     }
 
-    public static Vec3 of(float x, float y, float z) {
+    public static Vec3 of(double x, double y, double z) {
         return new Vec3(x, y, z);
     }
 
@@ -21,7 +21,7 @@ public class Vec3 {
         return new Vec3(source.x, source.y, source.z);
     }
 
-    public Vec3 set(float x, float y, float z) {
+    public Vec3 set(double x, double y, double z) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -57,11 +57,11 @@ public class Vec3 {
         return this;
     }
 
-    public Vec3 scale(float t) {
+    public Vec3 scale(double t) {
         return new Vec3(this.x * t, this.y * t, this.z * t);
     }
 
-    public Vec3 scaleInPlace(float t) {
+    public Vec3 scaleInPlace(double t) {
         this.x *= t;
         this.y *= t;
         this.z *= t;
@@ -69,7 +69,7 @@ public class Vec3 {
     }
 
     public Vec3 normalize() {
-        float abs = norm();
+        double abs = norm();
         if (abs < 1e-6f) {
             return new Vec3(this);
         } else {
@@ -78,14 +78,14 @@ public class Vec3 {
     }
 
     public Vec3 normalizeInPlace() {
-        float abs = norm();
+        double abs = norm();
         if (abs > 1e-6f) {
             scaleInPlace(1 / abs);
         }
         return this;
     }
 
-    public float dot(Vec3 b) {
+    public double dot(Vec3 b) {
         return this.x * b.x + this.y * b.y + this.z * b.z;
     }
 
@@ -93,8 +93,8 @@ public class Vec3 {
         return new Vec3(this.y * b.z - this.z * b.y, this.z * b.x - this.x * b.z, this.x * b.y - this.y * b.x);
     }
 
-    public float norm() {
-        return (float) Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+    public double norm() {
+        return (double) Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
     }
 
     @Override
@@ -102,9 +102,9 @@ public class Vec3 {
         if (this == o) return true;
         if (!(o instanceof Vec3)) return false;
         Vec3 vec3 = (Vec3) o;
-        return Float.compare(vec3.x, x) == 0 &&
-                Float.compare(vec3.y, y) == 0 &&
-                Float.compare(vec3.z, z) == 0;
+        return Double.compare(vec3.x, x) == 0 &&
+                Double.compare(vec3.y, y) == 0 &&
+                Double.compare(vec3.z, z) == 0;
     }
 
     @Override
@@ -121,7 +121,7 @@ public class Vec3 {
                 '}';
     }
 
-    private Vec3(float x, float y, float z) {
+    private Vec3(double x, double y, double z) {
         this.x = x;
         this.y = y;
         this.z = z;
