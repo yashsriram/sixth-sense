@@ -59,10 +59,11 @@ public class Mat2 {
         return a * d - b * c;
     }
 
-    public Mat2 inverse() throws Exception {
+    public Mat2 inverse() {
         double determinant = determinant();
         if (Math.abs(determinant) < SINGULAR_LIMIT) {
-            throw new Exception("Inverse of a singular 2x2 matrix attempted");
+            // If non invertible return the same matrix
+            return Mat2.of(a, b, c, d);
         }
         return new Mat2(d, -b, -c, a).scaleInPlace(1 / determinant);
     }
