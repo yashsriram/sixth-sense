@@ -9,7 +9,7 @@ import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 
 class LaserScanData {
-    Vector<Double> lengths = new Vector<>();
+    Vector<Double> distances = new Vector<>();
     long scanTime = 0;
 }
 
@@ -23,8 +23,8 @@ public class Simulator {
     final static int NUM_LASERS = 181;
     final static double MIN_THETA = -Math.PI / 2;
     final static double MAX_THETA = Math.PI / 2;
-    final static double MAX_LASER_DISTANCE = 5.0;
-    final static double LASER_DIST_OVER_DIST_VAL = 6.0;
+    final static double LASER_MAX_DISTANCE = 5.0;
+    final static double LASER_INVALID_MEASUREMENT = LASER_MAX_DISTANCE + 1;
     final static double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / NUM_LASERS;
     int laserScanFreq = 10;  // How many iterations to wait between updates
     final static LaserScanData currentLaserScan = new LaserScanData();
@@ -143,13 +143,13 @@ public class Simulator {
     private Vector<Double> computeLaserScan() {
         Vector<Double> rayDistances = new Vector<>(NUM_LASERS);
         for (int i = 0; i < NUM_LASERS; i++) {
-            rayDistances.add(LASER_DIST_OVER_DIST_VAL);
+            rayDistances.add(LASER_INVALID_MEASUREMENT);
         }
         // Move the center of the scanner back from the center of the robot
         Vec2 truePosition = Vec2.of(truePose.x, truePose.y);
         Vec2 laserCenter = truePosition.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength));
 
-        // The laser beam
+        // For each laser beam
         for (int i = 0; i < NUM_LASERS; ++i) {
             double percentage = i / (NUM_LASERS - 1.0);
             double laserThErr = ThreadLocalRandom.current().nextDouble(-LASER_ANGLE_ERROR_LIMIT * LASER_ANGULAR_RESOLUTION, LASER_ANGLE_ERROR_LIMIT * LASER_ANGULAR_RESOLUTION);
@@ -159,12 +159,13 @@ public class Simulator {
             // Check intersection for each line feature
             for (LineSegmentFeature line : lineFeatures) {
                 double rayDistance = line.checkIntersection(laserCenter, v);
-                if (rayDistance >= 0 && rayDistance < MAX_LASER_DISTANCE) {
-                    rayDistances.set(i, rayDistance);
+                if (rayDistance >= 0 && rayDistance < LASER_MAX_DISTANCE) {
+                    rayDistances.set(i, Math.min(rayDistance, rayDistances.get(i)));
                 }
             }
 
-            if (rayDistances.get(i) < LASER_DIST_OVER_DIST_VAL) {
+            // Add some noise to measurements
+            if (rayDistances.get(i) < LASER_INVALID_MEASUREMENT) {
                 double laser_d_err = ThreadLocalRandom.current().nextDouble(-LASER_DISTANCE_ERROR_LIMIT, LASER_DISTANCE_ERROR_LIMIT);
                 rayDistances.set(i, rayDistances.get(i) + laser_d_err);
             }
@@ -251,7 +252,7 @@ public class Simulator {
                 // Update the laser scan
                 Vector<Double> tmp_scan = computeLaserScan();
                 synchronized (currentLaserScan) {
-                    currentLaserScan.lengths = tmp_scan;
+                    currentLaserScan.distances = tmp_scan;
                     currentLaserScan.scanTime = System.currentTimeMillis();
                 }
             }

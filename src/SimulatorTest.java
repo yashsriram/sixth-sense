@@ -42,7 +42,7 @@ public class SimulatorTest extends PApplet {
             line((float) l.p1.x * SCALE + WIDTH / 2f, (float) l.p1.y * SCALE + HEIGHT / 2f, (float) l.p2.x * SCALE + WIDTH / 2f, (float) l.p2.y * SCALE + HEIGHT / 2f);
         }
 
-        // Draw the Laser scan:
+        // Draw the Laser scan
         Vector<Vec2> lines = new Vector<>();
         Vec2 position = Vec2.of(pose.x, pose.y).scaleInPlace(SCALE).plusInPlace(Vec2.of(WIDTH / 2.0, HEIGHT / 2.0));
         Vec2 laserEnd = position.minus(
@@ -51,14 +51,14 @@ public class SimulatorTest extends PApplet {
         Vec2 otherEnd = position.plus(
                 Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * sim.robotLength * SCALE)
         );
-        for (int i = 0; i < Simulator.NUM_LASERS; ++i) {
-            if (scan.lengths.size() == 0 || scan.lengths.get(i) == Simulator.LASER_DIST_OVER_DIST_VAL) {
+        for (int i = 0; i < scan.distances.size(); ++i) {
+            if (scan.distances.get(i) == Simulator.LASER_INVALID_MEASUREMENT) {
                 continue;
             }
             double percentage = i / (Simulator.NUM_LASERS - 1.0);
             double theta = Simulator.MIN_THETA + (Simulator.MAX_THETA - Simulator.MIN_THETA) * percentage;
 
-            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + pose.z), Math.sin(theta + pose.z)).scaleInPlace(scan.lengths.get(i) * SCALE));
+            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + pose.z), Math.sin(theta + pose.z)).scaleInPlace(scan.distances.get(i) * SCALE));
             lines.add(scan_pt_i);
         }
         stroke(1, 0, 0);
@@ -78,10 +78,10 @@ public class SimulatorTest extends PApplet {
             sim.sendControl(Vec2.zero());
         }
         if (keyCode == UP) {
-            sim.sendControl(Vec2.of(30, 0));
+            sim.sendControl(Vec2.of(10, 0));
         }
         if (keyCode == DOWN) {
-            sim.sendControl(Vec2.of(-30, 0));
+            sim.sendControl(Vec2.of(-10, 0));
         }
         if (keyCode == LEFT) {
             sim.sendControl(Vec2.of(0, -0.5));
