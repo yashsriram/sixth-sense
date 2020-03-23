@@ -21,8 +21,7 @@ public class SimulatorTest extends PApplet {
         rectMode(CENTER);
         noStroke();
 
-        String scene_name = "/home/pandu/school/10/Sensing&Estimation/project/data/apartment.scn";
-
+        String scene_name = "data/apartment.scn";
         sim = new Simulator(scene_name);
     }
 
