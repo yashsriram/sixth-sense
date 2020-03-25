@@ -124,9 +124,9 @@ public class Simulator {
     }
 
     private Vector<Double> computeLaserScan() {
-        Vector<Double> rayDistances = new Vector<>(NUM_LASERS);
+        Vector<Double> measurements = new Vector<>(NUM_LASERS);
         for (int i = 0; i < NUM_LASERS; i++) {
-            rayDistances.add(LASER_INVALID_MEASUREMENT);
+            measurements.add(LASER_INVALID_MEASUREMENT);
         }
         // Move the center of the scanner back from the center of the robot
         Vec2 truePosition = Vec2.of(truePose.x, truePose.y);
@@ -143,26 +143,26 @@ public class Simulator {
             for (LineSegmentFeature line : lineFeatures) {
                 double rayDistance = line.checkIntersection(laserCenter, v);
                 if (rayDistance >= 0 && rayDistance < LASER_MAX_DISTANCE) {
-                    rayDistances.set(i, Math.min(rayDistance, rayDistances.get(i)));
+                    measurements.set(i, Math.min(rayDistance, measurements.get(i)));
                 }
             }
 
             // Add some noise to measurements
-            if (rayDistances.get(i) < LASER_INVALID_MEASUREMENT) {
+            if (measurements.get(i) < LASER_INVALID_MEASUREMENT) {
                 double laser_d_err = ThreadLocalRandom.current().nextDouble(-LASER_DISTANCE_ERROR_LIMIT, LASER_DISTANCE_ERROR_LIMIT);
-                rayDistances.set(i, rayDistances.get(i) + laser_d_err);
+                measurements.set(i, measurements.get(i) + laser_d_err);
             }
         }
 
-        return rayDistances;
+        return measurements;
     }
 
-    Vec3 contDynamics(Vec3 x_t, Vec2 u_t) {
-        Vec3 x_dot_t = Vec3.zero();
-        x_dot_t.x = u_t.x * Math.cos(x_t.z);
-        x_dot_t.y = u_t.x * Math.sin(x_t.z);
-        x_dot_t.z = u_t.y;
-        return x_dot_t;
+    Vec3 applyControl(Vec3 pose, Vec2 control) {
+        Vec3 changeInPose = Vec3.zero();
+        changeInPose.x = control.x * Math.cos(pose.z);
+        changeInPose.y = control.x * Math.sin(pose.z);
+        changeInPose.z = control.y;
+        return changeInPose;
     }
 
     void updateCurrentControl(double dt) {
@@ -189,22 +189,22 @@ public class Simulator {
         // Run the dynamics via RK4
         Vec3 k1, k2, k3, k4;
         Vec3 x2, x3, x4;
-        k1 = contDynamics(truePose, tmpControl);
+        k1 = applyControl(truePose, tmpControl);
         x2 = truePose.plus(k1.scale(0.5f * dt));
-        k2 = contDynamics(x2, tmpControl);
+        k2 = applyControl(x2, tmpControl);
         x3 = truePose.plus(k2.scale(0.5f * dt));
-        k3 = contDynamics(x3, tmpControl);
+        k3 = applyControl(x3, tmpControl);
         x4 = truePose.plus(k3.scale(dt));
-        k4 = contDynamics(x4, tmpControl);
+        k4 = applyControl(x4, tmpControl);
 
-        Vec3 dtrue_pose = Vec3.zero();
-        dtrue_pose
+        Vec3 dtruePose = Vec3.zero();
+        dtruePose
                 .plusInPlace(k1)
                 .plusInPlace(k2.scale(2))
                 .plusInPlace(k3.scale(2))
                 .plusInPlace(k4)
                 .scaleInPlace(dt / 6.0);
-        truePose.plusInPlace(dtrue_pose);
+        truePose.plusInPlace(dtruePose);
 
         for (LineSegmentFeature line : lineFeatures) {
             if (line.shortestDistance(Vec2.of(truePose.x, truePose.y)) < robotLength) {
@@ -215,15 +215,14 @@ public class Simulator {
     }
 
     void mainLoop() {
-        final long loop_duration = 10;
-        double loop_dt = 1e-3 * loop_duration;
-
-        int iter = 0;
+        final long loopDuration = 10;
+        double loopDt = 1e-3 * loopDuration;
+        int iteration = 0;
 
         while (running) {
-            if (iter % CONTROL_FREQ == 0) {
+            if (iteration % CONTROL_FREQ == 0) {
                 // Do a control update
-                updateCurrentControl(loop_dt);
+                updateCurrentControl(loopDt);
                 synchronized (CURRENT_ODOMETRY_DATA) {
                     synchronized (currentControl) {
                         CURRENT_ODOMETRY_DATA.odom = currentControl;
@@ -231,7 +230,7 @@ public class Simulator {
                     CURRENT_ODOMETRY_DATA.odomTime = System.currentTimeMillis();
                 }
             }
-            if (iter % LASER_SCAN_FREQ == 0) {
+            if (iteration % LASER_SCAN_FREQ == 0) {
                 // Update the laser scan
                 Vector<Double> tmp_scan = computeLaserScan();
                 synchronized (CURRENT_LASER_SCAN) {
@@ -240,9 +239,9 @@ public class Simulator {
                 }
             }
 
-            iter++;
+            iteration++;
             try {
-                Thread.sleep(loop_duration);
+                Thread.sleep(loopDuration);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
