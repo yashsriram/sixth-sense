@@ -55,7 +55,7 @@ public class LineSegmentFeature {
 
     @Override
     public String toString() {
-        return "simulator.LineSegmentFeature{" +
+        return "LineSegmentFeature{" +
                 "p1=" + p1 +
                 ", p2=" + p2 +
                 '}';

@@ -12,33 +12,36 @@ import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Simulator {
+    // Graphics engine
     final PApplet parent;
 
-    // Laser Scanner Parameters
+    // Environment
+    private Vector<LineSegmentFeature> lineFeatures = new Vector<>();
+
+    // Laser scanner
     public final static int NUM_LASERS = 181;
     public final static double MIN_THETA = -Math.PI / 2;
     public final static double MAX_THETA = Math.PI / 2;
     public final static double LASER_MAX_DISTANCE = 5.0;
     public final static double LASER_INVALID_MEASUREMENT = LASER_MAX_DISTANCE + 1;
     public final static double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / NUM_LASERS;
-    public final static int laserScanFreq = 10;  // How many iterations to wait between updates
-    public final static LaserScanData currentLaserScan = new LaserScanData();
+    public final static int LASER_SCAN_FREQ = 10;
+    public final static LaserScanData CURRENT_LASER_SCAN = new LaserScanData();
 
-    // Odometry Data Parameters
-    int controlFreq = 1; // How many iterations to wait between updates
-    final static OdometryData currentOdometryData = new OdometryData();
+    // Odometry data
+    final static int CONTROL_FREQ = 1;
+    final static OdometryData CURRENT_ODOMETRY_DATA = new OdometryData();
 
-    // Robot Parameters:
-    public final double robotLength;
-    private Vec3 truePose = Vec3.zero();
-    private Vector<LineSegmentFeature> lineFeatures = new Vector<>();
+    // Robot parameters
     final static double MAX_LINEAR_ACCELERATION = 0.5;
     final static double MAX_ANGULAR_ACCELERATION = 0.5;
+    public final double robotLength;
+    private Vec3 truePose = Vec3.zero();
     final static Vec2 goalControl = Vec2.zero();
     final static Vec2 currentControl = Vec2.zero();
     private boolean running = true;
 
-    // Random Distributions
+    // Randomness
     private static final double LASER_ANGLE_ERROR_LIMIT = 0.05;
     private static final double LASER_DISTANCE_ERROR_LIMIT = 0.05;
     private static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.1;
@@ -94,26 +97,22 @@ public class Simulator {
         mainLoop.start();
     }
 
-    public Vector<LineSegmentFeature> getLineFeatures() {
-        return lineFeatures;
-    }
-
     public Vec3 getTruePose() {
         return truePose;
     }
 
     public LaserScanData getLaserScan() {
         LaserScanData ret;
-        synchronized (currentLaserScan) {
-            ret = currentLaserScan;
+        synchronized (CURRENT_LASER_SCAN) {
+            ret = CURRENT_LASER_SCAN;
         }
         return ret;
     }
 
     public OdometryData getOdometry() {
         OdometryData ret;
-        synchronized (currentOdometryData) {
-            ret = currentOdometryData;
+        synchronized (CURRENT_ODOMETRY_DATA) {
+            ret = CURRENT_ODOMETRY_DATA;
         }
         return ret;
     }
@@ -222,22 +221,22 @@ public class Simulator {
         int iter = 0;
 
         while (running) {
-            if (iter % controlFreq == 0) {
+            if (iter % CONTROL_FREQ == 0) {
                 // Do a control update
                 updateCurrentControl(loop_dt);
-                synchronized (currentOdometryData) {
+                synchronized (CURRENT_ODOMETRY_DATA) {
                     synchronized (currentControl) {
-                        currentOdometryData.odom = currentControl;
+                        CURRENT_ODOMETRY_DATA.odom = currentControl;
                     }
-                    currentOdometryData.odomTime = System.currentTimeMillis();
+                    CURRENT_ODOMETRY_DATA.odomTime = System.currentTimeMillis();
                 }
             }
-            if (iter % laserScanFreq == 0) {
+            if (iter % LASER_SCAN_FREQ == 0) {
                 // Update the laser scan
                 Vector<Double> tmp_scan = computeLaserScan();
-                synchronized (currentLaserScan) {
-                    currentLaserScan.distances = tmp_scan;
-                    currentLaserScan.scanTime = System.currentTimeMillis();
+                synchronized (CURRENT_LASER_SCAN) {
+                    CURRENT_LASER_SCAN.distances = tmp_scan;
+                    CURRENT_LASER_SCAN.scanTime = System.currentTimeMillis();
                 }
             }
 
