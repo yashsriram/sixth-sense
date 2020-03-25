@@ -3,6 +3,8 @@ package simulator;
 import math.Vec2;
 import math.Vec3;
 import processing.core.PApplet;
+import simulator.environment.LineSegmentFeature;
+import simulator.sensors.LaserSensorData;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -26,7 +28,7 @@ public class Simulator {
     public final static double LASER_INVALID_MEASUREMENT = LASER_MAX_DISTANCE + 1;
     public final static double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / NUM_LASERS;
     public final static int LASER_SCAN_FREQ = 10;
-    public final static LaserScanData CURRENT_LASER_SCAN = new LaserScanData();
+    public final static LaserSensorData CURRENT_LASER_SCAN = new LaserSensorData();
 
     // Odometry data
     final static int CONTROL_FREQ = 1;
@@ -101,8 +103,8 @@ public class Simulator {
         return truePose;
     }
 
-    public LaserScanData getLaserScan() {
-        LaserScanData ret;
+    public LaserSensorData getLaserScanThreadSafe() {
+        LaserSensorData ret;
         synchronized (CURRENT_LASER_SCAN) {
             ret = CURRENT_LASER_SCAN;
         }
@@ -252,6 +254,33 @@ public class Simulator {
         // Draw the building
         for (LineSegmentFeature l : lineFeatures) {
             parent.line((float) l.p1.x * scale + width / 2f, (float) l.p1.y * scale + height / 2f, (float) l.p2.x * scale + width / 2f, (float) l.p2.y * scale + height / 2f);
+        }
+
+        Vec3 pose = getTruePose();
+        Vec2 position = Vec2.of(pose.x, pose.y).scaleInPlace(scale).plusInPlace(Vec2.of(width / 2.0, height / 2.0));
+        Vec2 laserEnd = position.minus(Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * robotLength * scale));
+        Vec2 otherEnd = position.plus(Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * robotLength * scale));
+
+        // Draw robot
+        parent.stroke(1);
+        parent.line((float) laserEnd.x, (float) laserEnd.y, (float) otherEnd.x, (float) otherEnd.y);
+
+        // Draw lasers
+        LaserSensorData data = getLaserScanThreadSafe();
+        Vector<Vec2> lines = new Vector<>();
+        for (int i = 0; i < data.distances.size(); ++i) {
+            if (data.distances.get(i) == Simulator.LASER_INVALID_MEASUREMENT) {
+                continue;
+            }
+            double percentage = i / (Simulator.NUM_LASERS - 1.0);
+            double theta = Simulator.MIN_THETA + (Simulator.MAX_THETA - Simulator.MIN_THETA) * percentage;
+
+            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + pose.z), Math.sin(theta + pose.z)).scaleInPlace(data.distances.get(i) * scale));
+            lines.add(scan_pt_i);
+        }
+        parent.stroke(1, 0, 0);
+        for (Vec2 l : lines) {
+            parent.line((float) laserEnd.x, (float) laserEnd.y, (float) l.x, (float) l.y);
         }
     }
 }

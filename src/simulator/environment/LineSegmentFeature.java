@@ -1,18 +1,18 @@
-package simulator;
+package simulator.environment;
 
 import math.Mat2;
 import math.Vec2;
 
 public class LineSegmentFeature {
-    Vec2 p1;
-    Vec2 p2;
+    public final Vec2 p1;
+    public final Vec2 p2;
 
     public LineSegmentFeature(Vec2 p1, Vec2 p2) {
         this.p1 = Vec2.of(p1);
         this.p2 = Vec2.of(p2);
     }
 
-    double checkIntersection(final Vec2 robotPosition, final Vec2 robotDirection) {
+    public double checkIntersection(final Vec2 robotPosition, final Vec2 robotDirection) {
         Vec2 p21 = p2.minus(p1);
         Vec2 robotDirectionNormalized = robotDirection.normalize();
         Mat2 A = Mat2.withCols(robotDirectionNormalized.scale(-1), p21);
@@ -34,7 +34,7 @@ public class LineSegmentFeature {
         return t1t2.x;
     }
 
-    double shortestDistance(Vec2 p3) {
+    public double shortestDistance(Vec2 p3) {
         Vec2 p21Normed = p2.minus(p1);
         double p21Norm = p21Normed.norm();
         p21Normed.normalizeInPlace();
