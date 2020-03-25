@@ -1,3 +1,5 @@
+package simulator;
+
 import math.Mat2;
 import math.Vec2;
 
@@ -53,7 +55,7 @@ public class LineSegmentFeature {
 
     @Override
     public String toString() {
-        return "LineSegmentFeature{" +
+        return "simulator.LineSegmentFeature{" +
                 "p1=" + p1 +
                 ", p2=" + p2 +
                 '}';

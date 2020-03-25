@@ -1,6 +1,9 @@
 import math.Vec2;
 import math.Vec3;
 import processing.core.PApplet;
+import simulator.LaserScanData;
+import simulator.OdometryData;
+import simulator.Simulator;
 
 import java.util.Vector;
 
@@ -22,7 +25,7 @@ public class SimulatorTest extends PApplet {
         noStroke();
 
         String scene_name = "data/apartment.scn";
-        sim = new Simulator(scene_name);
+        sim = new Simulator(this, scene_name);
     }
 
     public void draw() {
@@ -33,13 +36,10 @@ public class SimulatorTest extends PApplet {
         OdometryData odom = sim.getOdometry();
         LaserScanData scan = sim.getLaserScan();
 
+        sim.draw(SCALE, WIDTH, HEIGHT);
+
         // For visualization purposes only, you shouldn't use this in your localization
         Vec3 pose = sim.getTruePose();
-
-        // Draw the building
-        for (LineSegmentFeature l : sim.getLineFeatures()) {
-            line((float) l.p1.x * SCALE + WIDTH / 2f, (float) l.p1.y * SCALE + HEIGHT / 2f, (float) l.p2.x * SCALE + WIDTH / 2f, (float) l.p2.y * SCALE + HEIGHT / 2f);
-        }
 
         // Draw the Laser scan
         Vector<Vec2> lines = new Vector<>();

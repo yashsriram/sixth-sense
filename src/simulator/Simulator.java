@@ -1,5 +1,8 @@
+package simulator;
+
 import math.Vec2;
 import math.Vec3;
+import processing.core.PApplet;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -8,33 +11,25 @@ import java.util.Scanner;
 import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 
-class LaserScanData {
-    Vector<Double> distances = new Vector<>();
-    long scanTime = 0;
-}
-
-class OdometryData {
-    Vec2 odom = Vec2.zero();
-    long odomTime = 0;
-}
-
 public class Simulator {
+    final PApplet parent;
+
     // Laser Scanner Parameters
-    final static int NUM_LASERS = 181;
-    final static double MIN_THETA = -Math.PI / 2;
-    final static double MAX_THETA = Math.PI / 2;
-    final static double LASER_MAX_DISTANCE = 5.0;
-    final static double LASER_INVALID_MEASUREMENT = LASER_MAX_DISTANCE + 1;
-    final static double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / NUM_LASERS;
-    int laserScanFreq = 10;  // How many iterations to wait between updates
-    final static LaserScanData currentLaserScan = new LaserScanData();
+    public final static int NUM_LASERS = 181;
+    public final static double MIN_THETA = -Math.PI / 2;
+    public final static double MAX_THETA = Math.PI / 2;
+    public final static double LASER_MAX_DISTANCE = 5.0;
+    public final static double LASER_INVALID_MEASUREMENT = LASER_MAX_DISTANCE + 1;
+    public final static double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / NUM_LASERS;
+    public final static int laserScanFreq = 10;  // How many iterations to wait between updates
+    public final static LaserScanData currentLaserScan = new LaserScanData();
 
     // Odometry Data Parameters
     int controlFreq = 1; // How many iterations to wait between updates
     final static OdometryData currentOdometryData = new OdometryData();
 
     // Robot Parameters:
-    double robotLength = 0;
+    public final double robotLength;
     private Vec3 truePose = Vec3.zero();
     private Vector<LineSegmentFeature> lineFeatures = new Vector<>();
     final static double MAX_LINEAR_ACCELERATION = 0.5;
@@ -49,26 +44,31 @@ public class Simulator {
     private static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.1;
     private static final double ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
 
-
-    private static Vector<Vector<String>> loadFileByToken(final String filepath, final int nSkip, final String delimiter) throws FileNotFoundException {
-        Vector<Vector<String>> fileContents = new Vector<>();
-        File file = new File(filepath);
-        Scanner scanner = new Scanner(file);
-        int nLinesRead = 0;
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            nLinesRead++;
-            if (nLinesRead <= nSkip) {
-                continue;
+    public Simulator(PApplet parent, String sceneFilepath) {
+        this.parent = parent;
+        // Read scene
+        Vector<Vector<String>> fileContents = null;
+        try {
+            String delimiter = " ";
+            fileContents = new Vector<>();
+            File file = new File(sceneFilepath);
+            Scanner scanner = new Scanner(file);
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                String[] tokens = line.split(delimiter);
+                fileContents.add(new Vector<>(Arrays.asList(tokens)));
             }
-            String[] tokens = line.split(delimiter);
-            fileContents.add(new Vector<>(Arrays.asList(tokens)));
+            scanner.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.exit(-1);
         }
-        scanner.close();
-        return fileContents;
-    }
+        // Make sure we've loaded a non-empty map file.
+        // Note that the first line in the file is the robot position
+        assert (fileContents.size() > 0);
 
-    private void loadRobotPose(Vector<String> poseTokens) {
+        // Load robot pose
+        Vector<String> poseTokens = fileContents.get(0);
         // Make sure the pose is of size 4 (x, y, th, radius)
         assert (poseTokens.size() == 4);
         truePose.set(
@@ -77,32 +77,16 @@ public class Simulator {
                 Double.parseDouble(poseTokens.get(2))
         );
         robotLength = Double.parseDouble(poseTokens.get(3));
-    }
 
-    private void addLineFeature(Vector<String> lineFeatureTokens) {
-        // Make sure the line information is of size 4 (x1,y1,x2,y2)
-        assert (lineFeatureTokens.size() == 4);
-        Vec2 p1 = Vec2.of(Double.parseDouble(lineFeatureTokens.get(0)), Double.parseDouble(lineFeatureTokens.get(1)));
-        Vec2 p2 = Vec2.of(Double.parseDouble(lineFeatureTokens.get(2)), Double.parseDouble(lineFeatureTokens.get(3)));
-        lineFeatures.add(new LineSegmentFeature(p1, p2));
-    }
 
-    public Simulator(String map_file) {
-        Vector<Vector<String>> fileContents = null;
-        try {
-            fileContents = loadFileByToken(map_file, 0, " ");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
-        // Make sure we've loaded a non-empty map file.  Note that the first line in the file is the robot position
-        assert (fileContents.size() > 0);
-
-        loadRobotPose(fileContents.get(0));
-
-        // Every Subsequent line in the file is a line segment:
+        // Every subsequent line in the file is a line segment
         for (int i = 1; i < fileContents.size(); ++i) {
-            addLineFeature(fileContents.get(i));
+            Vector<String> lineFeatureTokens = fileContents.get(i);
+            // Make sure the line information is of size 4 (x1,y1,x2,y2)
+            assert (lineFeatureTokens.size() == 4);
+            Vec2 p1 = Vec2.of(Double.parseDouble(lineFeatureTokens.get(0)), Double.parseDouble(lineFeatureTokens.get(1)));
+            Vec2 p2 = Vec2.of(Double.parseDouble(lineFeatureTokens.get(2)), Double.parseDouble(lineFeatureTokens.get(3)));
+            lineFeatures.add(new LineSegmentFeature(p1, p2));
         }
 
         // Fork off the main simulation loop
@@ -114,11 +98,11 @@ public class Simulator {
         return lineFeatures;
     }
 
-    Vec3 getTruePose() {
+    public Vec3 getTruePose() {
         return truePose;
     }
 
-    LaserScanData getLaserScan() {
+    public LaserScanData getLaserScan() {
         LaserScanData ret;
         synchronized (currentLaserScan) {
             ret = currentLaserScan;
@@ -126,7 +110,7 @@ public class Simulator {
         return ret;
     }
 
-    OdometryData getOdometry() {
+    public OdometryData getOdometry() {
         OdometryData ret;
         synchronized (currentOdometryData) {
             ret = currentOdometryData;
@@ -134,7 +118,7 @@ public class Simulator {
         return ret;
     }
 
-    void sendControl(Vec2 ctrl) {
+    public void sendControl(Vec2 ctrl) {
         synchronized (goalControl) {
             goalControl.set(ctrl);
         }
@@ -266,4 +250,10 @@ public class Simulator {
         }
     }
 
+    public void draw(float scale, float width, float height) {
+        // Draw the building
+        for (LineSegmentFeature l : lineFeatures) {
+            parent.line((float) l.p1.x * scale + width / 2f, (float) l.p1.y * scale + height / 2f, (float) l.p2.x * scale + width / 2f, (float) l.p2.y * scale + height / 2f);
+        }
+    }
 }
