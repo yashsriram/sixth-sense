@@ -6,7 +6,7 @@ import simulator.Simulator;
 public class SimulatorTest extends PApplet {
     public static final int WIDTH = 800;
     public static final int HEIGHT = 800;
-    public static int SCALE = 5;
+    public static int SCALE = 100;
 
     Simulator sim;
 
@@ -20,7 +20,7 @@ public class SimulatorTest extends PApplet {
         rectMode(CENTER);
         noStroke();
 
-        String scene_name = "data/apartment.scn";
+        String scene_name = "data/simple_rectangle.scn";
         sim = new Simulator(this, scene_name);
     }
 
