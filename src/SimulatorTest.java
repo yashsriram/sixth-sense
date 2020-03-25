@@ -28,26 +28,26 @@ public class SimulatorTest extends PApplet {
         background(0);
         stroke(1);
 
-        OdometryData odom = sim.getOdometry();
+        OdometryData odom = sim.getOdometryThreadSafe();
         sim.draw(SCALE, WIDTH, HEIGHT);
         surface.setTitle("Processing - FPS: " + Math.round(frameRate));
     }
 
     public void keyPressed() {
         if (key == 'p') {
-            sim.sendControl(Vec2.zero());
+            sim.sendControlThreadSafe(Vec2.zero());
         }
         if (keyCode == UP) {
-            sim.sendControl(Vec2.of(10, 0));
+            sim.sendControlThreadSafe(Vec2.of(10, 0));
         }
         if (keyCode == DOWN) {
-            sim.sendControl(Vec2.of(-10, 0));
+            sim.sendControlThreadSafe(Vec2.of(-10, 0));
         }
         if (keyCode == LEFT) {
-            sim.sendControl(Vec2.of(0, -0.5));
+            sim.sendControlThreadSafe(Vec2.of(0, -0.5));
         }
         if (keyCode == RIGHT) {
-            sim.sendControl(Vec2.of(0, 0.5));
+            sim.sendControlThreadSafe(Vec2.of(0, 0.5));
         }
         if (key == '+') {
             SCALE++;

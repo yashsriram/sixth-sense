@@ -111,7 +111,7 @@ public class Simulator {
         return ret;
     }
 
-    public OdometryData getOdometry() {
+    public OdometryData getOdometryThreadSafe() {
         OdometryData ret;
         synchronized (CURRENT_ODOMETRY_DATA) {
             ret = CURRENT_ODOMETRY_DATA;
@@ -119,7 +119,7 @@ public class Simulator {
         return ret;
     }
 
-    public void sendControl(Vec2 ctrl) {
+    public void sendControlThreadSafe(Vec2 ctrl) {
         synchronized (goalControl) {
             goalControl.set(ctrl);
         }
@@ -167,7 +167,7 @@ public class Simulator {
         return changeInPose;
     }
 
-    void updateCurrentControl(double dt) {
+    private void updateCurrentControl(double dt) {
         Vec2 tmpControl = Vec2.zero();
         synchronized (currentControl) {
             // Only allow so much acceleration per timestep
@@ -216,7 +216,7 @@ public class Simulator {
         }
     }
 
-    void mainLoop() {
+    private void mainLoop() {
         final long loopDuration = 10;
         double loopDt = 1e-3 * loopDuration;
         int iteration = 0;
