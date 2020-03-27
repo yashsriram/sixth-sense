@@ -6,7 +6,7 @@
 
 # Compilation (on linux)
 - Open a terminal with current directory as the one containing this file
-- Use `javac -cp "jars/*" -d build/ src/*.java src/*/*.java` to compile and put all output class files under build/
+- Use `javac -cp "jars/*" -d build/ src/*.java src/*/*.java src/*/*/*.java` to compile and put all output class files under build/
 - Use `java -cp "build/:jars/*" <package-path><class-name>` to run any simulation
     - Use `java -cp "build/:jars/*" SimulationTest` to run any simulation
 
