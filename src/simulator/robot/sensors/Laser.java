@@ -17,7 +17,6 @@ public class Laser {
     public static final double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / LASER_COUNT;
     public static final double LASER_ANGLE_ERROR_LIMIT = 0.05;
     public static final double LASER_DISTANCE_ERROR_LIMIT = 0.05;
-    public static final int LASER_SCAN_FREQUENCY = 10;
 
     private final List<Double> measurements = new ArrayList<>(LASER_COUNT);
 

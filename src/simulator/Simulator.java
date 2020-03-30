@@ -3,10 +3,9 @@ package simulator;
 import math.Vec2;
 import math.Vec3;
 import processing.core.PApplet;
-import simulator.environment.LineSegment;
 import simulator.environment.Landmark;
+import simulator.environment.LineSegment;
 import simulator.robot.Robot;
-import simulator.robot.sensors.Laser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,6 +19,7 @@ public class Simulator {
     public static final int WIDTH = 800;
     public static final int HEIGHT = 800;
     public static int SCALE = 100;
+
     // Graphics engine
     final PApplet applet;
 
@@ -27,10 +27,10 @@ public class Simulator {
     private List<Landmark> lines = new ArrayList<>();
 
     // Laser scanner
-    public final static Laser LASER_SENSOR = new Laser();
 
     // Odometry data
     final static int CONTROL_FREQ = 1;
+    public static final int LASER_SCAN_FREQUENCY = 10;
     final static OdometryData CURRENT_ODOMETRY_DATA = new OdometryData();
     final static Vec2 goalControl = Vec2.zero();
     final static Vec2 currentControl = Vec2.zero();
@@ -67,13 +67,15 @@ public class Simulator {
         // Make sure the pose is of size 4 (x, y, th, radius)
         assert (poseTokens.size() == 4);
         robot = new Robot(
+                applet,
                 Double.parseDouble(poseTokens.get(3)),
                 Vec3.of(
                         Double.parseDouble(poseTokens.get(0)),
                         Double.parseDouble(poseTokens.get(1)),
                         Double.parseDouble(poseTokens.get(2))
                 ),
-                true);
+                true
+        );
 
         // Every subsequent line in the file is a line segment
         for (int i = 1; i < fileContents.size(); ++i) {
@@ -177,8 +179,8 @@ public class Simulator {
                     CURRENT_ODOMETRY_DATA.odomTime = System.currentTimeMillis();
                 }
             }
-            if (iteration % Laser.LASER_SCAN_FREQUENCY == 0) {
-                LASER_SENSOR.updateLaserScan(robot, lines);
+            if (iteration % LASER_SCAN_FREQUENCY == 0) {
+                robot.laser.updateLaserScan(robot, lines);
             }
 
             iteration++;
@@ -191,35 +193,11 @@ public class Simulator {
     }
 
     public void draw() {
-        // Draw the landmarks
+        // Draw landmarks
         for (Landmark l : lines) {
             l.draw();
         }
-
-        Vec2 position = Vec2.of(robot.truePose.x, robot.truePose.y).scaleInPlace(Simulator.SCALE).plusInPlace(Vec2.of(Simulator.WIDTH / 2.0, Simulator.HEIGHT / 2.0));
-        Vec2 laserEnd = position.minus(Vec2.of(Math.cos(robot.truePose.z), Math.sin(robot.truePose.z)).scaleInPlace(0.5 * robot.robotLength * Simulator.SCALE));
-        Vec2 otherEnd = position.plus(Vec2.of(Math.cos(robot.truePose.z), Math.sin(robot.truePose.z)).scaleInPlace(0.5 * robot.robotLength * Simulator.SCALE));
-
         // Draw robot
-        applet.stroke(1);
-        applet.line((float) laserEnd.x, (float) laserEnd.y, (float) otherEnd.x, (float) otherEnd.y);
-
-        // Draw lasers
-        List<Double> distances = LASER_SENSOR.getLaserMeasurementsThreadSafe();
-        List<Vec2> lines = new ArrayList<>(this.lines.size());
-        for (int i = 0; i < distances.size(); ++i) {
-            if (distances.get(i) == Laser.LASER_INVALID_MEASUREMENT) {
-                continue;
-            }
-            double percentage = i / (Laser.LASER_COUNT - 1.0);
-            double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage;
-
-            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + robot.truePose.z), Math.sin(theta + robot.truePose.z)).scaleInPlace(distances.get(i) * Simulator.SCALE));
-            lines.add(scan_pt_i);
-        }
-        applet.stroke(1, 0, 0);
-        for (Vec2 l : lines) {
-            applet.line((float) laserEnd.x, (float) laserEnd.y, (float) l.x, (float) l.y);
-        }
+        robot.draw();
     }
 }
