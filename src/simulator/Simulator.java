@@ -20,13 +20,14 @@ public class Simulator {
     public static final int HEIGHT = 800;
     public static int SCALE = 100;
 
-    // Graphics engine
+    // Graphics
     final PApplet applet;
 
     // Environment
     private List<Landmark> lines = new ArrayList<>();
 
-    // Laser scanner
+    // Robot
+    private Robot robot;
 
     // Odometry data
     final static int CONTROL_FREQ = 1;
@@ -36,9 +37,6 @@ public class Simulator {
     final static Vec2 currentControl = Vec2.zero();
     private static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.1;
     private static final double ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
-
-    // Robot parameters
-    private Robot robot;
 
     public Simulator(PApplet applet, String sceneFilepath) {
         this.applet = applet;

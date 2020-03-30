@@ -13,12 +13,15 @@ public class Robot {
     public final static double MAX_LINEAR_ACCELERATION = 0.5;
     public final static double MAX_ANGULAR_ACCELERATION = 0.5;
 
+    // Graphics
     private final PApplet applet;
 
+    // Main frame
     public final double robotLength;
     public final Vec3 truePose;
     private boolean isRunning;
 
+    // Sensors
     public final Laser laser;
 
     public Robot(PApplet applet, double robotLength, Vec3 truePose, boolean isRunning) {

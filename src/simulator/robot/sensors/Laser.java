@@ -10,11 +10,14 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Laser {
     public static final int COUNT = 181;
+
+    // Angle
     public static final double MIN_THETA = -Math.PI / 2;
     public static final double MAX_THETA = Math.PI / 2;
     public static final double ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / COUNT;
     public static final double ANGLE_ERROR_LIMIT = 0.05;
 
+    // Distance
     public static final double MAX_DISTANCE = 5.0;
     public static final double INVALID_MEASUREMENT_VALUE = MAX_DISTANCE + 1;
     public static final double DISTANCE_ERROR_LIMIT = 0.05;
