@@ -3,13 +3,16 @@ package simulator;
 import math.Vec2;
 import math.Vec3;
 import processing.core.PApplet;
-import simulator.environment.LineSegmentFeature;
+import simulator.environment.LineSegment;
 import simulator.robot.Robot;
-import simulator.robot.sensors.LaserSensor;
+import simulator.robot.sensors.Laser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Simulator {
@@ -17,10 +20,10 @@ public class Simulator {
     final PApplet parent;
 
     // Environment
-    private List<LineSegmentFeature> lineFeatures = new ArrayList<>();
+    private List<LineSegment> lineFeatures = new ArrayList<>();
 
     // Laser scanner
-    public final static LaserSensor CURRENT_LASER_SCAN = new LaserSensor();
+    public final static Laser LASER_SENSOR = new Laser();
 
     // Odometry data
     final static int CONTROL_FREQ = 1;
@@ -75,20 +78,12 @@ public class Simulator {
             assert (lineFeatureTokens.size() == 4);
             Vec2 p1 = Vec2.of(Double.parseDouble(lineFeatureTokens.get(0)), Double.parseDouble(lineFeatureTokens.get(1)));
             Vec2 p2 = Vec2.of(Double.parseDouble(lineFeatureTokens.get(2)), Double.parseDouble(lineFeatureTokens.get(3)));
-            lineFeatures.add(new LineSegmentFeature(p1, p2));
+            lineFeatures.add(new LineSegment(p1, p2));
         }
 
         // Fork off the main simulation loop
-        Thread mainLoop = new Thread(this::mainLoop);
-        mainLoop.start();
-    }
-
-    public LaserSensor getLaserScanThreadSafe() {
-        LaserSensor ret;
-        synchronized (CURRENT_LASER_SCAN) {
-            ret = CURRENT_LASER_SCAN;
-        }
-        return ret;
+        Thread robotLoop = new Thread(this::robotLoop);
+        robotLoop.start();
     }
 
     public OdometryData getOdometryThreadSafe() {
@@ -99,44 +94,10 @@ public class Simulator {
         return ret;
     }
 
-    public void sendControlThreadSafe(Vec2 ctrl) {
+    public void applyControlThreadSafe(Vec2 ctrl) {
         synchronized (goalControl) {
             goalControl.set(ctrl);
         }
-    }
-
-    private List<Double> computeLaserScan() {
-        List<Double> measurements = new ArrayList<>(LaserSensor.NUM_LASERS);
-        for (int i = 0; i < LaserSensor.NUM_LASERS; i++) {
-            measurements.add(LaserSensor.LASER_INVALID_MEASUREMENT);
-        }
-        // Move the center of the scanner back from the center of the robot
-        Vec2 truePosition = Vec2.of(robot.truePose.x, robot.truePose.y);
-        Vec2 laserCenter = truePosition.minus(Vec2.of(Math.cos(robot.truePose.z), Math.sin(robot.truePose.z)).scaleInPlace(0.5 * robot.robotLength));
-
-        // For each laser beam
-        for (int i = 0; i < LaserSensor.NUM_LASERS; ++i) {
-            double percentage = i / (LaserSensor.NUM_LASERS - 1.0);
-            double laserThErr = ThreadLocalRandom.current().nextDouble(-LaserSensor.LASER_ANGLE_ERROR_LIMIT * LaserSensor.LASER_ANGULAR_RESOLUTION, LaserSensor.LASER_ANGLE_ERROR_LIMIT * LaserSensor.LASER_ANGULAR_RESOLUTION);
-            double theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage + robot.truePose.z + laserThErr;
-            Vec2 v = Vec2.of(Math.cos(theta), Math.sin(theta));
-
-            // Check intersection for each line feature
-            for (LineSegmentFeature line : lineFeatures) {
-                double rayDistance = line.checkIntersection(laserCenter, v);
-                if (rayDistance >= 0 && rayDistance < LaserSensor.LASER_MAX_DISTANCE) {
-                    measurements.set(i, Math.min(rayDistance, measurements.get(i)));
-                }
-            }
-
-            // Add some noise to measurements
-            if (measurements.get(i) < LaserSensor.LASER_INVALID_MEASUREMENT) {
-                double laser_d_err = ThreadLocalRandom.current().nextDouble(-LaserSensor.LASER_DISTANCE_ERROR_LIMIT, LaserSensor.LASER_DISTANCE_ERROR_LIMIT);
-                measurements.set(i, measurements.get(i) + laser_d_err);
-            }
-        }
-
-        return measurements;
     }
 
     Vec3 getStateDerivative(Vec3 pose, Vec2 control) {
@@ -188,7 +149,7 @@ public class Simulator {
                 .scaleInPlace(dt / 6.0);
         robot.truePose.plusInPlace(dtruePose);
 
-        for (LineSegmentFeature line : lineFeatures) {
+        for (LineSegment line : lineFeatures) {
             if (line.shortestDistance(Vec2.of(robot.truePose.x, robot.truePose.y)) < robot.robotLength) {
                 System.out.println("Robot: \"Oh No! I crashed!!!!\"");
                 robot.setRunning(false);
@@ -196,7 +157,7 @@ public class Simulator {
         }
     }
 
-    private void mainLoop() {
+    private void robotLoop() {
         final long loopDuration = 10;
         double loopDt = 1e-3 * loopDuration;
         int iteration = 0;
@@ -212,13 +173,8 @@ public class Simulator {
                     CURRENT_ODOMETRY_DATA.odomTime = System.currentTimeMillis();
                 }
             }
-            if (iteration % LaserSensor.LASER_SCAN_FREQ == 0) {
-                // Update the laser scan
-                List<Double> tmp_scan = computeLaserScan();
-                synchronized (CURRENT_LASER_SCAN) {
-                    CURRENT_LASER_SCAN.distances = tmp_scan;
-                    CURRENT_LASER_SCAN.scanTime = System.currentTimeMillis();
-                }
+            if (iteration % Laser.LASER_SCAN_FREQUENCY == 0) {
+                LASER_SENSOR.updateLaserScan(robot, lineFeatures);
             }
 
             iteration++;
@@ -232,7 +188,7 @@ public class Simulator {
 
     public void draw(float scale, float width, float height) {
         // Draw the building
-        for (LineSegmentFeature l : lineFeatures) {
+        for (LineSegment l : lineFeatures) {
             parent.line((float) l.p1.x * scale + width / 2f, (float) l.p1.y * scale + height / 2f, (float) l.p2.x * scale + width / 2f, (float) l.p2.y * scale + height / 2f);
         }
 
@@ -245,16 +201,16 @@ public class Simulator {
         parent.line((float) laserEnd.x, (float) laserEnd.y, (float) otherEnd.x, (float) otherEnd.y);
 
         // Draw lasers
-        LaserSensor data = getLaserScanThreadSafe();
+        List<Double> distances = LASER_SENSOR.getLaserMeasurementsThreadSafe();
         List<Vec2> lines = new ArrayList<>(lineFeatures.size());
-        for (int i = 0; i < data.distances.size(); ++i) {
-            if (data.distances.get(i) == LaserSensor.LASER_INVALID_MEASUREMENT) {
+        for (int i = 0; i < distances.size(); ++i) {
+            if (distances.get(i) == Laser.LASER_INVALID_MEASUREMENT) {
                 continue;
             }
-            double percentage = i / (LaserSensor.NUM_LASERS - 1.0);
-            double theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage;
+            double percentage = i / (Laser.LASER_COUNT - 1.0);
+            double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage;
 
-            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + robot.truePose.z), Math.sin(theta + robot.truePose.z)).scaleInPlace(data.distances.get(i) * scale));
+            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + robot.truePose.z), Math.sin(theta + robot.truePose.z)).scaleInPlace(distances.get(i) * scale));
             lines.add(scan_pt_i);
         }
         parent.stroke(1, 0, 0);

@@ -35,19 +35,19 @@ public class SimulatorTest extends PApplet {
 
     public void keyPressed() {
         if (key == 'p') {
-            sim.sendControlThreadSafe(Vec2.zero());
+            sim.applyControlThreadSafe(Vec2.zero());
         }
         if (keyCode == UP) {
-            sim.sendControlThreadSafe(Vec2.of(10, 0));
+            sim.applyControlThreadSafe(Vec2.of(10, 0));
         }
         if (keyCode == DOWN) {
-            sim.sendControlThreadSafe(Vec2.of(-10, 0));
+            sim.applyControlThreadSafe(Vec2.of(-10, 0));
         }
         if (keyCode == LEFT) {
-            sim.sendControlThreadSafe(Vec2.of(0, -0.5));
+            sim.applyControlThreadSafe(Vec2.of(0, -0.5));
         }
         if (keyCode == RIGHT) {
-            sim.sendControlThreadSafe(Vec2.of(0, 0.5));
+            sim.applyControlThreadSafe(Vec2.of(0, 0.5));
         }
         if (key == '+') {
             SCALE++;
