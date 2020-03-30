@@ -58,6 +58,13 @@ public class LineSegment extends Landmark {
     }
 
     void draw() {
-        applet.line((float) p1.x * Simulator.SCALE + Simulator.WIDTH / 2f, (float) p1.y * Simulator.SCALE + Simulator.HEIGHT / 2f, (float) p2.x * Simulator.SCALE + Simulator.WIDTH / 2f, (float) p2.y * Simulator.SCALE + Simulator.HEIGHT / 2f);
+        applet.line(
+                (float) p1.x,
+                0,
+                (float) p1.y,
+                (float) p2.x,
+                0,
+                (float) p2.y
+        );
     }
 }

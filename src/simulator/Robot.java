@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Robot {
-    public static final double MAX_LINEAR_ACCELERATION = 0.5;
-    public static final double MAX_ANGULAR_ACCELERATION = 0.5;
-    public static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.5;
-    public static final double ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
+    public static double MAX_LINEAR_ACCELERATION = 20;
+    public static double MAX_ANGULAR_ACCELERATION = 0.5;
+    public static double LINEAR_VELOCITY_ERROR_LIMIT = 0.5;
+    public static double ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
 
     // Graphics
     private final PApplet applet;
@@ -122,15 +122,15 @@ public class Robot {
     }
 
     void draw() {
-        Vec2 position = Vec2.of(truePose.x, truePose.y).scaleInPlace(Simulator.SCALE).plusInPlace(Vec2.of(Simulator.WIDTH / 2.0, Simulator.HEIGHT / 2.0));
-        Vec2 laserEnd = position.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength * Simulator.SCALE));
-        Vec2 otherEnd = position.plus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength * Simulator.SCALE));
+        Vec2 position = Vec2.of(truePose.x, truePose.y);
+        Vec2 laserEnd = position.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength));
+        Vec2 otherEnd = position.plus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength));
 
         // Draw lasers
         laser.draw(laserEnd, truePose.z);
 
         // Draw robot body
         applet.stroke(1);
-        applet.line((float) laserEnd.x, (float) laserEnd.y, (float) otherEnd.x, (float) otherEnd.y);
+        applet.line((float) laserEnd.x, 0, (float) laserEnd.y, (float) otherEnd.x, 0, (float) otherEnd.y);
     }
 }

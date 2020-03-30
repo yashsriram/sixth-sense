@@ -1,12 +1,17 @@
+import camera.QueasyCam;
 import math.Vec2;
 import processing.core.PApplet;
+import simulator.Laser;
+import simulator.Robot;
 import simulator.Simulator;
 
 public class Main extends PApplet {
+    public static final int WIDTH = 800;
+    public static final int HEIGHT = 800;
     Simulator sim;
-
+    QueasyCam cam;
     public void settings() {
-        size(Simulator.WIDTH, Simulator.HEIGHT, P2D);
+        size(WIDTH, HEIGHT, P3D);
     }
 
     public void setup() {
@@ -14,11 +19,27 @@ public class Main extends PApplet {
         colorMode(RGB, 1.0f);
         rectMode(CENTER);
         noStroke();
+        cam = new QueasyCam(this);
         reset();
     }
 
     private void reset() {
-        String scene_name = "data/simple_rectangle.scn";
+        String scene_name = "data/apartment.scn";
+        // Play with these
+        Simulator.SCALE = 100;
+        Simulator.CONTROL_FREQ = 1;
+        Simulator.LASER_SCAN_FREQUENCY = 10;
+
+        Robot.MAX_LINEAR_ACCELERATION = 20;
+        Robot.LINEAR_VELOCITY_ERROR_LIMIT = 2;
+
+        Robot.MAX_ANGULAR_ACCELERATION = 0.5;
+        Robot.ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
+
+        Laser.ANGLE_ERROR_LIMIT = 0.05;
+        Laser.MAX_DISTANCE = 500;
+        Laser.DISTANCE_ERROR_LIMIT = 5;
+
         sim = new Simulator(this, scene_name);
     }
 
@@ -37,22 +58,16 @@ public class Main extends PApplet {
             sim.applyControl(Vec2.zero());
         }
         if (keyCode == UP) {
-            sim.applyControl(Vec2.of(10, 0));
+            sim.applyControl(Vec2.of(100, 0));
         }
         if (keyCode == DOWN) {
-            sim.applyControl(Vec2.of(-10, 0));
+            sim.applyControl(Vec2.of(-100, 0));
         }
         if (keyCode == LEFT) {
             sim.applyControl(Vec2.of(0, -0.5));
         }
         if (keyCode == RIGHT) {
             sim.applyControl(Vec2.of(0, 0.5));
-        }
-        if (key == '+') {
-            Simulator.SCALE++;
-        }
-        if (key == '-') {
-            Simulator.SCALE--;
         }
     }
 

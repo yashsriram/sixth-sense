@@ -14,12 +14,15 @@ public class Laser {
     public static final double MIN_THETA = -Math.PI / 2;
     public static final double MAX_THETA = Math.PI / 2;
     public static final double ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / COUNT;
-    public static final double ANGLE_ERROR_LIMIT = 0.05;
+    public static double ANGLE_ERROR_LIMIT = 0.05;
 
     // Distance
-    public static final double MAX_DISTANCE = 5.0;
-    public static final double INVALID_MEASUREMENT_VALUE = MAX_DISTANCE + 1;
-    public static final double DISTANCE_ERROR_LIMIT = 0.05;
+    public static double MAX_DISTANCE = 500.0;
+    public static double DISTANCE_ERROR_LIMIT = 0.05;
+
+    private static double invalidMeasurementValue() {
+        return MAX_DISTANCE + 1;
+    }
 
     // Graphics
     private final PApplet applet;
@@ -30,14 +33,14 @@ public class Laser {
     Laser(PApplet applet) {
         this.applet = applet;
         for (int i = 0; i < COUNT; i++) {
-            measurements.add(INVALID_MEASUREMENT_VALUE);
+            measurements.add(invalidMeasurementValue());
         }
     }
 
     void updateLaserScan(Vec2 position, double orientation, List<Landmark> landmarks) {
         List<Double> newMeasurements = new ArrayList<>(Laser.COUNT);
         for (int i = 0; i < Laser.COUNT; i++) {
-            newMeasurements.add(Laser.INVALID_MEASUREMENT_VALUE);
+            newMeasurements.add(Laser.invalidMeasurementValue());
         }
 
         // For each laser beam
@@ -56,7 +59,7 @@ public class Laser {
             }
 
             // Add some noise to new measurements
-            if (newMeasurements.get(i) < Laser.INVALID_MEASUREMENT_VALUE) {
+            if (newMeasurements.get(i) < Laser.invalidMeasurementValue()) {
                 double laser_d_err = ThreadLocalRandom.current().nextDouble(-Laser.DISTANCE_ERROR_LIMIT, Laser.DISTANCE_ERROR_LIMIT);
                 newMeasurements.set(i, newMeasurements.get(i) + laser_d_err);
             }
@@ -82,18 +85,23 @@ public class Laser {
         List<Double> distances = getMeasurements();
         List<Vec2> lasers = new ArrayList<>(Laser.COUNT);
         for (int i = 0; i < distances.size(); ++i) {
-            if (distances.get(i) == Laser.INVALID_MEASUREMENT_VALUE) {
+            if (distances.get(i) == Laser.invalidMeasurementValue()) {
                 continue;
             }
             double percentage = i / (Laser.COUNT - 1.0);
             double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage;
 
-            Vec2 laserSprite = position.plus(Vec2.of(Math.cos(orientation + theta), Math.sin(orientation + theta)).scaleInPlace(distances.get(i) * Simulator.SCALE));
+            Vec2 laserSprite =
+                    position.plus(
+                            Vec2.of(Math.cos(orientation + theta),
+                                    Math.sin(orientation + theta))
+                                    .scaleInPlace(distances.get(i))
+                    );
             lasers.add(laserSprite);
         }
         applet.stroke(1, 0, 0);
         for (Vec2 l : lasers) {
-            applet.line((float) position.x, (float) position.y, (float) l.x, (float) l.y);
+            applet.line((float) position.x, 0, (float) position.y, (float) l.x, 0, (float) l.y);
         }
     }
 }

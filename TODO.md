@@ -1,3 +1,3 @@
 - [ ] significance of time in odometry and laser scan struct
-- [ ] scaling
-- [ ] 3d rendering
+- [x] scaling
+- [x] 3d rendering
