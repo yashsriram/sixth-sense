@@ -1,9 +1,7 @@
-package simulator.robot.sensors;
+package simulator;
 
 import math.Vec2;
 import processing.core.PApplet;
-import simulator.Simulator;
-import simulator.environment.Landmark;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,14 +27,14 @@ public class Laser {
     // Multi-thread access
     private final List<Double> measurements = new ArrayList<>(COUNT);
 
-    public Laser(PApplet applet) {
+    Laser(PApplet applet) {
         this.applet = applet;
         for (int i = 0; i < COUNT; i++) {
             measurements.add(INVALID_MEASUREMENT_VALUE);
         }
     }
 
-    public void updateLaserScan(Vec2 position, double orientation, List<Landmark> landmarks) {
+    void updateLaserScan(Vec2 position, double orientation, List<Landmark> landmarks) {
         List<Double> newMeasurements = new ArrayList<>(Laser.COUNT);
         for (int i = 0; i < Laser.COUNT; i++) {
             newMeasurements.add(Laser.INVALID_MEASUREMENT_VALUE);
@@ -72,7 +70,7 @@ public class Laser {
         }
     }
 
-    public List<Double> getMeasurements() {
+    List<Double> getMeasurements() {
         List<Double> currentMeasurements;
         synchronized (measurements) {
             currentMeasurements = new ArrayList<>(measurements);
@@ -80,7 +78,7 @@ public class Laser {
         return currentMeasurements;
     }
 
-    public void draw(Vec2 position, double orientation) {
+    void draw(Vec2 position, double orientation) {
         List<Double> distances = getMeasurements();
         List<Vec2> lasers = new ArrayList<>(Laser.COUNT);
         for (int i = 0; i < distances.size(); ++i) {

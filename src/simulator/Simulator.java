@@ -3,9 +3,6 @@ package simulator;
 import math.Vec2;
 import math.Vec3;
 import processing.core.PApplet;
-import simulator.environment.Landmark;
-import simulator.environment.LineSegment;
-import simulator.robot.Robot;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -89,9 +86,9 @@ public class Simulator {
 
         while (robot.isRunning()) {
             if (iteration % CONTROL_FREQ == 0) {
-                robot.updateState(loopDt);
+                robot.updatePose(loopDt);
                 for (Landmark line : lines) {
-                    if (line.shortestDistanceFrom(Vec2.of(robot.truePose.x, robot.truePose.y)) < robot.robotLength) {
+                    if (robot.isCrashing(line)) {
                         System.out.println("Robot: \"Oh No! I crashed!!!!\"");
                         robot.setRunning(false);
                     }
@@ -108,6 +105,10 @@ public class Simulator {
                 e.printStackTrace();
             }
         }
+    }
+
+    public List<Double> getLaserScan() {
+        return robot.laser.getMeasurements();
     }
 
     public Vec2 getCurrentControl() {

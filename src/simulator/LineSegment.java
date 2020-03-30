@@ -1,9 +1,8 @@
-package simulator.environment;
+package simulator;
 
 import math.Mat2;
 import math.Vec2;
 import processing.core.PApplet;
-import simulator.Simulator;
 
 public class LineSegment extends Landmark {
     private final PApplet applet;
@@ -13,7 +12,7 @@ public class LineSegment extends Landmark {
     private final Vec2 p21Normed;
     private final Vec2 p21;
 
-    public LineSegment(PApplet applet, Vec2 p1, Vec2 p2) {
+    LineSegment(PApplet applet, Vec2 p1, Vec2 p2) {
         this.applet = applet;
         this.p1 = Vec2.of(p1);
         this.p2 = Vec2.of(p2);
@@ -22,7 +21,7 @@ public class LineSegment extends Landmark {
         this.p21 = p2.minus(p1);
     }
 
-    public double shortestRayDistanceFrom(final Vec2 position, final Vec2 orientation) {
+    double shortestRayDistanceFrom(final Vec2 position, final Vec2 orientation) {
         Vec2 robotDirectionNormalized = orientation.normalize();
         Mat2 A = Mat2.withCols(robotDirectionNormalized.scale(-1), p21);
         Vec2 b = position.minus(p1);
@@ -43,7 +42,7 @@ public class LineSegment extends Landmark {
         return t1t2.x;
     }
 
-    public double shortestDistanceFrom(Vec2 position) {
+    double shortestDistanceFrom(Vec2 position) {
         Vec2 p31 = position.minus(p1);
         double projectionLength = p31.dot(p21Normed);
         if (projectionLength < 0) {
@@ -58,7 +57,7 @@ public class LineSegment extends Landmark {
         }
     }
 
-    public void draw() {
+    void draw() {
         applet.line((float) p1.x * Simulator.SCALE + Simulator.WIDTH / 2f, (float) p1.y * Simulator.SCALE + Simulator.HEIGHT / 2f, (float) p2.x * Simulator.SCALE + Simulator.WIDTH / 2f, (float) p2.y * Simulator.SCALE + Simulator.HEIGHT / 2f);
     }
 }
