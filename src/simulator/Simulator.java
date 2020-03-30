@@ -5,7 +5,7 @@ import math.Vec3;
 import processing.core.PApplet;
 import simulator.environment.LineSegmentFeature;
 import simulator.robot.Robot;
-import simulator.sensors.LaserSensorData;
+import simulator.robot.sensors.LaserSensor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -22,23 +22,18 @@ public class Simulator {
     private Vector<LineSegmentFeature> lineFeatures = new Vector<>();
 
     // Laser scanner
-    public final static LaserSensorData CURRENT_LASER_SCAN = new LaserSensorData();
+    public final static LaserSensor CURRENT_LASER_SCAN = new LaserSensor();
 
     // Odometry data
     final static int CONTROL_FREQ = 1;
     final static OdometryData CURRENT_ODOMETRY_DATA = new OdometryData();
+    final static Vec2 goalControl = Vec2.zero();
+    final static Vec2 currentControl = Vec2.zero();
+    private static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.1;
+    private static final double ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
 
     // Robot parameters
     private Robot robot;
-    final static Vec2 goalControl = Vec2.zero();
-    final static Vec2 currentControl = Vec2.zero();
-    private boolean running = true;
-
-    // Randomness
-    private static final double LASER_ANGLE_ERROR_LIMIT = 0.05;
-    private static final double LASER_DISTANCE_ERROR_LIMIT = 0.05;
-    private static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.1;
-    private static final double ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
 
     public Simulator(PApplet parent, String sceneFilepath) {
         this.parent = parent;
@@ -73,7 +68,8 @@ public class Simulator {
                         Double.parseDouble(poseTokens.get(0)),
                         Double.parseDouble(poseTokens.get(1)),
                         Double.parseDouble(poseTokens.get(2))
-                ));
+                ),
+                true);
 
         // Every subsequent line in the file is a line segment
         for (int i = 1; i < fileContents.size(); ++i) {
@@ -90,8 +86,8 @@ public class Simulator {
         mainLoop.start();
     }
 
-    public LaserSensorData getLaserScanThreadSafe() {
-        LaserSensorData ret;
+    public LaserSensor getLaserScanThreadSafe() {
+        LaserSensor ret;
         synchronized (CURRENT_LASER_SCAN) {
             ret = CURRENT_LASER_SCAN;
         }
@@ -113,32 +109,32 @@ public class Simulator {
     }
 
     private Vector<Double> computeLaserScan() {
-        Vector<Double> measurements = new Vector<>(LaserSensorData.NUM_LASERS);
-        for (int i = 0; i < LaserSensorData.NUM_LASERS; i++) {
-            measurements.add(LaserSensorData.LASER_INVALID_MEASUREMENT);
+        Vector<Double> measurements = new Vector<>(LaserSensor.NUM_LASERS);
+        for (int i = 0; i < LaserSensor.NUM_LASERS; i++) {
+            measurements.add(LaserSensor.LASER_INVALID_MEASUREMENT);
         }
         // Move the center of the scanner back from the center of the robot
         Vec2 truePosition = Vec2.of(robot.truePose.x, robot.truePose.y);
         Vec2 laserCenter = truePosition.minus(Vec2.of(Math.cos(robot.truePose.z), Math.sin(robot.truePose.z)).scaleInPlace(0.5 * robot.robotLength));
 
         // For each laser beam
-        for (int i = 0; i < LaserSensorData.NUM_LASERS; ++i) {
-            double percentage = i / (LaserSensorData.NUM_LASERS - 1.0);
-            double laserThErr = ThreadLocalRandom.current().nextDouble(-LASER_ANGLE_ERROR_LIMIT * LaserSensorData.LASER_ANGULAR_RESOLUTION, LASER_ANGLE_ERROR_LIMIT * LaserSensorData.LASER_ANGULAR_RESOLUTION);
-            double theta = LaserSensorData.MIN_THETA + (LaserSensorData.MAX_THETA - LaserSensorData.MIN_THETA) * percentage + robot.truePose.z + laserThErr;
+        for (int i = 0; i < LaserSensor.NUM_LASERS; ++i) {
+            double percentage = i / (LaserSensor.NUM_LASERS - 1.0);
+            double laserThErr = ThreadLocalRandom.current().nextDouble(-LaserSensor.LASER_ANGLE_ERROR_LIMIT * LaserSensor.LASER_ANGULAR_RESOLUTION, LaserSensor.LASER_ANGLE_ERROR_LIMIT * LaserSensor.LASER_ANGULAR_RESOLUTION);
+            double theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage + robot.truePose.z + laserThErr;
             Vec2 v = Vec2.of(Math.cos(theta), Math.sin(theta));
 
             // Check intersection for each line feature
             for (LineSegmentFeature line : lineFeatures) {
                 double rayDistance = line.checkIntersection(laserCenter, v);
-                if (rayDistance >= 0 && rayDistance < LaserSensorData.LASER_MAX_DISTANCE) {
+                if (rayDistance >= 0 && rayDistance < LaserSensor.LASER_MAX_DISTANCE) {
                     measurements.set(i, Math.min(rayDistance, measurements.get(i)));
                 }
             }
 
             // Add some noise to measurements
-            if (measurements.get(i) < LaserSensorData.LASER_INVALID_MEASUREMENT) {
-                double laser_d_err = ThreadLocalRandom.current().nextDouble(-LASER_DISTANCE_ERROR_LIMIT, LASER_DISTANCE_ERROR_LIMIT);
+            if (measurements.get(i) < LaserSensor.LASER_INVALID_MEASUREMENT) {
+                double laser_d_err = ThreadLocalRandom.current().nextDouble(-LaserSensor.LASER_DISTANCE_ERROR_LIMIT, LaserSensor.LASER_DISTANCE_ERROR_LIMIT);
                 measurements.set(i, measurements.get(i) + laser_d_err);
             }
         }
@@ -198,7 +194,7 @@ public class Simulator {
         for (LineSegmentFeature line : lineFeatures) {
             if (line.shortestDistance(Vec2.of(robot.truePose.x, robot.truePose.y)) < robot.robotLength) {
                 System.out.println("Robot: \"Oh No! I crashed!!!!\"");
-                running = false;
+                robot.setRunning(false);
             }
         }
     }
@@ -208,7 +204,7 @@ public class Simulator {
         double loopDt = 1e-3 * loopDuration;
         int iteration = 0;
 
-        while (running) {
+        while (robot.isRunning()) {
             if (iteration % CONTROL_FREQ == 0) {
                 // Do a control update
                 update(loopDt);
@@ -219,7 +215,7 @@ public class Simulator {
                     CURRENT_ODOMETRY_DATA.odomTime = System.currentTimeMillis();
                 }
             }
-            if (iteration % LaserSensorData.LASER_SCAN_FREQ == 0) {
+            if (iteration % LaserSensor.LASER_SCAN_FREQ == 0) {
                 // Update the laser scan
                 Vector<Double> tmp_scan = computeLaserScan();
                 synchronized (CURRENT_LASER_SCAN) {
@@ -252,14 +248,14 @@ public class Simulator {
         parent.line((float) laserEnd.x, (float) laserEnd.y, (float) otherEnd.x, (float) otherEnd.y);
 
         // Draw lasers
-        LaserSensorData data = getLaserScanThreadSafe();
+        LaserSensor data = getLaserScanThreadSafe();
         Vector<Vec2> lines = new Vector<>();
         for (int i = 0; i < data.distances.size(); ++i) {
-            if (data.distances.get(i) == LaserSensorData.LASER_INVALID_MEASUREMENT) {
+            if (data.distances.get(i) == LaserSensor.LASER_INVALID_MEASUREMENT) {
                 continue;
             }
-            double percentage = i / (LaserSensorData.NUM_LASERS - 1.0);
-            double theta = LaserSensorData.MIN_THETA + (LaserSensorData.MAX_THETA - LaserSensorData.MIN_THETA) * percentage;
+            double percentage = i / (LaserSensor.NUM_LASERS - 1.0);
+            double theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage;
 
             Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + robot.truePose.z), Math.sin(theta + robot.truePose.z)).scaleInPlace(data.distances.get(i) * scale));
             lines.add(scan_pt_i);
