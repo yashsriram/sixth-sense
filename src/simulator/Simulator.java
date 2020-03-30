@@ -4,6 +4,7 @@ import math.Vec2;
 import math.Vec3;
 import processing.core.PApplet;
 import simulator.environment.LineSegmentFeature;
+import simulator.robot.Robot;
 import simulator.sensors.LaserSensorData;
 
 import java.io.File;
@@ -21,13 +22,6 @@ public class Simulator {
     private Vector<LineSegmentFeature> lineFeatures = new Vector<>();
 
     // Laser scanner
-    public final static int NUM_LASERS = 181;
-    public final static double MIN_THETA = -Math.PI / 2;
-    public final static double MAX_THETA = Math.PI / 2;
-    public final static double LASER_MAX_DISTANCE = 5.0;
-    public final static double LASER_INVALID_MEASUREMENT = LASER_MAX_DISTANCE + 1;
-    public final static double LASER_ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / NUM_LASERS;
-    public final static int LASER_SCAN_FREQ = 10;
     public final static LaserSensorData CURRENT_LASER_SCAN = new LaserSensorData();
 
     // Odometry data
@@ -35,10 +29,7 @@ public class Simulator {
     final static OdometryData CURRENT_ODOMETRY_DATA = new OdometryData();
 
     // Robot parameters
-    final static double MAX_LINEAR_ACCELERATION = 0.5;
-    final static double MAX_ANGULAR_ACCELERATION = 0.5;
-    public final double robotLength;
-    private Vec3 truePose = Vec3.zero();
+    private Robot robot;
     final static Vec2 goalControl = Vec2.zero();
     final static Vec2 currentControl = Vec2.zero();
     private boolean running = true;
@@ -76,13 +67,13 @@ public class Simulator {
         Vector<String> poseTokens = fileContents.get(0);
         // Make sure the pose is of size 4 (x, y, th, radius)
         assert (poseTokens.size() == 4);
-        truePose.set(
-                Double.parseDouble(poseTokens.get(0)),
-                Double.parseDouble(poseTokens.get(1)),
-                Double.parseDouble(poseTokens.get(2))
-        );
-        robotLength = Double.parseDouble(poseTokens.get(3));
-
+        robot = new Robot(
+                Double.parseDouble(poseTokens.get(3)),
+                Vec3.of(
+                        Double.parseDouble(poseTokens.get(0)),
+                        Double.parseDouble(poseTokens.get(1)),
+                        Double.parseDouble(poseTokens.get(2))
+                ));
 
         // Every subsequent line in the file is a line segment
         for (int i = 1; i < fileContents.size(); ++i) {
@@ -97,10 +88,6 @@ public class Simulator {
         // Fork off the main simulation loop
         Thread mainLoop = new Thread(this::mainLoop);
         mainLoop.start();
-    }
-
-    public Vec3 getTruePose() {
-        return truePose;
     }
 
     public LaserSensorData getLaserScanThreadSafe() {
@@ -126,31 +113,31 @@ public class Simulator {
     }
 
     private Vector<Double> computeLaserScan() {
-        Vector<Double> measurements = new Vector<>(NUM_LASERS);
-        for (int i = 0; i < NUM_LASERS; i++) {
-            measurements.add(LASER_INVALID_MEASUREMENT);
+        Vector<Double> measurements = new Vector<>(LaserSensorData.NUM_LASERS);
+        for (int i = 0; i < LaserSensorData.NUM_LASERS; i++) {
+            measurements.add(LaserSensorData.LASER_INVALID_MEASUREMENT);
         }
         // Move the center of the scanner back from the center of the robot
-        Vec2 truePosition = Vec2.of(truePose.x, truePose.y);
-        Vec2 laserCenter = truePosition.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength));
+        Vec2 truePosition = Vec2.of(robot.truePose.x, robot.truePose.y);
+        Vec2 laserCenter = truePosition.minus(Vec2.of(Math.cos(robot.truePose.z), Math.sin(robot.truePose.z)).scaleInPlace(0.5 * robot.robotLength));
 
         // For each laser beam
-        for (int i = 0; i < NUM_LASERS; ++i) {
-            double percentage = i / (NUM_LASERS - 1.0);
-            double laserThErr = ThreadLocalRandom.current().nextDouble(-LASER_ANGLE_ERROR_LIMIT * LASER_ANGULAR_RESOLUTION, LASER_ANGLE_ERROR_LIMIT * LASER_ANGULAR_RESOLUTION);
-            double theta = MIN_THETA + (MAX_THETA - MIN_THETA) * percentage + truePose.z + laserThErr;
+        for (int i = 0; i < LaserSensorData.NUM_LASERS; ++i) {
+            double percentage = i / (LaserSensorData.NUM_LASERS - 1.0);
+            double laserThErr = ThreadLocalRandom.current().nextDouble(-LASER_ANGLE_ERROR_LIMIT * LaserSensorData.LASER_ANGULAR_RESOLUTION, LASER_ANGLE_ERROR_LIMIT * LaserSensorData.LASER_ANGULAR_RESOLUTION);
+            double theta = LaserSensorData.MIN_THETA + (LaserSensorData.MAX_THETA - LaserSensorData.MIN_THETA) * percentage + robot.truePose.z + laserThErr;
             Vec2 v = Vec2.of(Math.cos(theta), Math.sin(theta));
 
             // Check intersection for each line feature
             for (LineSegmentFeature line : lineFeatures) {
                 double rayDistance = line.checkIntersection(laserCenter, v);
-                if (rayDistance >= 0 && rayDistance < LASER_MAX_DISTANCE) {
+                if (rayDistance >= 0 && rayDistance < LaserSensorData.LASER_MAX_DISTANCE) {
                     measurements.set(i, Math.min(rayDistance, measurements.get(i)));
                 }
             }
 
             // Add some noise to measurements
-            if (measurements.get(i) < LASER_INVALID_MEASUREMENT) {
+            if (measurements.get(i) < LaserSensorData.LASER_INVALID_MEASUREMENT) {
                 double laser_d_err = ThreadLocalRandom.current().nextDouble(-LASER_DISTANCE_ERROR_LIMIT, LASER_DISTANCE_ERROR_LIMIT);
                 measurements.set(i, measurements.get(i) + laser_d_err);
             }
@@ -159,7 +146,7 @@ public class Simulator {
         return measurements;
     }
 
-    Vec3 applyControl(Vec3 pose, Vec2 control) {
+    Vec3 getStateDerivative(Vec3 pose, Vec2 control) {
         Vec3 changeInPose = Vec3.zero();
         changeInPose.x = control.x * Math.cos(pose.z);
         changeInPose.y = control.x * Math.sin(pose.z);
@@ -167,16 +154,16 @@ public class Simulator {
         return changeInPose;
     }
 
-    private void updateCurrentControl(double dt) {
+    private void update(double dt) {
         Vec2 tmpControl = Vec2.zero();
         synchronized (currentControl) {
             // Only allow so much acceleration per timestep
             Vec2 control_diff = goalControl.minus(currentControl);
-            if (Math.abs(control_diff.x) > MAX_LINEAR_ACCELERATION * dt) {
-                control_diff.x = Math.signum(control_diff.x) * MAX_LINEAR_ACCELERATION * dt;
+            if (Math.abs(control_diff.x) > Robot.MAX_LINEAR_ACCELERATION * dt) {
+                control_diff.x = Math.signum(control_diff.x) * Robot.MAX_LINEAR_ACCELERATION * dt;
             }
-            if (Math.abs(control_diff.y) > MAX_ANGULAR_ACCELERATION * dt) {
-                control_diff.y = Math.signum(control_diff.y) * MAX_ANGULAR_ACCELERATION * dt;
+            if (Math.abs(control_diff.y) > Robot.MAX_ANGULAR_ACCELERATION * dt) {
+                control_diff.y = Math.signum(control_diff.y) * Robot.MAX_ANGULAR_ACCELERATION * dt;
             }
             currentControl.plusInPlace(control_diff);
             tmpControl = currentControl;
@@ -191,13 +178,13 @@ public class Simulator {
         // Run the dynamics via RK4
         Vec3 k1, k2, k3, k4;
         Vec3 x2, x3, x4;
-        k1 = applyControl(truePose, tmpControl);
-        x2 = truePose.plus(k1.scale(0.5f * dt));
-        k2 = applyControl(x2, tmpControl);
-        x3 = truePose.plus(k2.scale(0.5f * dt));
-        k3 = applyControl(x3, tmpControl);
-        x4 = truePose.plus(k3.scale(dt));
-        k4 = applyControl(x4, tmpControl);
+        k1 = getStateDerivative(robot.truePose, tmpControl);
+        x2 = robot.truePose.plus(k1.scale(0.5f * dt));
+        k2 = getStateDerivative(x2, tmpControl);
+        x3 = robot.truePose.plus(k2.scale(0.5f * dt));
+        k3 = getStateDerivative(x3, tmpControl);
+        x4 = robot.truePose.plus(k3.scale(dt));
+        k4 = getStateDerivative(x4, tmpControl);
 
         Vec3 dtruePose = Vec3.zero();
         dtruePose
@@ -206,10 +193,10 @@ public class Simulator {
                 .plusInPlace(k3.scale(2))
                 .plusInPlace(k4)
                 .scaleInPlace(dt / 6.0);
-        truePose.plusInPlace(dtruePose);
+        robot.truePose.plusInPlace(dtruePose);
 
         for (LineSegmentFeature line : lineFeatures) {
-            if (line.shortestDistance(Vec2.of(truePose.x, truePose.y)) < robotLength) {
+            if (line.shortestDistance(Vec2.of(robot.truePose.x, robot.truePose.y)) < robot.robotLength) {
                 System.out.println("Robot: \"Oh No! I crashed!!!!\"");
                 running = false;
             }
@@ -224,7 +211,7 @@ public class Simulator {
         while (running) {
             if (iteration % CONTROL_FREQ == 0) {
                 // Do a control update
-                updateCurrentControl(loopDt);
+                update(loopDt);
                 synchronized (CURRENT_ODOMETRY_DATA) {
                     synchronized (currentControl) {
                         CURRENT_ODOMETRY_DATA.odom = currentControl;
@@ -232,7 +219,7 @@ public class Simulator {
                     CURRENT_ODOMETRY_DATA.odomTime = System.currentTimeMillis();
                 }
             }
-            if (iteration % LASER_SCAN_FREQ == 0) {
+            if (iteration % LaserSensorData.LASER_SCAN_FREQ == 0) {
                 // Update the laser scan
                 Vector<Double> tmp_scan = computeLaserScan();
                 synchronized (CURRENT_LASER_SCAN) {
@@ -256,10 +243,9 @@ public class Simulator {
             parent.line((float) l.p1.x * scale + width / 2f, (float) l.p1.y * scale + height / 2f, (float) l.p2.x * scale + width / 2f, (float) l.p2.y * scale + height / 2f);
         }
 
-        Vec3 pose = getTruePose();
-        Vec2 position = Vec2.of(pose.x, pose.y).scaleInPlace(scale).plusInPlace(Vec2.of(width / 2.0, height / 2.0));
-        Vec2 laserEnd = position.minus(Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * robotLength * scale));
-        Vec2 otherEnd = position.plus(Vec2.of(Math.cos(pose.z), Math.sin(pose.z)).scaleInPlace(0.5 * robotLength * scale));
+        Vec2 position = Vec2.of(robot.truePose.x, robot.truePose.y).scaleInPlace(scale).plusInPlace(Vec2.of(width / 2.0, height / 2.0));
+        Vec2 laserEnd = position.minus(Vec2.of(Math.cos(robot.truePose.z), Math.sin(robot.truePose.z)).scaleInPlace(0.5 * robot.robotLength * scale));
+        Vec2 otherEnd = position.plus(Vec2.of(Math.cos(robot.truePose.z), Math.sin(robot.truePose.z)).scaleInPlace(0.5 * robot.robotLength * scale));
 
         // Draw robot
         parent.stroke(1);
@@ -269,13 +255,13 @@ public class Simulator {
         LaserSensorData data = getLaserScanThreadSafe();
         Vector<Vec2> lines = new Vector<>();
         for (int i = 0; i < data.distances.size(); ++i) {
-            if (data.distances.get(i) == Simulator.LASER_INVALID_MEASUREMENT) {
+            if (data.distances.get(i) == LaserSensorData.LASER_INVALID_MEASUREMENT) {
                 continue;
             }
-            double percentage = i / (Simulator.NUM_LASERS - 1.0);
-            double theta = Simulator.MIN_THETA + (Simulator.MAX_THETA - Simulator.MIN_THETA) * percentage;
+            double percentage = i / (LaserSensorData.NUM_LASERS - 1.0);
+            double theta = LaserSensorData.MIN_THETA + (LaserSensorData.MAX_THETA - LaserSensorData.MIN_THETA) * percentage;
 
-            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + pose.z), Math.sin(theta + pose.z)).scaleInPlace(data.distances.get(i) * scale));
+            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + robot.truePose.z), Math.sin(theta + robot.truePose.z)).scaleInPlace(data.distances.get(i) * scale));
             lines.add(scan_pt_i);
         }
         parent.stroke(1, 0, 0);
