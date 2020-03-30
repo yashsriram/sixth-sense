@@ -1,6 +1,8 @@
 package simulator.robot.sensors;
 
 import math.Vec2;
+import processing.core.PApplet;
+import simulator.Simulator;
 import simulator.environment.Landmark;
 import simulator.robot.Robot;
 
@@ -22,9 +24,14 @@ public class Laser {
     public static final double INVALID_MEASUREMENT_VALUE = MAX_DISTANCE + 1;
     public static final double DISTANCE_ERROR_LIMIT = 0.05;
 
+    // Graphics
+    private final PApplet applet;
+
+    // Multi-thread access
     private final List<Double> measurements = new ArrayList<>(COUNT);
 
-    public Laser() {
+    public Laser(PApplet applet) {
+        this.applet = applet;
         for (int i = 0; i < COUNT; i++) {
             measurements.add(INVALID_MEASUREMENT_VALUE);
         }
@@ -70,11 +77,30 @@ public class Laser {
     }
 
 
-    public List<Double> getLaserMeasurementsThreadSafe() {
+    public List<Double> getMeasurements() {
         List<Double> currentMeasurements;
         synchronized (measurements) {
             currentMeasurements = new ArrayList<>(measurements);
         }
         return currentMeasurements;
+    }
+
+    public void draw(Vec2 laserEnd, double orientation) {
+        List<Double> distances = getMeasurements();
+        List<Vec2> lasers = new ArrayList<>(Laser.COUNT);
+        for (int i = 0; i < distances.size(); ++i) {
+            if (distances.get(i) == Laser.INVALID_MEASUREMENT_VALUE) {
+                continue;
+            }
+            double percentage = i / (Laser.COUNT - 1.0);
+            double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage;
+
+            Vec2 laserSprite = laserEnd.plus(Vec2.of(Math.cos(orientation + theta), Math.sin(orientation + theta)).scaleInPlace(distances.get(i) * Simulator.SCALE));
+            lasers.add(laserSprite);
+        }
+        applet.stroke(1, 0, 0);
+        for (Vec2 l : lasers) {
+            applet.line((float) laserEnd.x, (float) laserEnd.y, (float) l.x, (float) l.y);
+        }
     }
 }

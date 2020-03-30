@@ -1,6 +1,5 @@
 import math.Vec2;
 import processing.core.PApplet;
-import simulator.OdometryData;
 import simulator.Simulator;
 
 public class SimulatorTest extends PApplet {
@@ -24,26 +23,25 @@ public class SimulatorTest extends PApplet {
         background(0);
         stroke(1);
 
-        OdometryData odom = sim.getOdometryThreadSafe();
         sim.draw();
         surface.setTitle("Processing - FPS: " + Math.round(frameRate));
     }
 
     public void keyPressed() {
         if (key == 'p') {
-            sim.applyControlThreadSafe(Vec2.zero());
+            sim.applyControl(Vec2.zero());
         }
         if (keyCode == UP) {
-            sim.applyControlThreadSafe(Vec2.of(10, 0));
+            sim.applyControl(Vec2.of(10, 0));
         }
         if (keyCode == DOWN) {
-            sim.applyControlThreadSafe(Vec2.of(-10, 0));
+            sim.applyControl(Vec2.of(-10, 0));
         }
         if (keyCode == LEFT) {
-            sim.applyControlThreadSafe(Vec2.of(0, -0.5));
+            sim.applyControl(Vec2.of(0, -0.5));
         }
         if (keyCode == RIGHT) {
-            sim.applyControlThreadSafe(Vec2.of(0, 0.5));
+            sim.applyControl(Vec2.of(0, 0.5));
         }
         if (key == '+') {
             Simulator.SCALE++;

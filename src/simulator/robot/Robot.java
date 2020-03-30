@@ -6,9 +6,6 @@ import processing.core.PApplet;
 import simulator.Simulator;
 import simulator.robot.sensors.Laser;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Robot {
     public final static double MAX_LINEAR_ACCELERATION = 0.5;
     public final static double MAX_ANGULAR_ACCELERATION = 0.5;
@@ -18,7 +15,7 @@ public class Robot {
 
     // Main frame
     public final double robotLength;
-    public final Vec3 truePose;
+    public Vec3 truePose;
     private boolean isRunning;
 
     // Sensors
@@ -29,7 +26,7 @@ public class Robot {
         this.robotLength = robotLength;
         this.truePose = Vec3.of(truePose);
         this.isRunning = isRunning;
-        this.laser = new Laser();
+        this.laser = new Laser(applet);
     }
 
     public boolean isRunning() {
@@ -45,26 +42,11 @@ public class Robot {
         Vec2 laserEnd = position.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength * Simulator.SCALE));
         Vec2 otherEnd = position.plus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength * Simulator.SCALE));
 
+        // Draw lasers
+        laser.draw(laserEnd, truePose.z);
+
         // Draw robot body
         applet.stroke(1);
         applet.line((float) laserEnd.x, (float) laserEnd.y, (float) otherEnd.x, (float) otherEnd.y);
-
-        // Draw lasers
-        List<Double> distances = laser.getLaserMeasurementsThreadSafe();
-        List<Vec2> lines = new ArrayList<>(Laser.COUNT);
-        for (int i = 0; i < distances.size(); ++i) {
-            if (distances.get(i) == Laser.INVALID_MEASUREMENT_VALUE) {
-                continue;
-            }
-            double percentage = i / (Laser.COUNT - 1.0);
-            double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage;
-
-            Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + truePose.z), Math.sin(theta + truePose.z)).scaleInPlace(distances.get(i) * Simulator.SCALE));
-            lines.add(scan_pt_i);
-        }
-        applet.stroke(1, 0, 0);
-        for (Vec2 l : lines) {
-            applet.line((float) laserEnd.x, (float) laserEnd.y, (float) l.x, (float) l.y);
-        }
     }
 }

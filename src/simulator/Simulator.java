@@ -16,11 +16,14 @@ import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Simulator {
+    // Simulator settings
+    public final static int CONTROL_FREQ = 1;
+    public static final int LASER_SCAN_FREQUENCY = 10;
+
+    // Graphics
     public static final int WIDTH = 800;
     public static final int HEIGHT = 800;
     public static int SCALE = 100;
-
-    // Graphics
     final PApplet applet;
 
     // Environment
@@ -29,10 +32,7 @@ public class Simulator {
     // Robot
     private Robot robot;
 
-    // Odometry data
-    final static int CONTROL_FREQ = 1;
-    public static final int LASER_SCAN_FREQUENCY = 10;
-    final static OdometryData CURRENT_ODOMETRY_DATA = new OdometryData();
+    // Multi-thread access
     final static Vec2 goalControl = Vec2.zero();
     final static Vec2 currentControl = Vec2.zero();
     private static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.1;
@@ -90,15 +90,15 @@ public class Simulator {
         robotLoop.start();
     }
 
-    public OdometryData getOdometryThreadSafe() {
-        OdometryData ret;
-        synchronized (CURRENT_ODOMETRY_DATA) {
-            ret = CURRENT_ODOMETRY_DATA;
+    public Vec2 getCurrentControl() {
+        Vec2 ret = Vec2.zero();
+        synchronized (currentControl) {
+            ret.set(currentControl);
         }
         return ret;
     }
 
-    public void applyControlThreadSafe(Vec2 ctrl) {
+    public void applyControl(Vec2 ctrl) {
         synchronized (goalControl) {
             goalControl.set(ctrl);
         }
@@ -115,16 +115,18 @@ public class Simulator {
     private void update(double dt) {
         Vec2 tmpControl = Vec2.zero();
         synchronized (currentControl) {
-            // Only allow so much acceleration per timestep
-            Vec2 control_diff = goalControl.minus(currentControl);
-            if (Math.abs(control_diff.x) > Robot.MAX_LINEAR_ACCELERATION * dt) {
-                control_diff.x = Math.signum(control_diff.x) * Robot.MAX_LINEAR_ACCELERATION * dt;
+            synchronized (goalControl) {
+                // Only allow so much acceleration per timestep
+                Vec2 control_diff = goalControl.minus(currentControl);
+                if (Math.abs(control_diff.x) > Robot.MAX_LINEAR_ACCELERATION * dt) {
+                    control_diff.x = Math.signum(control_diff.x) * Robot.MAX_LINEAR_ACCELERATION * dt;
+                }
+                if (Math.abs(control_diff.y) > Robot.MAX_ANGULAR_ACCELERATION * dt) {
+                    control_diff.y = Math.signum(control_diff.y) * Robot.MAX_ANGULAR_ACCELERATION * dt;
+                }
+                currentControl.plusInPlace(control_diff);
+                tmpControl = currentControl;
             }
-            if (Math.abs(control_diff.y) > Robot.MAX_ANGULAR_ACCELERATION * dt) {
-                control_diff.y = Math.signum(control_diff.y) * Robot.MAX_ANGULAR_ACCELERATION * dt;
-            }
-            currentControl.plusInPlace(control_diff);
-            tmpControl = currentControl;
         }
 
         // Only apply noise if we're trying to move
@@ -168,14 +170,7 @@ public class Simulator {
 
         while (robot.isRunning()) {
             if (iteration % CONTROL_FREQ == 0) {
-                // Do a control update
                 update(loopDt);
-                synchronized (CURRENT_ODOMETRY_DATA) {
-                    synchronized (currentControl) {
-                        CURRENT_ODOMETRY_DATA.odom = currentControl;
-                    }
-                    CURRENT_ODOMETRY_DATA.odomTime = System.currentTimeMillis();
-                }
             }
             if (iteration % LASER_SCAN_FREQUENCY == 0) {
                 robot.laser.updateLaserScan(robot, lines);
