@@ -1,7 +1,7 @@
 package simulator.robot.sensors;
 
 import math.Vec2;
-import simulator.environment.LineSegment;
+import simulator.environment.Landmark;
 import simulator.robot.Robot;
 
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public class Laser {
         }
     }
 
-    public void updateLaserScan(Robot robot, List<LineSegment> lineFeatures) {
+    public void updateLaserScan(Robot robot, List<Landmark> landmarks) {
         List<Double> newMeasurements = new ArrayList<>(Laser.LASER_COUNT);
         for (int i = 0; i < Laser.LASER_COUNT; i++) {
             newMeasurements.add(Laser.LASER_INVALID_MEASUREMENT);
@@ -44,8 +44,8 @@ public class Laser {
             Vec2 v = Vec2.of(Math.cos(theta), Math.sin(theta));
 
             // Check intersection for each line feature
-            for (LineSegment line : lineFeatures) {
-                double rayDistance = line.rayDistance(laserCenter, v);
+            for (Landmark landmark : landmarks) {
+                double rayDistance = landmark.shortestRayDistance(laserCenter, v);
                 if (rayDistance >= 0 && rayDistance < Laser.LASER_MAX_DISTANCE) {
                     newMeasurements.set(i, Math.min(rayDistance, newMeasurements.get(i)));
                 }

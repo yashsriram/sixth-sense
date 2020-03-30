@@ -4,14 +4,10 @@ import simulator.OdometryData;
 import simulator.Simulator;
 
 public class SimulatorTest extends PApplet {
-    public static final int WIDTH = 800;
-    public static final int HEIGHT = 800;
-    public static int SCALE = 100;
-
     Simulator sim;
 
     public void settings() {
-        size(WIDTH, HEIGHT, P2D);
+        size(Simulator.WIDTH, Simulator.HEIGHT, P2D);
     }
 
     public void setup() {
@@ -29,7 +25,7 @@ public class SimulatorTest extends PApplet {
         stroke(1);
 
         OdometryData odom = sim.getOdometryThreadSafe();
-        sim.draw(SCALE, WIDTH, HEIGHT);
+        sim.draw();
         surface.setTitle("Processing - FPS: " + Math.round(frameRate));
     }
 
@@ -50,10 +46,10 @@ public class SimulatorTest extends PApplet {
             sim.applyControlThreadSafe(Vec2.of(0, 0.5));
         }
         if (key == '+') {
-            SCALE++;
+            Simulator.SCALE++;
         }
         if (key == '-') {
-            SCALE--;
+            Simulator.SCALE--;
         }
     }
 

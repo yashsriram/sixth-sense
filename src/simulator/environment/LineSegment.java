@@ -2,15 +2,19 @@ package simulator.environment;
 
 import math.Mat2;
 import math.Vec2;
+import processing.core.PApplet;
+import simulator.Simulator;
 
-public class LineSegment {
-    public final Vec2 p1;
-    public final Vec2 p2;
-    public final double length;
-    public final Vec2 p21Normed;
-    public final Vec2 p21;
+public class LineSegment extends Landmark {
+    private final PApplet applet;
+    private final Vec2 p1;
+    private final Vec2 p2;
+    private final double length;
+    private final Vec2 p21Normed;
+    private final Vec2 p21;
 
-    public LineSegment(Vec2 p1, Vec2 p2) {
+    public LineSegment(PApplet applet, Vec2 p1, Vec2 p2) {
+        this.applet = applet;
         this.p1 = Vec2.of(p1);
         this.p2 = Vec2.of(p2);
         this.length = p2.minus(p1).norm();
@@ -18,10 +22,10 @@ public class LineSegment {
         this.p21 = p2.minus(p1);
     }
 
-    public double rayDistance(final Vec2 robotPosition, final Vec2 robotDirection) {
-        Vec2 robotDirectionNormalized = robotDirection.normalize();
+    public double shortestRayDistance(final Vec2 eye, final Vec2 forwardDirection) {
+        Vec2 robotDirectionNormalized = forwardDirection.normalize();
         Mat2 A = Mat2.withCols(robotDirectionNormalized.scale(-1), p21);
-        Vec2 b = robotPosition.minus(p1);
+        Vec2 b = eye.minus(p1);
 
         // If determinant is small i.e. the two directions are nearly parallel, we'll just assume no intersection
         if (Math.abs(A.determinant()) < Mat2.SINGULAR_LIMIT) {
@@ -39,19 +43,23 @@ public class LineSegment {
         return t1t2.x;
     }
 
-    public double shortestDistance(Vec2 pose) {
-        Vec2 p31 = pose.minus(p1);
+    public double shortestDistance(Vec2 eye) {
+        Vec2 p31 = eye.minus(p1);
         double projectionLength = p31.dot(p21Normed);
         if (projectionLength < 0) {
             // Projects to before p1
             return p31.norm();
         } else if (projectionLength > length) {
             // Projects to after p2
-            return pose.minus(p2).norm();
+            return eye.minus(p2).norm();
         } else {
             // Somewhere in the middle
             return p31.minus(p21Normed.scale(projectionLength)).norm();
         }
+    }
+
+    public void draw() {
+        applet.line((float) p1.x * Simulator.SCALE + Simulator.WIDTH / 2f, (float) p1.y * Simulator.SCALE + Simulator.HEIGHT / 2f, (float) p2.x * Simulator.SCALE + Simulator.WIDTH / 2f, (float) p2.y * Simulator.SCALE + Simulator.HEIGHT / 2f);
     }
 
     @Override
