@@ -48,12 +48,12 @@ public class Robot {
 
         // Draw lasers
         List<Double> distances = laser.getLaserMeasurementsThreadSafe();
-        List<Vec2> lines = new ArrayList<>(Laser.LASER_COUNT);
+        List<Vec2> lines = new ArrayList<>(Laser.COUNT);
         for (int i = 0; i < distances.size(); ++i) {
-            if (distances.get(i) == Laser.LASER_INVALID_MEASUREMENT) {
+            if (distances.get(i) == Laser.INVALID_MEASUREMENT_VALUE) {
                 continue;
             }
-            double percentage = i / (Laser.LASER_COUNT - 1.0);
+            double percentage = i / (Laser.COUNT - 1.0);
             double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage;
 
             Vec2 scan_pt_i = laserEnd.plus(Vec2.of(Math.cos(theta + truePose.z), Math.sin(theta + truePose.z)).scaleInPlace(distances.get(i) * Simulator.SCALE));
