@@ -39,7 +39,6 @@ public class Simulator {
         List<List<String>> fileContents = new ArrayList<>();
         try {
             String delimiter = " ";
-            fileContents = new ArrayList<>();
             File file = new File(sceneFilepath);
             Scanner scanner = new Scanner(file);
             while (scanner.hasNextLine()) {
@@ -247,7 +246,7 @@ public class Simulator {
 
         // Draw lasers
         LaserSensor data = getLaserScanThreadSafe();
-        List<Vec2> lines = new ArrayList<>();
+        List<Vec2> lines = new ArrayList<>(lineFeatures.size());
         for (int i = 0; i < data.distances.size(); ++i) {
             if (data.distances.get(i) == LaserSensor.LASER_INVALID_MEASUREMENT) {
                 continue;
