@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Robot {
     public static final double MAX_LINEAR_ACCELERATION = 0.5;
     public static final double MAX_ANGULAR_ACCELERATION = 0.5;
-    public static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.1;
+    public static final double LINEAR_VELOCITY_ERROR_LIMIT = 0.5;
     public static final double ANGULAR_VELOCITY_ERROR_LIMIT = 0.1;
 
     // Graphics
@@ -53,47 +53,47 @@ public class Robot {
     }
 
     void updatePose(double dt) {
-        Vec2 tmpControl = Vec2.zero();
+        Vec2 controlWithNoise = Vec2.zero();
         synchronized (currentControl) {
             synchronized (goalControl) {
-                // Only allow so much acceleration per timestep
-                Vec2 control_diff = goalControl.minus(currentControl);
-                if (Math.abs(control_diff.x) > Robot.MAX_LINEAR_ACCELERATION * dt) {
-                    control_diff.x = Math.signum(control_diff.x) * Robot.MAX_LINEAR_ACCELERATION * dt;
+                // Clamp acceleration
+                Vec2 controlDiff = goalControl.minus(currentControl);
+                if (Math.abs(controlDiff.x) > Robot.MAX_LINEAR_ACCELERATION * dt) {
+                    controlDiff.x = Math.signum(controlDiff.x) * Robot.MAX_LINEAR_ACCELERATION * dt;
                 }
-                if (Math.abs(control_diff.y) > Robot.MAX_ANGULAR_ACCELERATION * dt) {
-                    control_diff.y = Math.signum(control_diff.y) * Robot.MAX_ANGULAR_ACCELERATION * dt;
+                if (Math.abs(controlDiff.y) > Robot.MAX_ANGULAR_ACCELERATION * dt) {
+                    controlDiff.y = Math.signum(controlDiff.y) * Robot.MAX_ANGULAR_ACCELERATION * dt;
                 }
-                currentControl.plusInPlace(control_diff);
-                tmpControl = currentControl;
+                currentControl.plusInPlace(controlDiff);
+                controlWithNoise = Vec2.of(currentControl);
             }
         }
 
         // Only apply noise if we're trying to move
-        if (tmpControl.sqauredNorm() != 0.0) {
-            tmpControl.x *= (1.0 + ThreadLocalRandom.current().nextDouble(-LINEAR_VELOCITY_ERROR_LIMIT, LINEAR_VELOCITY_ERROR_LIMIT));
-            tmpControl.y *= (1.0 + ThreadLocalRandom.current().nextDouble(-ANGULAR_VELOCITY_ERROR_LIMIT, ANGULAR_VELOCITY_ERROR_LIMIT));
+        if (controlWithNoise.sqauredNorm() != 0.0) {
+            controlWithNoise.x *= (1.0 + ThreadLocalRandom.current().nextDouble(-LINEAR_VELOCITY_ERROR_LIMIT, LINEAR_VELOCITY_ERROR_LIMIT));
+            controlWithNoise.y *= (1.0 + ThreadLocalRandom.current().nextDouble(-ANGULAR_VELOCITY_ERROR_LIMIT, ANGULAR_VELOCITY_ERROR_LIMIT));
         }
 
         // Run the dynamics via RK4
         Vec3 k1, k2, k3, k4;
         Vec3 x2, x3, x4;
-        k1 = getChangeInPose(truePose, tmpControl);
+        k1 = getChangeInPose(truePose, controlWithNoise);
         x2 = truePose.plus(k1.scale(0.5f * dt));
-        k2 = getChangeInPose(x2, tmpControl);
+        k2 = getChangeInPose(x2, controlWithNoise);
         x3 = truePose.plus(k2.scale(0.5f * dt));
-        k3 = getChangeInPose(x3, tmpControl);
+        k3 = getChangeInPose(x3, controlWithNoise);
         x4 = truePose.plus(k3.scale(dt));
-        k4 = getChangeInPose(x4, tmpControl);
+        k4 = getChangeInPose(x4, controlWithNoise);
 
-        Vec3 dtruePose = Vec3.zero();
-        dtruePose
+        Vec3 avergeChangeInPose = Vec3.zero();
+        avergeChangeInPose
                 .plusInPlace(k1)
                 .plusInPlace(k2.scale(2))
                 .plusInPlace(k3.scale(2))
                 .plusInPlace(k4)
                 .scaleInPlace(dt / 6.0);
-        truePose.plusInPlace(dtruePose);
+        truePose.plusInPlace(avergeChangeInPose);
     }
 
     void updateSense(List<Landmark> landmarks) {

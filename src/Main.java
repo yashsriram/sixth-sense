@@ -2,7 +2,7 @@ import math.Vec2;
 import processing.core.PApplet;
 import simulator.Simulator;
 
-public class SimulatorTest extends PApplet {
+public class Main extends PApplet {
     Simulator sim;
 
     public void settings() {
@@ -14,7 +14,10 @@ public class SimulatorTest extends PApplet {
         colorMode(RGB, 1.0f);
         rectMode(CENTER);
         noStroke();
+        reset();
+    }
 
+    private void reset() {
         String scene_name = "data/simple_rectangle.scn";
         sim = new Simulator(this, scene_name);
     }
@@ -27,6 +30,9 @@ public class SimulatorTest extends PApplet {
     }
 
     public void keyPressed() {
+        if (key == 'r') {
+            reset();
+        }
         if (key == 'p') {
             sim.applyControl(Vec2.zero());
         }
@@ -51,7 +57,7 @@ public class SimulatorTest extends PApplet {
     }
 
     static public void main(String[] passedArgs) {
-        String[] appletArgs = new String[]{"SimulatorTest"};
+        String[] appletArgs = new String[]{"Main"};
         if (passedArgs != null) {
             PApplet.main(concat(appletArgs, passedArgs));
         } else {
