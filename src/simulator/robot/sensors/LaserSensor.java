@@ -1,6 +1,7 @@
 package simulator.robot.sensors;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 public class LaserSensor {
     public final static int NUM_LASERS = 181;
@@ -13,6 +14,6 @@ public class LaserSensor {
     public static final double LASER_ANGLE_ERROR_LIMIT = 0.05;
     public static final double LASER_DISTANCE_ERROR_LIMIT = 0.05;
 
-    public Vector<Double> distances = new Vector<>();
+    public List<Double> distances = new ArrayList<>();
     public long scanTime = 0;
 }

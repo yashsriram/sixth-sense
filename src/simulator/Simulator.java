@@ -9,9 +9,7 @@ import simulator.robot.sensors.LaserSensor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Arrays;
-import java.util.Scanner;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Simulator {
@@ -19,7 +17,7 @@ public class Simulator {
     final PApplet parent;
 
     // Environment
-    private Vector<LineSegmentFeature> lineFeatures = new Vector<>();
+    private List<LineSegmentFeature> lineFeatures = new ArrayList<>();
 
     // Laser scanner
     public final static LaserSensor CURRENT_LASER_SCAN = new LaserSensor();
@@ -38,16 +36,16 @@ public class Simulator {
     public Simulator(PApplet parent, String sceneFilepath) {
         this.parent = parent;
         // Read scene
-        Vector<Vector<String>> fileContents = null;
+        List<List<String>> fileContents = new ArrayList<>();
         try {
             String delimiter = " ";
-            fileContents = new Vector<>();
+            fileContents = new ArrayList<>();
             File file = new File(sceneFilepath);
             Scanner scanner = new Scanner(file);
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 String[] tokens = line.split(delimiter);
-                fileContents.add(new Vector<>(Arrays.asList(tokens)));
+                fileContents.add(new ArrayList<>(Arrays.asList(tokens)));
             }
             scanner.close();
         } catch (FileNotFoundException e) {
@@ -59,7 +57,7 @@ public class Simulator {
         assert (fileContents.size() > 0);
 
         // Load robot pose
-        Vector<String> poseTokens = fileContents.get(0);
+        List<String> poseTokens = fileContents.get(0);
         // Make sure the pose is of size 4 (x, y, th, radius)
         assert (poseTokens.size() == 4);
         robot = new Robot(
@@ -73,7 +71,7 @@ public class Simulator {
 
         // Every subsequent line in the file is a line segment
         for (int i = 1; i < fileContents.size(); ++i) {
-            Vector<String> lineFeatureTokens = fileContents.get(i);
+            List<String> lineFeatureTokens = fileContents.get(i);
             // Make sure the line information is of size 4 (x1,y1,x2,y2)
             assert (lineFeatureTokens.size() == 4);
             Vec2 p1 = Vec2.of(Double.parseDouble(lineFeatureTokens.get(0)), Double.parseDouble(lineFeatureTokens.get(1)));
@@ -108,8 +106,8 @@ public class Simulator {
         }
     }
 
-    private Vector<Double> computeLaserScan() {
-        Vector<Double> measurements = new Vector<>(LaserSensor.NUM_LASERS);
+    private List<Double> computeLaserScan() {
+        List<Double> measurements = new ArrayList<>(LaserSensor.NUM_LASERS);
         for (int i = 0; i < LaserSensor.NUM_LASERS; i++) {
             measurements.add(LaserSensor.LASER_INVALID_MEASUREMENT);
         }
@@ -217,7 +215,7 @@ public class Simulator {
             }
             if (iteration % LaserSensor.LASER_SCAN_FREQ == 0) {
                 // Update the laser scan
-                Vector<Double> tmp_scan = computeLaserScan();
+                List<Double> tmp_scan = computeLaserScan();
                 synchronized (CURRENT_LASER_SCAN) {
                     CURRENT_LASER_SCAN.distances = tmp_scan;
                     CURRENT_LASER_SCAN.scanTime = System.currentTimeMillis();
@@ -249,7 +247,7 @@ public class Simulator {
 
         // Draw lasers
         LaserSensor data = getLaserScanThreadSafe();
-        Vector<Vec2> lines = new Vector<>();
+        List<Vec2> lines = new ArrayList<>();
         for (int i = 0; i < data.distances.size(); ++i) {
             if (data.distances.get(i) == LaserSensor.LASER_INVALID_MEASUREMENT) {
                 continue;
