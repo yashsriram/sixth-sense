@@ -22,7 +22,6 @@ public class SimulatorTest extends PApplet {
     public void draw() {
         background(0);
         stroke(1);
-
         sim.draw();
         surface.setTitle("Processing - FPS: " + Math.round(frameRate));
     }

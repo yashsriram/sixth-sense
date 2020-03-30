@@ -22,10 +22,10 @@ public class LineSegment extends Landmark {
         this.p21 = p2.minus(p1);
     }
 
-    public double shortestRayDistance(final Vec2 eye, final Vec2 forwardDirection) {
-        Vec2 robotDirectionNormalized = forwardDirection.normalize();
+    public double shortestRayDistanceFrom(final Vec2 position, final Vec2 orientation) {
+        Vec2 robotDirectionNormalized = orientation.normalize();
         Mat2 A = Mat2.withCols(robotDirectionNormalized.scale(-1), p21);
-        Vec2 b = eye.minus(p1);
+        Vec2 b = position.minus(p1);
 
         // If determinant is small i.e. the two directions are nearly parallel, we'll just assume no intersection
         if (Math.abs(A.determinant()) < Mat2.SINGULAR_LIMIT) {
@@ -43,15 +43,15 @@ public class LineSegment extends Landmark {
         return t1t2.x;
     }
 
-    public double shortestDistance(Vec2 eye) {
-        Vec2 p31 = eye.minus(p1);
+    public double shortestDistanceFrom(Vec2 position) {
+        Vec2 p31 = position.minus(p1);
         double projectionLength = p31.dot(p21Normed);
         if (projectionLength < 0) {
             // Projects to before p1
             return p31.norm();
         } else if (projectionLength > length) {
             // Projects to after p2
-            return eye.minus(p2).norm();
+            return position.minus(p2).norm();
         } else {
             // Somewhere in the middle
             return p31.minus(p21Normed.scale(projectionLength)).norm();
@@ -60,13 +60,5 @@ public class LineSegment extends Landmark {
 
     public void draw() {
         applet.line((float) p1.x * Simulator.SCALE + Simulator.WIDTH / 2f, (float) p1.y * Simulator.SCALE + Simulator.HEIGHT / 2f, (float) p2.x * Simulator.SCALE + Simulator.WIDTH / 2f, (float) p2.y * Simulator.SCALE + Simulator.HEIGHT / 2f);
-    }
-
-    @Override
-    public String toString() {
-        return "LineSegmentFeature{" +
-                "p1=" + p1 +
-                ", p2=" + p2 +
-                '}';
     }
 }

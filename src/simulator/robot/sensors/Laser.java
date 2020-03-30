@@ -4,7 +4,6 @@ import math.Vec2;
 import processing.core.PApplet;
 import simulator.Simulator;
 import simulator.environment.Landmark;
-import simulator.robot.Robot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,25 +36,22 @@ public class Laser {
         }
     }
 
-    public void updateLaserScan(Robot robot, List<Landmark> landmarks) {
+    public void updateLaserScan(Vec2 position, double orientation, List<Landmark> landmarks) {
         List<Double> newMeasurements = new ArrayList<>(Laser.COUNT);
         for (int i = 0; i < Laser.COUNT; i++) {
             newMeasurements.add(Laser.INVALID_MEASUREMENT_VALUE);
         }
-        // Move the center of the scanner back from the center of the robot
-        Vec2 truePosition = Vec2.of(robot.truePose.x, robot.truePose.y);
-        Vec2 laserCenter = truePosition.minus(Vec2.of(Math.cos(robot.truePose.z), Math.sin(robot.truePose.z)).scaleInPlace(0.5 * robot.robotLength));
 
         // For each laser beam
         for (int i = 0; i < Laser.COUNT; ++i) {
             double percentage = i / (Laser.COUNT - 1.0);
             double laserThErr = ThreadLocalRandom.current().nextDouble(-Laser.ANGLE_ERROR_LIMIT * Laser.ANGULAR_RESOLUTION, Laser.ANGLE_ERROR_LIMIT * Laser.ANGULAR_RESOLUTION);
-            double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage + robot.truePose.z + laserThErr;
+            double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage + orientation + laserThErr;
             Vec2 v = Vec2.of(Math.cos(theta), Math.sin(theta));
 
             // Check intersection for each line feature
             for (Landmark landmark : landmarks) {
-                double rayDistance = landmark.shortestRayDistance(laserCenter, v);
+                double rayDistance = landmark.shortestRayDistanceFrom(position, v);
                 if (rayDistance >= 0 && rayDistance < Laser.MAX_DISTANCE) {
                     newMeasurements.set(i, Math.min(rayDistance, newMeasurements.get(i)));
                 }
@@ -76,7 +72,6 @@ public class Laser {
         }
     }
 
-
     public List<Double> getMeasurements() {
         List<Double> currentMeasurements;
         synchronized (measurements) {
@@ -85,7 +80,7 @@ public class Laser {
         return currentMeasurements;
     }
 
-    public void draw(Vec2 laserEnd, double orientation) {
+    public void draw(Vec2 position, double orientation) {
         List<Double> distances = getMeasurements();
         List<Vec2> lasers = new ArrayList<>(Laser.COUNT);
         for (int i = 0; i < distances.size(); ++i) {
@@ -95,12 +90,12 @@ public class Laser {
             double percentage = i / (Laser.COUNT - 1.0);
             double theta = Laser.MIN_THETA + (Laser.MAX_THETA - Laser.MIN_THETA) * percentage;
 
-            Vec2 laserSprite = laserEnd.plus(Vec2.of(Math.cos(orientation + theta), Math.sin(orientation + theta)).scaleInPlace(distances.get(i) * Simulator.SCALE));
+            Vec2 laserSprite = position.plus(Vec2.of(Math.cos(orientation + theta), Math.sin(orientation + theta)).scaleInPlace(distances.get(i) * Simulator.SCALE));
             lasers.add(laserSprite);
         }
         applet.stroke(1, 0, 0);
         for (Vec2 l : lasers) {
-            applet.line((float) laserEnd.x, (float) laserEnd.y, (float) l.x, (float) l.y);
+            applet.line((float) position.x, (float) position.y, (float) l.x, (float) l.y);
         }
     }
 }
