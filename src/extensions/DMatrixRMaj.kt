@@ -1,6 +1,7 @@
+package extensions
+
 import org.ejml.data.DMatrixRMaj
 import org.ejml.dense.row.CommonOps_DDRM
-import java.lang.IllegalArgumentException
 
 operator fun DMatrixRMaj.get(i: Int, j: Int, numRows: Int, numCols: Int): DMatrixRMaj {
     val block = DMatrixRMaj(numRows, numCols)
