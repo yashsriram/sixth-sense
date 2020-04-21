@@ -1,7 +1,9 @@
 package simulator
 
+import extensions.timesAssign
 import math.Vec2
 import math.Vec3
+import org.ejml.data.DMatrix2
 import processing.core.PApplet
 import java.io.File
 import java.io.FileNotFoundException
@@ -46,10 +48,10 @@ class Simulator(private val applet: PApplet, sceneFilepath: String?) {
         for (i in 1 until fileContents.size) {
             val lineFeatureTokens = fileContents[i]
             assert(lineFeatureTokens.size == 4)
-            val p1 = Vec2.of(lineFeatureTokens[0].toDouble(), lineFeatureTokens[1].toDouble())
-            p1.scaleInPlace(SCALE)
-            val p2 = Vec2.of(lineFeatureTokens[2].toDouble(), lineFeatureTokens[3].toDouble())
-            p2.scaleInPlace(SCALE)
+            val p1 = DMatrix2(lineFeatureTokens[0].toDouble(), lineFeatureTokens[1].toDouble())
+            p1 *= SCALE
+            val p2 = DMatrix2(lineFeatureTokens[2].toDouble(), lineFeatureTokens[3].toDouble())
+            p2 *= SCALE
             lines.add(LineSegment(applet, p1, p2))
         }
 

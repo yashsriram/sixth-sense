@@ -2,6 +2,7 @@ package simulator
 
 import math.Vec2
 import math.Vec3
+import org.ejml.data.DMatrix2
 import processing.core.PApplet
 import java.util.concurrent.ThreadLocalRandom
 
@@ -86,7 +87,7 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
     }
 
     fun isCrashing(landmark: Landmark): Boolean {
-        return landmark.shortestDistanceFrom(Vec2.of(truePose.x, truePose.y)) < robotLength
+        return landmark.shortestDistanceFrom(DMatrix2(truePose.x, truePose.y)) < robotLength
     }
 
     fun getCurrentControl(): Vec2 {

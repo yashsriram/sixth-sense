@@ -1,6 +1,7 @@
 package simulator
 
 import math.Vec2
+import org.ejml.data.DMatrix2
 import processing.core.PApplet
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
@@ -48,7 +49,7 @@ class Laser internal constructor(private val applet: PApplet) {
 
             // Check intersection for each line feature
             for (landmark in landmarks) {
-                val rayDistance = landmark.shortestRayDistanceFrom(position, v)
+                val rayDistance = landmark.shortestRayDistanceFrom(DMatrix2(position.x, position.y), DMatrix2(v.x, v.y))
                 if (rayDistance >= 0 && rayDistance < MAX_DISTANCE) {
                     newMeasurements[i] = Math.min(rayDistance, newMeasurements[i])
                 }

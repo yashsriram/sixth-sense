@@ -33,6 +33,10 @@ operator fun DMatrix2.timesAssign(t: Double) {
     this.a2 *= t
 }
 
+fun DMatrix2.dot(b : DMatrix2): Double {
+    return CommonOps_DDF2.dot(this, b)
+}
+
 fun DMatrix2.norm(): Double {
     return sqrt(this.a1 * this.a1 + this.a2 * this.a2)
 }
