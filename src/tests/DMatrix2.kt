@@ -29,7 +29,8 @@ fun main() {
     E *= 2.0
     println("E *= 2 = ${E.prettyPrint()}")
     println("||E|| = ${E.norm()}")
-    E.normInPlace()
+    println("E.normalize() = ${E.normalize().prettyPrint()}")
+    E.normalizeInPlace()
     println("E = ${E.prettyPrint()}")
     println("||E|| = ${E.norm()}")
 }

@@ -2,7 +2,6 @@ package extensions
 
 import org.ejml.data.DMatrix2
 import org.ejml.dense.fixed.CommonOps_DDF2
-import java.lang.IllegalStateException
 import kotlin.math.sqrt
 
 operator fun DMatrix2.plus(b: DMatrix2): DMatrix2 {
@@ -38,7 +37,17 @@ fun DMatrix2.norm(): Double {
     return sqrt(this.a1 * this.a1 + this.a2 * this.a2)
 }
 
-fun DMatrix2.normInPlace(): DMatrix2 {
+fun DMatrix2.normalize(): DMatrix2 {
+    val abs = norm()
+    if (abs > 1e-6f) {
+        val normed = DMatrix2(this)
+        normed *= (1 / abs)
+        return normed
+    }
+    throw IllegalStateException("Attempt to normalize zero vector")
+}
+
+fun DMatrix2.normalizeInPlace(): DMatrix2 {
     val norm = this.norm()
     if (norm > 1e-6f) {
         this *= (1 / norm)
