@@ -2,8 +2,11 @@ import extensions.*
 import org.ejml.data.DMatrix2
 import org.ejml.data.DMatrixRMaj
 import org.ejml.dense.row.CommonOps_DDRM
+import org.ejml.dense.row.EigenOps_DDRM
+import org.ejml.dense.row.decomposition.eig.SwitchingEigenDecomposition_DDRM
 import processing.core.PApplet
 import processing.core.PConstants
+import java.lang.IllegalStateException
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.roundToLong
@@ -129,7 +132,7 @@ class Slam : PApplet() {
 
 
     override fun draw() {
-        // Run
+        /* ---- ---- ---- ---- Update ---- ---- ---- ---- */
         iter++
         if (iter < 1000) {
             // True Propagation without approximation (we'll assume w is not close to 0):
@@ -191,7 +194,7 @@ class Slam : PApplet() {
             estimatedPath.add(x_T)
         }
 
-        // Draw
+        /* ---- ---- ---- ---- Draw ---- ---- ---- ---- */
         background(0)
         noFill()
         stroke(1f, 1f, 0f)
@@ -201,31 +204,68 @@ class Slam : PApplet() {
         }
 
         // Draw the true trajectory
-        stroke(0f, 1f, 0f)
-        for (i in 1 until truePath.size) {
-            val prevState = truePath[i - 1]
-            val currState = truePath[i]
-            line(prevState[0].toFloat(), prevState[1].toFloat(), currState[0].toFloat(), currState[1].toFloat())
-        }
+        jointPoints(truePath, 0f, 1f, 0f)
         circle(truePath[truePath.size - 1][0].toFloat(), truePath[truePath.size - 1][1].toFloat(), 10f)
 
         // Draw the estimated trajectory
-        stroke(0f, 0f, 1f)
-        for (i in 1 until estimatedPath.size) {
-            val prevState = estimatedPath[i - 1]
-            val currState = estimatedPath[i]
-            line(prevState[0].toFloat(), prevState[1].toFloat(), currState[0].toFloat(), currState[1].toFloat())
-        }
+        jointPoints(estimatedPath, 0f, 0f, 1f)
         circle(estimatedPath[estimatedPath.size - 1][0].toFloat(), estimatedPath[estimatedPath.size - 1][1].toFloat(), 10f)
+
         // Draw the uncertainty of the robot
-//        vis.AddTempEllipse(x_t.head < 2 > (), Sigma_t.topLeftCorner < 2, 2 > (), Color::RED, 1.2);
+        visualizeCovariance(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
 
         // Draw the uncertainty of all the landmarks in the state
-//        for (size_t j = 3; j < x_t.size(); j += 2) {
-//            vis.AddTempEllipse(x_t.segment < 2 > (j), Sigma_t.block < 2, 2 > (j, j), Color::RED, 1.2);
-//        }
+        for (j in 3 until x_T.numRows step 2) {
+            visualizeCovariance(x_T[j, 0, 2, 1], sigma_T[j, j, 2, 2])
+        }
 
         surface.setTitle("Processing - FPS: " + frameRate.roundToLong())
+    }
+
+    private fun visualizeCovariance(x_T: DMatrixRMaj, sigma_T: DMatrixRMaj) {
+        val sigma_T_copy = DMatrixRMaj(sigma_T)
+        val decomposer = SwitchingEigenDecomposition_DDRM(2, true, 1e-6)
+        val success = decomposer.decompose(sigma_T_copy)
+        if (!success) {
+            throw IllegalStateException("Can't find eigen vectors/values of matrix")
+        }
+        val eigenValue1 = decomposer.getEigenvalue(0)
+        val eigenValue2 = decomposer.getEigenvalue(1)
+        val eigenVectors = EigenOps_DDRM.createMatrixV(decomposer)
+        val ellipseTheta = atan2(eigenVectors[1, 0].toFloat(), eigenVectors[0, 0].toFloat())
+        val sinEllipseTheta = sin(ellipseTheta)
+        val cosEllipseTheta = cos(ellipseTheta)
+        val rot = DMatrixRMaj(
+                arrayOf(
+                        doubleArrayOf(cosEllipseTheta.toDouble(), -sinEllipseTheta.toDouble()),
+                        doubleArrayOf(sinEllipseTheta.toDouble(), cosEllipseTheta.toDouble())
+                )
+        )
+        val ellipseResolution = 20
+        val ellipse = mutableListOf<DMatrixRMaj>()
+        for (i in 0 until ellipseResolution) {
+            // Only ellipseResolution - 1 points as the first and last points are the same (completing the loop)
+            val theta = 2 * PI * i / (ellipseResolution - 1)
+
+            // Scale by major / minor axis, then rotate and offset
+            val pointOnEllipse = DMatrixRMaj(
+                    arrayOf(
+                            doubleArrayOf(2.0 * sqrt((5.991 * eigenValue1.real).toFloat()) * cos(theta)),
+                            doubleArrayOf(2.0 * sqrt((5.991 * eigenValue2.real).toFloat()) * sin(theta))
+                    )
+            )
+            ellipse.add(x_T + rot * pointOnEllipse)
+        }
+        jointPoints(ellipse, 1f, 0f, 0f)
+    }
+
+    private fun jointPoints(points: MutableList<DMatrixRMaj>, r: Float, g: Float, b: Float) {
+        stroke(r, g, b)
+        for (i in 1 until points.size) {
+            val prevState = points[i - 1]
+            val currState = points[i]
+            line(prevState[0].toFloat(), prevState[1].toFloat(), currState[0].toFloat(), currState[1].toFloat())
+        }
     }
 
 }
