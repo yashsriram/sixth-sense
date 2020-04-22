@@ -28,6 +28,18 @@ operator fun DMatrixRMaj.minus(b: DMatrixRMaj): DMatrixRMaj {
     return difference
 }
 
+operator fun DMatrixRMaj.times(b: DMatrixRMaj): DMatrixRMaj {
+    val product = DMatrixRMaj(this.numRows, b.numCols)
+    CommonOps_DDRM.mult(this, b, product)
+    return product
+}
+
+operator fun DMatrixRMaj.times(t: Double): DMatrixRMaj {
+    val scaled = this.createLike()
+    CommonOps_DDRM.scale(t, this, scaled)
+    return scaled
+}
+
 operator fun DMatrixRMaj.plusAssign(b: DMatrixRMaj) {
     CommonOps_DDRM.addEquals(this, b)
 }

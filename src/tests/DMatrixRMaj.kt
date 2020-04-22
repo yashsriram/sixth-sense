@@ -51,4 +51,8 @@ fun main() {
     }
     println("A == D: ${A == D}: weird!!!")
     println("A === D: ${A === D}")
+    println("A : ${A}")
+    println("B : ${B}")
+    println("A * B: ${A * B}")
+    println("A * 2: ${A * 2.0}")
 }
