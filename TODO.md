@@ -1,5 +1,6 @@
 # Plan
-- [ ] Find a good linear algebra library
+- [ ] Smooth the workflow
+    - [x] Find a good linear algebra library
     - [x] Write operator overloads, extensions
     - [x] Test EJML and extensions
     - [x] Translate all src to Kotlin
