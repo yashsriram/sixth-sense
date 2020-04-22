@@ -8,6 +8,8 @@ import java.util.*
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.roundToLong
 
+data class Estimate(val mean: DMatrixRMaj, val covariance: DMatrixRMaj)
+
 class Slam : PApplet() {
     companion object {
         const val WIDTH = 1000
@@ -33,14 +35,14 @@ class Slam : PApplet() {
 
     // FIXME: Initial estimate itself has some noise?
     private val std_X = 0.05
-    private val x_T = xTrue + DMatrixRMaj(
+    private var x_T = xTrue + DMatrixRMaj(
             arrayOf(
                     doubleArrayOf(std_X * random.nextGaussian()),
                     doubleArrayOf(std_X * random.nextGaussian()),
                     doubleArrayOf(std_X * random.nextGaussian())
             )
     )
-    private val sigma_T = CommonOps_DDRM.identity(3) * (std_X * std_X)
+    private var sigma_T = CommonOps_DDRM.identity(3) * (std_X * std_X)
 
     // Noise Covariance
     private val std_N = 0.10
@@ -81,6 +83,51 @@ class Slam : PApplet() {
         estimatedPath.add(x_T)
     }
 
+    private fun propagateEKFSLAM(x_T: DMatrixRMaj,
+                                 sigma_T: DMatrixRMaj,
+                                 u: DMatrix2,
+                                 sigma_N: DMatrixRMaj,
+                                 dt: Double): Estimate {
+        val theta_t = x_T[2]
+        val v = u.a1
+        val w = u.a2
+
+        // Note that these we passed by reference, so to return, just set them
+        val x_TPDT = DMatrixRMaj(x_T)
+        x_TPDT[0] += dt * v * cos(theta_t.toFloat())
+        x_TPDT[1] += dt * v * sin(theta_t.toFloat())
+        x_TPDT[2] += dt * w
+
+        val sigma_TPDT = DMatrixRMaj(sigma_T)
+        val A = DMatrixRMaj(
+                arrayOf(
+                        doubleArrayOf(1.0, 0.0, -dt * v * sin(theta_t.toFloat())),
+                        doubleArrayOf(0.0, 1.0, dt * v * cos(theta_t.toFloat())),
+                        doubleArrayOf(0.0, 0.0, 1.0)
+                )
+        )
+        val N = DMatrixRMaj(
+                arrayOf(
+                        doubleArrayOf(dt * cos(theta_t.toFloat()), 0.0),
+                        doubleArrayOf(dt * sin(theta_t.toFloat()), 0.0),
+                        doubleArrayOf(0.0, dt)
+                )
+        )
+        // Sigma_RR_new
+        val Sigma_RR = sigma_TPDT[0, 0, 3, 3]
+        sigma_TPDT[0, 0, 3, 3] = A * Sigma_RR * A.transpose() + N * sigma_N * N.transpose()
+        // Sigma_R_Li_new
+        for (col in 3 until sigma_TPDT.numCols step 2) {
+            sigma_TPDT[0, col, 3, 2] = A * sigma_TPDT[0, col, 3, 2]
+        }
+        // Sigma_Li_R_new
+        for (row in 3 until sigma_TPDT.numRows step 2) {
+            sigma_TPDT[row, 0, 2, 3] = sigma_TPDT[row, 0, 2, 3] * A.transpose()
+        }
+        return Estimate(mean = x_TPDT, covariance = sigma_TPDT)
+    }
+
+
     override fun draw() {
         // Run
         iter++
@@ -96,13 +143,9 @@ class Slam : PApplet() {
             xTrueNew[2] = thetaNew
 
             // Run an EKFSLAMPropagation step
-//            {
-//                Eigen::VectorXd x_new;
-//                Eigen::MatrixXd Sigma_new;
-//                EKFSLAMPropagate(x_t, Sigma_t, u, Sigma_n, dt, x_new, Sigma_new);
-//                x_t = x_new;
-//                Sigma_t = Sigma_new;
-//            }
+            val estimateTPDT = propagateEKFSLAM(x_T, sigma_T, u, sigma_N, dt)
+            x_T = estimateTPDT.mean
+            sigma_T = estimateTPDT.covariance
 
             // Run an update every 5 iterations
             if (iter % 5 == 0) {

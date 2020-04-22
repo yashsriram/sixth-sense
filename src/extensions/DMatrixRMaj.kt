@@ -55,7 +55,7 @@ fun DMatrixRMaj.norm(): Double {
 }
 
 fun DMatrixRMaj.transpose(): DMatrixRMaj {
-    val transpose = this.createLike()
+    val transpose = DMatrixRMaj(this.numCols, this.numRows)
     CommonOps_DDRM.transpose(this, transpose)
     return transpose
 }
