@@ -43,15 +43,19 @@ class LineSegment internal constructor(private val applet: PApplet, p1: DMatrix2
     override fun shortestDistanceFrom(position: DMatrix2): Double {
         val p31 = position - p1
         val projectionLength = p31.dot(p21Normed)
-        return if (projectionLength < 0) {
-            // Projects to before p1
-            p31.norm()
-        } else if (projectionLength > length) {
-            // Projects to after p2
-            (position - p2).norm()
-        } else {
-            // Somewhere in the middle
-            (p31 - p21Normed * projectionLength).norm()
+        return when {
+            projectionLength < 0 -> {
+                // Projects to before p1
+                p31.norm()
+            }
+            projectionLength > length -> {
+                // Projects to after p2
+                (position - p2).norm()
+            }
+            else -> {
+                // Somewhere in the middle
+                (p31 - p21Normed * projectionLength).norm()
+            }
         }
     }
 

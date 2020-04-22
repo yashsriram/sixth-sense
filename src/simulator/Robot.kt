@@ -18,8 +18,8 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
         var ANGULAR_VELOCITY_ERROR_LIMIT = 0.1
         private fun getChangeInPose(pose: DMatrix3, control: DMatrix2): DMatrix3 {
             val changeInPose = DMatrix3()
-            changeInPose.a1 = control.a1 * Math.cos(pose.a3)
-            changeInPose.a2 = control.a1 * Math.sin(pose.a3)
+            changeInPose.a1 = control.a1 * cos(pose.a3)
+            changeInPose.a2 = control.a1 * sin(pose.a3)
             changeInPose.a3 = control.a2
             return changeInPose
         }

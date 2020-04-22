@@ -7,6 +7,7 @@ import processing.core.PApplet
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.sin
 
 class Laser internal constructor(private val applet: PApplet) {
@@ -54,14 +55,14 @@ class Laser internal constructor(private val applet: PApplet) {
             for (landmark in landmarks) {
                 val rayDistance = landmark.shortestRayDistanceFrom(position, v)
                 if (rayDistance >= 0 && rayDistance < MAX_DISTANCE) {
-                    newMeasurements[i] = Math.min(rayDistance, newMeasurements[i])
+                    newMeasurements[i] = min(rayDistance, newMeasurements[i])
                 }
             }
 
             // Add some noise to new measurements
             if (newMeasurements[i] < invalidMeasurementValue()) {
-                val laser_d_err = ThreadLocalRandom.current().nextDouble(-DISTANCE_ERROR_LIMIT, DISTANCE_ERROR_LIMIT)
-                newMeasurements[i] = newMeasurements[i] + laser_d_err
+                val laserMeasurementError = ThreadLocalRandom.current().nextDouble(-DISTANCE_ERROR_LIMIT, DISTANCE_ERROR_LIMIT)
+                newMeasurements[i] += laserMeasurementError
             }
         }
 

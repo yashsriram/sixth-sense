@@ -12,8 +12,9 @@ class Main : PApplet() {
         const val HEIGHT = 800
     }
 
-    var sim: Simulator? = null
-    var cam: QueasyCam? = null
+    private var sim: Simulator? = null
+    private var cam: QueasyCam? = null
+
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
     }
@@ -28,7 +29,7 @@ class Main : PApplet() {
     }
 
     private fun reset() {
-        val scene_name = "data/apartment.scn"
+        val sceneName = "data/apartment.scn"
         // Play with these
         Simulator.SCALE = 100.0
         Simulator.CONTROL_FREQ = 1
@@ -40,7 +41,7 @@ class Main : PApplet() {
         Laser.ANGLE_ERROR_LIMIT = 0.05
         Laser.MAX_DISTANCE = 500.0
         Laser.DISTANCE_ERROR_LIMIT = 5.0
-        sim = Simulator(this, scene_name)
+        sim = Simulator(this, sceneName)
     }
 
     override fun draw() {

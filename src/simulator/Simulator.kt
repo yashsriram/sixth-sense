@@ -7,6 +7,7 @@ import processing.core.PApplet
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.*
+import kotlin.system.exitProcess
 
 class Simulator(private val applet: PApplet, sceneFilepath: String) {
     companion object {
@@ -34,12 +35,12 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
             while (scanner.hasNextLine()) {
                 val line = scanner.nextLine()
                 val tokens = line.split(delimiter.toRegex()).toTypedArray()
-                fileContents.add(ArrayList(Arrays.asList(*tokens)))
+                fileContents.add(ArrayList(listOf(*tokens)))
             }
             scanner.close()
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
-            System.exit(-1)
+            exitProcess(-1)
         }
         assert(fileContents.size > 0)
 
