@@ -2,6 +2,7 @@ package extensions
 
 import org.ejml.data.DMatrixRMaj
 import org.ejml.dense.row.CommonOps_DDRM
+import kotlin.math.sqrt
 
 operator fun DMatrixRMaj.get(i: Int, j: Int, numRows: Int, numCols: Int): DMatrixRMaj {
     val block = DMatrixRMaj(numRows, numCols)
@@ -42,6 +43,15 @@ operator fun DMatrixRMaj.times(t: Double): DMatrixRMaj {
 
 operator fun DMatrixRMaj.plusAssign(b: DMatrixRMaj) {
     CommonOps_DDRM.addEquals(this, b)
+}
+
+fun DMatrixRMaj.norm(): Double {
+    val size = this.numElements
+    var sumOfSquares = 0.0
+    for (i in 0 until size) {
+        sumOfSquares += (this.data[i] * this.data[i])
+    }
+    return sqrt(sumOfSquares)
 }
 
 fun DMatrixRMaj.transpose(): DMatrixRMaj {

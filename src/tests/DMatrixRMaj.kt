@@ -55,4 +55,6 @@ fun main() {
     println("B : ${B}")
     println("A * B: ${A * B}")
     println("A * 2: ${A * 2.0}")
+    println("B : ${B}")
+    println("vector 2 norm(B) : ${B.norm()}")
 }
