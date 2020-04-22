@@ -48,7 +48,7 @@ class Slam : PApplet() {
     private var sigma_T = CommonOps_DDRM.identity(3) * (std_X * std_X)
 
     // Noise Covariance
-    private val std_N = 0.10
+    private val std_N = 0.03
     private val sigma_N = CommonOps_DDRM.identity(2) * (std_N * std_N)
     private val std_M = 0.05
     private val sigma_M = CommonOps_DDRM.identity(2) * (std_M * std_M)
