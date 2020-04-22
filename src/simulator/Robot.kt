@@ -1,29 +1,35 @@
 package simulator
 
 import extensions.*
-import math.Vec3
 import org.ejml.data.DMatrix2
+import org.ejml.data.DMatrix3
 import processing.core.PApplet
 import java.util.concurrent.ThreadLocalRandom
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.sign
 import kotlin.math.sin
 
-class Robot internal constructor(private val applet: PApplet, private val robotLength: Double, truePose: Vec3, var isRunning: Boolean) {
+class Robot internal constructor(private val applet: PApplet, private val robotLength: Double, truePose: DMatrix3, var isRunning: Boolean) {
     companion object {
         var MAX_LINEAR_ACCELERATION = 20.0
         var MAX_ANGULAR_ACCELERATION = 0.5
         var LINEAR_VELOCITY_ERROR_LIMIT = 0.5
         var ANGULAR_VELOCITY_ERROR_LIMIT = 0.1
-        private fun getChangeInPose(pose: Vec3, control: DMatrix2): Vec3 {
-            val changeInPose = Vec3.zero()
-            changeInPose.x = control.a1 * Math.cos(pose.z)
-            changeInPose.y = control.a1 * Math.sin(pose.z)
-            changeInPose.z = control.a2
+        private fun getChangeInPose(pose: DMatrix3, control: DMatrix2): DMatrix3 {
+            val changeInPose = DMatrix3()
+            changeInPose.a1 = control.a1 * Math.cos(pose.a3)
+            changeInPose.a2 = control.a1 * Math.sin(pose.a3)
+            changeInPose.a3 = control.a2
             return changeInPose
+        }
+
+        private fun getPositionFromPose(pose: DMatrix3): DMatrix2 {
+            return DMatrix2(pose.a1, pose.a2)
         }
     }
 
-    private val truePose: Vec3 = Vec3.of(truePose)
+    private val truePose = DMatrix3(truePose)
 
     // Multi-thread access
     private val goalControl = DMatrix2()
@@ -33,58 +39,57 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
     val laser: Laser = Laser(applet)
 
     fun updatePose(dt: Double) {
-        var controlWithNoise = DMatrix2()
+        var noisyControl = DMatrix2()
         synchronized(currentControl) {
             synchronized(goalControl) {
 
                 // Clamp acceleration
                 val controlDiff = goalControl - currentControl
-                if (Math.abs(controlDiff.a1) > MAX_LINEAR_ACCELERATION * dt) {
-                    controlDiff.a1 = Math.signum(controlDiff.a1) * MAX_LINEAR_ACCELERATION * dt
+                if (abs(controlDiff.a1) > MAX_LINEAR_ACCELERATION * dt) {
+                    controlDiff.a1 = sign(controlDiff.a1) * MAX_LINEAR_ACCELERATION * dt
                 }
-                if (Math.abs(controlDiff.a2) > MAX_ANGULAR_ACCELERATION * dt) {
-                    controlDiff.a2 = Math.signum(controlDiff.a2) * MAX_ANGULAR_ACCELERATION * dt
+                if (abs(controlDiff.a2) > MAX_ANGULAR_ACCELERATION * dt) {
+                    controlDiff.a2 = sign(controlDiff.a2) * MAX_ANGULAR_ACCELERATION * dt
                 }
                 currentControl += controlDiff
-                controlWithNoise = DMatrix2(currentControl)
+                noisyControl = DMatrix2(currentControl)
             }
         }
 
         // Only apply noise if we're trying to move
-        if (controlWithNoise.squaredNorm() != 0.0) {
-            controlWithNoise.a1 *= 1.0 + ThreadLocalRandom.current().nextDouble(-LINEAR_VELOCITY_ERROR_LIMIT, LINEAR_VELOCITY_ERROR_LIMIT)
-            controlWithNoise.a2 *= 1.0 + ThreadLocalRandom.current().nextDouble(-ANGULAR_VELOCITY_ERROR_LIMIT, ANGULAR_VELOCITY_ERROR_LIMIT)
+        if (noisyControl.squaredNorm() != 0.0) {
+            noisyControl.a1 *= 1.0 + ThreadLocalRandom.current().nextDouble(-LINEAR_VELOCITY_ERROR_LIMIT, LINEAR_VELOCITY_ERROR_LIMIT)
+            noisyControl.a2 *= 1.0 + ThreadLocalRandom.current().nextDouble(-ANGULAR_VELOCITY_ERROR_LIMIT, ANGULAR_VELOCITY_ERROR_LIMIT)
         }
 
         // Run the dynamics via RK4
-        val k1 = getChangeInPose(truePose, controlWithNoise)
-        val x2 = truePose.plus(k1.scale(0.5f * dt))
-        val k2 = getChangeInPose(x2, controlWithNoise)
-        val x3 = truePose.plus(k2.scale(0.5f * dt))
-        val k3 = getChangeInPose(x3, controlWithNoise)
-        val x4 = truePose.plus(k3.scale(dt))
-        val k4 = getChangeInPose(x4, controlWithNoise)
-        val avergeChangeInPose = Vec3.zero()
-        avergeChangeInPose
-                .plusInPlace(k1)
-                .plusInPlace(k2.scale(2.0))
-                .plusInPlace(k3.scale(2.0))
-                .plusInPlace(k4)
-                .scaleInPlace(dt / 6.0)
-        truePose.plusInPlace(avergeChangeInPose)
+        val k1 = getChangeInPose(truePose, noisyControl)
+        val x2 = truePose + k1 * (0.5f * dt)
+        val k2 = getChangeInPose(x2, noisyControl)
+        val x3 = truePose + k2 * (0.5f * dt)
+        val k3 = getChangeInPose(x3, noisyControl)
+        val x4 = truePose + k3 * dt
+        val k4 = getChangeInPose(x4, noisyControl)
+        val avgChangeInPose = DMatrix3()
+        avgChangeInPose += k1
+        avgChangeInPose += k2 * 2.0
+        avgChangeInPose += k3 * 2.0
+        avgChangeInPose += k4
+        avgChangeInPose *= dt / 6.0
+        truePose += avgChangeInPose
     }
 
     fun updateSense(landmarks: List<Landmark>) {
         // Move the center of the scanner back from the center of the robot
-        val truePosition = DMatrix2(truePose.x, truePose.y)
-        val centerToHead = DMatrix2(cos(truePose.z), sin(truePose.z))
+        val truePosition = getPositionFromPose(truePose)
+        val centerToHead = DMatrix2(cos(truePose.a3), sin(truePose.a3))
         centerToHead *= 0.5 * robotLength
         val laserCenter = truePosition - centerToHead
-        laser.updateLaserScan(laserCenter, truePose.z, landmarks)
+        laser.updateLaserScan(laserCenter, truePose.a3, landmarks)
     }
 
     fun isCrashing(landmark: Landmark): Boolean {
-        return landmark.shortestDistanceFrom(DMatrix2(truePose.x, truePose.y)) < robotLength
+        return landmark.shortestDistanceFrom(getPositionFromPose(truePose)) < robotLength
     }
 
     fun getCurrentControl(): DMatrix2 {
@@ -98,14 +103,14 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
     }
 
     fun draw() {
-        val position = DMatrix2(truePose.x, truePose.y)
-        val centerToHead = DMatrix2(cos(truePose.z), sin(truePose.z))
+        val position = getPositionFromPose(truePose)
+        val centerToHead = DMatrix2(cos(truePose.a3), sin(truePose.a3))
         centerToHead *= 0.5 * robotLength
         val head = position + centerToHead
         val tail = position - centerToHead
 
         // Draw lasers
-        laser.draw(tail, truePose.z)
+        laser.draw(tail, truePose.a3)
 
         // Draw robot body
         applet.stroke(1)

@@ -1,8 +1,8 @@
 package simulator
 
 import extensions.timesAssign
-import math.Vec3
 import org.ejml.data.DMatrix2
+import org.ejml.data.DMatrix3
 import processing.core.PApplet
 import java.io.File
 import java.io.FileNotFoundException
@@ -61,9 +61,10 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         robot = Robot(
                 applet,
                 poseTokens[3].toDouble() * SCALE,
-                Vec3.of(
+                DMatrix3(
                         poseTokens[0].toDouble() * SCALE,
-                        poseTokens[1].toDouble() * SCALE, poseTokens[2].toDouble()),
+                        poseTokens[1].toDouble() * SCALE,
+                        poseTokens[2].toDouble()),
                 true
         )
         val robotLoop = Thread(Runnable { robotLoop() })
