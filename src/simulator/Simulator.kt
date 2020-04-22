@@ -1,7 +1,6 @@
 package simulator
 
 import extensions.timesAssign
-import math.Vec2
 import math.Vec3
 import org.ejml.data.DMatrix2
 import processing.core.PApplet
@@ -9,7 +8,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.util.*
 
-class Simulator(private val applet: PApplet, sceneFilepath: String?) {
+class Simulator(private val applet: PApplet, sceneFilepath: String) {
     companion object {
         // Simulator settings
         var CONTROL_FREQ = 1
@@ -100,11 +99,11 @@ class Simulator(private val applet: PApplet, sceneFilepath: String?) {
     val laserScan: List<Double>
         get() = robot.laser.getMeasurements()
 
-    val currentControl: Vec2
+    val currentControl: DMatrix2
         get() = robot.getCurrentControl()
 
-    fun applyControl(control: Vec2?) {
-        robot.applyControl(control!!)
+    fun applyControl(control: DMatrix2) {
+        robot.applyControl(control)
     }
 
     fun draw() {

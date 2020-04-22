@@ -1,7 +1,5 @@
 import camera.QueasyCam
-import math.Vec2
-import org.ejml.data.DMatrixRMaj
-import org.ejml.dense.row.CommonOps_DDRM
+import org.ejml.data.DMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
 import simulator.Laser
@@ -57,19 +55,19 @@ class Main : PApplet() {
             reset()
         }
         if (key == 'p') {
-            sim!!.applyControl(Vec2.zero())
+            sim!!.applyControl(DMatrix2())
         }
         if (keyCode == PConstants.UP) {
-            sim!!.applyControl(Vec2.of(100.0, 0.0))
+            sim!!.applyControl(DMatrix2(100.0, 0.0))
         }
         if (keyCode == PConstants.DOWN) {
-            sim!!.applyControl(Vec2.of(-100.0, 0.0))
+            sim!!.applyControl(DMatrix2(-100.0, 0.0))
         }
         if (keyCode == PConstants.LEFT) {
-            sim!!.applyControl(Vec2.of(0.0, -0.5))
+            sim!!.applyControl(DMatrix2(0.0, -0.5))
         }
         if (keyCode == PConstants.RIGHT) {
-            sim!!.applyControl(Vec2.of(0.0, 0.5))
+            sim!!.applyControl(DMatrix2(0.0, 0.5))
         }
     }
 }

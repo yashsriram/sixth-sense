@@ -41,6 +41,10 @@ fun DMatrix2.norm(): Double {
     return sqrt(this.a1 * this.a1 + this.a2 * this.a2)
 }
 
+fun DMatrix2.squaredNorm(): Double {
+    return this.a1 * this.a1 + this.a2 * this.a2
+}
+
 fun DMatrix2.normalize(): DMatrix2 {
     val abs = norm()
     if (abs > 1e-6f) {
