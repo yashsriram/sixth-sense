@@ -1,10 +1,16 @@
 # Sixth Sense
-- Code is written in java 11, but should work with 8+
+- Code is written in Kotlin
 - src/ contains all source code
 - jars/ contain all libraries bundled as jars
-    - processing is used as a library
+    - processing is used for rendering
+    - emjl is used for linear algebra 
 
 # Compilation (on linux)
 - Open a terminal with current directory as the one containing this file
-- Use `javac -cp "jars/*" -d build/ $(find -name "*.java")` to compile and put all output class files under build/
-- Use `java -cp "build/:jars/*" <package>.<to>.<path>.<class>` to run any simulation
+- `kotlinc -classpath "$(find jars/ -name "*.jar" | paste -sd ":" -)" $(find -name "*.kt") $(find -name "*.java") -include-runtime -d sixthsense.jar`
+- `javac -cp "jars/*" -d build/ $(find -name "*.java")`
+
+# Execution
+- `java -cp "build/:jars/*:jars/ejml-v0.39-libs/*:Main.jar" <package>.<classname>Kt`
+- Notice the suffix Kt after class name
+- For example `java -cp "build/:jars/*:jars/ejml-v0.39-libs/*:sixthsense.jar" MainKt`
