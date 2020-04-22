@@ -83,7 +83,7 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
         // Move the center of the scanner back from the center of the robot
         val truePosition = Vec2.of(truePose.x, truePose.y)
         val laserCenter = truePosition.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength))
-        laser.updateLaserScan(laserCenter, truePose.z, landmarks)
+        laser.updateLaserScan(DMatrix2(laserCenter.x, laserCenter.y), truePose.z, landmarks)
     }
 
     fun isCrashing(landmark: Landmark): Boolean {
@@ -102,15 +102,15 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
 
     fun draw() {
         val position = Vec2.of(truePose.x, truePose.y)
-        val laserEnd = position.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength))
-        val otherEnd = position.plus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength))
+        val tail = position.minus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength))
+        val head = position.plus(Vec2.of(Math.cos(truePose.z), Math.sin(truePose.z)).scaleInPlace(0.5 * robotLength))
 
         // Draw lasers
-        laser.draw(laserEnd, truePose.z)
+        laser.draw(DMatrix2(tail.x, tail.y), truePose.z)
 
         // Draw robot body
         applet.stroke(1)
-        applet.line(laserEnd.x.toFloat(), 0f, laserEnd.y.toFloat(), otherEnd.x.toFloat(), 0f, otherEnd.y.toFloat())
+        applet.line(tail.x.toFloat(), 0f, tail.y.toFloat(), head.x.toFloat(), 0f, head.y.toFloat())
     }
 
 }

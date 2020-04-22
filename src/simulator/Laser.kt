@@ -1,10 +1,13 @@
 package simulator
 
-import math.Vec2
+import extensions.plus
+import extensions.timesAssign
 import org.ejml.data.DMatrix2
 import processing.core.PApplet
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
+import kotlin.math.cos
+import kotlin.math.sin
 
 class Laser internal constructor(private val applet: PApplet) {
 
@@ -34,7 +37,7 @@ class Laser internal constructor(private val applet: PApplet) {
         }
     }
 
-    fun updateLaserScan(position: Vec2, orientation: Double, landmarks: List<Landmark>) {
+    fun updateLaserScan(position: DMatrix2, orientation: Double, landmarks: List<Landmark>) {
         val newMeasurements: MutableList<Double> = ArrayList(COUNT)
         for (i in 0 until COUNT) {
             newMeasurements.add(invalidMeasurementValue())
@@ -45,11 +48,11 @@ class Laser internal constructor(private val applet: PApplet) {
             val percentage = i / (COUNT - 1.0)
             val laserThErr = ThreadLocalRandom.current().nextDouble(-ANGLE_ERROR_LIMIT * ANGULAR_RESOLUTION, ANGLE_ERROR_LIMIT * ANGULAR_RESOLUTION)
             val theta = MIN_THETA + (MAX_THETA - MIN_THETA) * percentage + orientation + laserThErr
-            val v = Vec2.of(Math.cos(theta), Math.sin(theta))
+            val v = DMatrix2(cos(theta), sin(theta))
 
             // Check intersection for each line feature
             for (landmark in landmarks) {
-                val rayDistance = landmark.shortestRayDistanceFrom(DMatrix2(position.x, position.y), DMatrix2(v.x, v.y))
+                val rayDistance = landmark.shortestRayDistanceFrom(position, v)
                 if (rayDistance >= 0 && rayDistance < MAX_DISTANCE) {
                     newMeasurements[i] = Math.min(rayDistance, newMeasurements[i])
                 }
@@ -76,25 +79,24 @@ class Laser internal constructor(private val applet: PApplet) {
         return currentMeasurements
     }
 
-    fun draw(position: Vec2, orientation: Double) {
+    fun draw(position: DMatrix2, orientation: Double) {
         val distances = getMeasurements()
-        val lasers: MutableList<Vec2> = ArrayList(COUNT)
+        val lasers: MutableList<DMatrix2> = ArrayList(COUNT)
         for (i in distances.indices) {
             if (distances[i] == invalidMeasurementValue()) {
                 continue
             }
             val percentage = i / (COUNT - 1.0)
             val theta = MIN_THETA + (MAX_THETA - MIN_THETA) * percentage
-            val laserSprite = position.plus(
-                    Vec2.of(Math.cos(orientation + theta),
-                            Math.sin(orientation + theta))
-                            .scaleInPlace(distances[i])
-            )
-            lasers.add(laserSprite)
+            val laserBeam = DMatrix2(cos(orientation + theta),
+                    sin(orientation + theta))
+            laserBeam *= distances[i]
+            val laserEnd = position + laserBeam
+            lasers.add(laserEnd)
         }
         applet.stroke(1f, 0f, 0f)
         for (l in lasers) {
-            applet.line(position.x.toFloat(), 0f, position.y.toFloat(), l.x.toFloat(), 0f, l.y.toFloat())
+            applet.line(position.a1.toFloat(), 0f, position.a2.toFloat(), l.a1.toFloat(), 0f, l.a2.toFloat())
         }
     }
 
