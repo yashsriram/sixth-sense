@@ -5,12 +5,23 @@
     - [x] Test EJML and extensions
     - [x] Translate all src to Kotlin
     - [x] Remove Mat2 Vec2 Vec3
-    - [ ] Find command line compile and run commands
-- [ ] Reproduce HW2 EKF SLAM in java using processing.
-- [ ] How to build line features from point features? Maybe detect end points. Maybe use RANSAC for that?
-- [ ] How to navigate? RRT for some time. Start going to furthest node until a new obstacle is detected?
-- [ ] Dynamic human obstacles
+    - [x] Find command line compile and run commands
+- [x] Reproduce HW2 EKF SLAM in java using processing.
+- [ ] Map corner features from lines
+    - [ ] implement RANSAC from class
+    - [ ] The least squares line fitting
+    - [ ] Case based corner detection (using discontinuities, intersections etc...)
+- [ ] Estimate Sigma_N and Sigma_M from simulator
+    - [ ] Give a control for some time and not errors, fit a gaussian with that
+    - [ ] Sigma_M needs the RANSAC/LS/Corner detector
+- [ ] SLAM vs Planning
+    - [ ] Landmarks and obstacles are not the same
+    - [ ] Here corners are landmarks and stored as slam state
+    - [ ] Lines are obstacles, endpoints stored for only planning
+    - [ ] RRT for some time. Start going to furthest node until a new obstacle is detected?
+    - [ ] Planning not the top priority rn
 - [ ] Circular obstacles
+- [ ] Dynamic human obstacles
 
 # Efficiency
 - [ ] Use proper += -= implementations
