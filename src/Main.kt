@@ -70,6 +70,9 @@ class Main : PApplet() {
         if (keyCode == PConstants.RIGHT) {
             sim!!.applyControl(DMatrix2(0.0, 0.5))
         }
+        if (key == 'c') {
+            cam!!.controllable = !cam!!.controllable
+        }
     }
 }
 
