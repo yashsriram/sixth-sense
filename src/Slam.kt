@@ -295,6 +295,7 @@ class Slam : PApplet() {
     override fun draw() {
         /* ---- ---- ---- ---- Update ---- ---- ---- ---- */
         iter++
+        val lasers = mutableListOf<DMatrixRMaj>()
         // True Propagation without approximation (we'll assume w is not close to 0):
         val xTrueNew = DMatrixRMaj(truePath[truePath.size - 1])
         val n = DMatrix2(std_N * random.nextGaussian(), std_N * random.nextGaussian())
@@ -318,6 +319,7 @@ class Slam : PApplet() {
             for (lm in landmarks) {
                 val truePositionToLandmark = lm[0, 0, 2, 1] - xTrueNew[0, 0, 2, 1]
                 if (truePositionToLandmark.norm() < SENSOR_DISTANCE) {
+                    lasers.add(DMatrixRMaj(lm))
                     val theta = xTrueNew[2].toFloat()
                     val sinTheta = sin(theta).toDouble()
                     val cosTheta = cos(theta).toDouble()
@@ -365,6 +367,10 @@ class Slam : PApplet() {
         jointPoints(truePath)
         val trueState = truePath[truePath.size - 1]
         circle(trueState[0].toFloat(), trueState[1].toFloat(), 2 * SENSOR_DISTANCE)
+        // Draw the laser hits
+        for (laser in lasers) {
+            line(trueState[0].toFloat(), trueState[1].toFloat(), laser[0].toFloat(), laser[1].toFloat())
+        }
 
         // Draw the estimated trajectory
         stroke(0f, 0f, 1f)
