@@ -248,10 +248,11 @@ class Slam : PApplet() {
             val theta = 2 * PI * i / (ellipseResolution - 1)
 
             // Scale by major / minor axis, then rotate and offset
+            // 5.991 (=chi2inv(.95,2)) is the 95% confidence scaling bound for a 2D covariance ellipse
             val pointOnEllipse = DMatrixRMaj(
                     arrayOf(
-                            doubleArrayOf(2.0 * sqrt((5.991 * eigenValue1.real).toFloat()) * cos(theta)),
-                            doubleArrayOf(2.0 * sqrt((5.991 * eigenValue2.real).toFloat()) * sin(theta))
+                            doubleArrayOf((sqrt((5.991 * eigenValue1.real).toFloat()) * cos(theta)).toDouble()),
+                            doubleArrayOf((sqrt((5.991 * eigenValue2.real).toFloat()) * sin(theta)).toDouble())
                     )
             )
             ellipse.add(x_T + rot * pointOnEllipse)
