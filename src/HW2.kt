@@ -14,7 +14,7 @@ import kotlin.math.roundToLong
 
 data class Estimate(val mean: DMatrixRMaj, val covariance: DMatrixRMaj)
 
-class Slam : PApplet() {
+class HW2 : PApplet() {
     companion object {
         const val WIDTH = 1000
         const val HEIGHT = 1000
