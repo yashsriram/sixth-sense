@@ -152,7 +152,7 @@ class Slam : PApplet() {
 
             // For each landmark check the Mahalanobis distance
             val numLandmarks = (x_TPDT.numRows - 3) / 2
-            kotlin.io.println("${numLandmarks} landmarks")
+            kotlin.io.print("${numLandmarks} landmarks\r")
             for (j in 3 until x_TPDT.numRows step 2) {
                 val x_R_T = x_TPDT[0, 0]
                 val y_R_T = x_TPDT[1, 0]
@@ -240,7 +240,7 @@ class Slam : PApplet() {
 
                 // Expected value
                 // Copy previous state
-                val prevX = DMatrixRMaj(x_TPDT)
+                val prevX = x_TPDT
                 x_TPDT = DMatrixRMaj(x_TPDT.numRows + 2, 1)
                 for (t in 0 until prevX.numRows) {
                     x_TPDT[t, 0] = prevX[t, 0]
@@ -251,7 +251,7 @@ class Slam : PApplet() {
 
                 // Covariance
                 // Copy previous state
-                val prevSigma = DMatrixRMaj(sigma_TPDT)
+                val prevSigma = sigma_TPDT
                 sigma_TPDT = DMatrixRMaj(sigma_TPDT.numRows + 2, sigma_TPDT.numCols + 2)
                 for (t in 0 until prevSigma.numRows) {
                     for (s in 0 until prevSigma.numCols) {
@@ -296,7 +296,6 @@ class Slam : PApplet() {
     override fun draw() {
         /* ---- ---- ---- ---- Update ---- ---- ---- ---- */
         iter++
-//        if (iter < 1000) {
         // True Propagation without approximation (we'll assume w is not close to 0):
         val xTrueNew = DMatrixRMaj(truePath[truePath.size - 1])
         val n = DMatrix2(std_N * random.nextGaussian(), std_N * random.nextGaussian())
@@ -344,7 +343,6 @@ class Slam : PApplet() {
 
             // Run an EKFSLAMUpdate step
             if (noisyMeasurements.size > 0) {
-                kotlin.io.println("${noisyMeasurements.size}")
                 val estimatePlus = updateRelPosEKFSLAM(x_T, sigma_T, noisyMeasurements, noisyMeasurementSigmas)
                 x_T = estimatePlus.mean
                 sigma_T = estimatePlus.covariance
@@ -353,7 +351,6 @@ class Slam : PApplet() {
 
         truePath.add(xTrueNew)
         estimatedPath.add(x_T)
-//        }
 
         /* ---- ---- ---- ---- Draw ---- ---- ---- ---- */
         background(0)
