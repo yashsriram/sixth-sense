@@ -10,7 +10,7 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-class Laser internal constructor(private val applet: PApplet) {
+class LaserSensor internal constructor(private val applet: PApplet) {
 
     companion object {
         const val COUNT = 181

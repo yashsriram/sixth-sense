@@ -2,7 +2,7 @@ import camera.QueasyCam
 import org.ejml.data.DMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
-import simulator.Laser
+import simulator.LaserSensor
 import simulator.Robot
 import simulator.Simulator
 
@@ -38,9 +38,9 @@ class Main : PApplet() {
         Robot.LINEAR_VELOCITY_ERROR_LIMIT = 2.0
         Robot.MAX_ANGULAR_ACCELERATION = 0.5
         Robot.ANGULAR_VELOCITY_ERROR_LIMIT = 0.1
-        Laser.ANGLE_ERROR_LIMIT = 0.05
-        Laser.MAX_DISTANCE = 500.0
-        Laser.DISTANCE_ERROR_LIMIT = 5.0
+        LaserSensor.ANGLE_ERROR_LIMIT = 0.05
+        LaserSensor.MAX_DISTANCE = 500.0
+        LaserSensor.DISTANCE_ERROR_LIMIT = 5.0
         sim = Simulator(this, sceneName)
     }
 

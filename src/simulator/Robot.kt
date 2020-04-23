@@ -36,7 +36,7 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
     private val currentControl = DMatrix2()
 
     // Sensors
-    val laser: Laser = Laser(applet)
+    val laserSensor: LaserSensor = LaserSensor(applet)
 
     fun updatePose(dt: Double) {
         var noisyControl = DMatrix2()
@@ -85,7 +85,7 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
         val centerToHead = DMatrix2(cos(truePose.a3), sin(truePose.a3))
         centerToHead *= 0.5 * robotLength
         val laserCenter = truePosition - centerToHead
-        laser.updateLaserScan(laserCenter, truePose.a3, landmarks)
+        laserSensor.updateLaserScan(laserCenter, truePose.a3, landmarks)
     }
 
     fun isCrashing(landmark: Landmark): Boolean {
@@ -110,7 +110,7 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
         val tail = position - centerToHead
 
         // Draw lasers
-        laser.draw(tail, truePose.a3)
+        laserSensor.draw(tail, truePose.a3)
 
         // Draw robot body
         applet.stroke(1)

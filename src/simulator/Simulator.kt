@@ -52,7 +52,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
             p1 *= SCALE
             val p2 = DMatrix2(lineFeatureTokens[2].toDouble(), lineFeatureTokens[3].toDouble())
             p2 *= SCALE
-            lines.add(LineSegment(applet, p1, p2))
+            lines.add(LineSegmentLandmark(applet, p1, p2))
         }
 
         // Load robot pose
@@ -99,7 +99,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     }
 
     val laserScan: List<Double>
-        get() = robot.laser.getMeasurements()
+        get() = robot.laserSensor.getMeasurements()
 
     val currentControl: DMatrix2
         get() = robot.getCurrentControl()
