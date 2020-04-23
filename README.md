@@ -1,5 +1,5 @@
 # Sixth Sense
-- Code is written in Kotlin
+- Code is written in Kotlin, JRE 8 is the best as "processing" library recommends it
 - src/ contains all source code
 - jars/ contain all libraries bundled as jars
     - processing is used for rendering
