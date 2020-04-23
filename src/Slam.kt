@@ -19,6 +19,7 @@ class Slam : PApplet() {
         const val WIDTH = 1000
         const val HEIGHT = 1000
         const val NUM_LANDMARKS = 40
+        const val SENSOR_DISTANCE = 200f
     }
 
     private val landmarks = mutableListOf<DMatrixRMaj>()
@@ -55,7 +56,7 @@ class Slam : PApplet() {
     private val sigma_M = CommonOps_DDRM.identity(2) * (std_M * std_M)
 
     // Control
-    private val u = DMatrix2(30.0, 0.15)
+    private var u = DMatrix2(20.0, 0.15)
 
     // Time step
     private val dt = 0.05
@@ -151,8 +152,6 @@ class Slam : PApplet() {
             var best_S = DMatrixRMaj()
 
             // For each landmark check the Mahalanobis distance
-            val numLandmarks = (x_TPDT.numRows - 3) / 2
-            kotlin.io.print("${numLandmarks} landmarks\r")
             for (j in 3 until x_TPDT.numRows step 2) {
                 val x_R_T = x_TPDT[0, 0]
                 val y_R_T = x_TPDT[1, 0]
@@ -207,7 +206,7 @@ class Slam : PApplet() {
             }
 
             // If looks like a landmark then do a regular update
-            if (min_distance <= 14) {
+            if (min_distance <= 20) {
                 val K = sigma_TPDT * best_H.transpose() * best_S.inverse()
                 val I = CommonOps_DDRM.identity(x_TPDT.numRows)
 
@@ -219,7 +218,7 @@ class Slam : PApplet() {
             }
 
             // If looks like no landmark seen until now augment SLAM state with the landmark information
-            if (min_distance > 20) {
+            if (min_distance > 25) {
                 val x_R_T = x_TPDT[0, 0]
                 val y_R_T = x_TPDT[1, 0]
                 val theta_T = x_TPDT[2, 0]
@@ -318,7 +317,7 @@ class Slam : PApplet() {
             val noisyMeasurementSigmas = mutableListOf<DMatrixRMaj>()
             for (lm in landmarks) {
                 val truePositionToLandmark = lm[0, 0, 2, 1] - xTrueNew[0, 0, 2, 1]
-                if (truePositionToLandmark.norm() < 200.0) {
+                if (truePositionToLandmark.norm() < SENSOR_DISTANCE) {
                     val theta = xTrueNew[2].toFloat()
                     val sinTheta = sin(theta).toDouble()
                     val cosTheta = cos(theta).toDouble()
@@ -362,11 +361,14 @@ class Slam : PApplet() {
         }
 
         // Draw the true trajectory
-        jointPoints(truePath, 0f, 1f, 0f)
-        circle(truePath[truePath.size - 1][0].toFloat(), truePath[truePath.size - 1][1].toFloat(), 10f)
+        stroke(0f, 1f, 0f)
+        jointPoints(truePath)
+        val trueState = truePath[truePath.size - 1]
+        circle(trueState[0].toFloat(), trueState[1].toFloat(), 2 * SENSOR_DISTANCE)
 
         // Draw the estimated trajectory
-        jointPoints(estimatedPath, 0f, 0f, 1f)
+        stroke(0f, 0f, 1f)
+        jointPoints(estimatedPath)
         circle(estimatedPath[estimatedPath.size - 1][0].toFloat(), estimatedPath[estimatedPath.size - 1][1].toFloat(), 10f)
 
         // Draw the uncertainty of the robot
@@ -377,7 +379,12 @@ class Slam : PApplet() {
             visualizeCovariance(x_T[j, 0, 2, 1], sigma_T[j, j, 2, 2])
         }
 
-        surface.setTitle("Processing - FPS: " + frameRate.roundToLong())
+        // Draw the uncertainty of all the landmarks in the state
+        for (j in 3 until x_T.numRows step 2) {
+            visualizeCovariance(x_T[j, 0, 2, 1], sigma_T[j, j, 2, 2])
+        }
+
+        surface.setTitle("Processing - FPS: ${frameRate.roundToLong()} v : ${u.a1} w : ${u.a2} #landmarks : ${(x_T.numRows - 3) / 2}")
     }
 
     private fun visualizeCovariance(x_T: DMatrixRMaj, sigma_T: DMatrixRMaj) {
@@ -407,19 +414,20 @@ class Slam : PApplet() {
 
             // Scale by major / minor axis, then rotate and offset
             // 5.991 (=chi2inv(.95,2)) is the 95% confidence scaling bound for a 2D covariance ellipse
+            // 2.0 * gives 99% conficence interval
             val pointOnEllipse = DMatrixRMaj(
                     arrayOf(
-                            doubleArrayOf((sqrt((5.991 * eigenValue1.real).toFloat()) * cos(theta)).toDouble()),
-                            doubleArrayOf((sqrt((5.991 * eigenValue2.real).toFloat()) * sin(theta)).toDouble())
+                            doubleArrayOf(2.0 * sqrt((5.991 * eigenValue1.real).toFloat()) * cos(theta)),
+                            doubleArrayOf(2.0 * sqrt((5.991 * eigenValue2.real).toFloat()) * sin(theta))
                     )
             )
             ellipse.add(x_T + rot * pointOnEllipse)
         }
-        jointPoints(ellipse, 1f, 0f, 0f)
+        stroke(1f, 0f, 0f)
+        jointPoints(ellipse)
     }
 
-    private fun jointPoints(points: MutableList<DMatrixRMaj>, r: Float, g: Float, b: Float) {
-        stroke(r, g, b)
+    private fun jointPoints(points: MutableList<DMatrixRMaj>) {
         for (i in 1 until points.size) {
             val prevState = points[i - 1]
             val currState = points[i]
@@ -427,6 +435,28 @@ class Slam : PApplet() {
         }
     }
 
+    override fun keyPressed() {
+        when (keyCode) {
+            PConstants.UP -> {
+                u.a1 += 1.0
+                if (u.a1 > 20) {
+                    u.a1 = 20.0
+                }
+            }
+            PConstants.DOWN -> {
+                u.a1 -= 1.0
+                if (u.a1 < -20) {
+                    u.a1 = -20.0
+                }
+            }
+            PConstants.LEFT -> {
+                u.a2 = -0.15
+            }
+            PConstants.RIGHT -> {
+                u.a2 = 0.15
+            }
+        }
+    }
 }
 
 fun main(passedArgs: Array<String>) {
