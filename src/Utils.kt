@@ -8,8 +8,10 @@ data class ObservedLineSegment(val point1: DMatrix2, val point2: DMatrix2)
 fun getInferredLines(points: List<DMatrix2>): MutableList<ObservedLineSegment> {
     val inferredLines = mutableListOf<ObservedLineSegment>()
     /* TODO fill "inferredLines" with endpoints detected after RANSAC + Least Squares, sample usage provided */
-    val x0 = points[0].a1
-    val y0 = points[0].a2
+    if (points.size > 0) {
+        val x0 = points[0].a1
+        val y0 = points[0].a2
+    }
     val point1 = DMatrix2(1.0, 0.0)
     val point2 = DMatrix2(0.0, 1.0)
     inferredLines.add(ObservedLineSegment(point1, point2))
