@@ -14,8 +14,8 @@
 - [ ] Estimate Sigma_N and Sigma_M from simulator
     - [ ] Give a control for some time and not errors, fit a gaussian with that
     - [ ] Sigma_M needs the RANSAC/LS/Corner detector
+- [ ] Landmarks and obstacles are not the same
 - [ ] SLAM vs Planning
-    - [ ] Landmarks and obstacles are not the same
     - [ ] Here corners are landmarks and stored as slam state
     - [ ] Lines are obstacles, endpoints stored for only planning
     - [ ] RRT for some time. Start going to furthest node until a new obstacle is detected?
