@@ -11,8 +11,6 @@ import simulator.Simulator
 import java.util.ArrayList
 import kotlin.math.roundToInt
 
-data class TwoPoints(val point1: DMatrix2, val point2: DMatrix2)
-
 class Main : PApplet() {
     companion object {
         const val WIDTH = 800
