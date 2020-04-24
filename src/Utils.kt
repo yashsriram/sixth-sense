@@ -19,12 +19,12 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
         val x0 = points[0].a1
         val y0 = points[0].a2
     }
-    val point1 = DMatrix2(1.0, 0.0)
-    val point2 = DMatrix2(0.0, 1.0)
+    val point1 = DMatrix2(10.0, 0.0)
+    val point2 = DMatrix2(0.0, 0.0)
     observedLineSegmentObstacles.add(ObservedLineSegmentObstacle(point1, point2))
 
     /* TODO fill "observedLandmarks" with landmarks such as intersections of line or loose ends of lines */
-    val corner = DMatrix2(0.0, 0.0)
+    val corner = DMatrix2(10.0, 0.0)
     observedLandmarks.add(corner)
 
     /* -- */

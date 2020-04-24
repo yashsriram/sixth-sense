@@ -74,13 +74,23 @@ class Main : PApplet() {
             val laserEnd = tail + laserBeam
             laserEnds.add(laserEnd)
         }
-        /* Visualization code - can be removed */
+
         stroke(1f, 1f, 0f)
         noFill()
         for (point in laserEnds) {
-            circle3D(point.a1, point.a2, 1.0)
+            circleXZ(point.a1, point.a2, 1.0)
         }
         val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
+        stroke(0f, 1f, 1f)
+        val obstacles = observed.first
+        for (segment in obstacles) {
+            line(segment.point1.a1.toFloat(), 0f, segment.point1.a2.toFloat(),
+                    segment.point2.a1.toFloat(), 0f, segment.point2.a2.toFloat())
+        }
+        val landmarks = observed.second
+        for (landmark in landmarks) {
+            circleXZ(landmark.a1, landmark.a2, 1.0)
+        }
 
         /* Draw */
         stroke(1)
@@ -88,7 +98,7 @@ class Main : PApplet() {
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}")
     }
 
-    private fun circle3D(x: Double, z: Double, radius: Double) {
+    private fun circleXZ(x: Double, z: Double, radius: Double) {
         beginShape()
         val resolution = 20
         for (i in 1..resolution) {
