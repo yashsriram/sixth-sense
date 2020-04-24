@@ -80,7 +80,7 @@ class Main : PApplet() {
         for (point in laserEnds) {
             circle3D(point.a1, point.a2, 1.0)
         }
-        val inferedLines = getInferredLines(laserEnds)
+        val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
 
         /* Draw */
         stroke(1)
