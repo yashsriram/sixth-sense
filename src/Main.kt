@@ -1,10 +1,16 @@
 import camera.QueasyCam
+import extensions.plus
+import extensions.timesAssign
 import org.ejml.data.DMatrix2
+import org.ejml.data.DMatrixRMaj
 import processing.core.PApplet
 import processing.core.PConstants
 import simulator.LaserSensor
 import simulator.Robot
 import simulator.Simulator
+import java.awt.Point
+
+data class TwoPoints(val point1: DMatrix2, val point2: DMatrix2)
 
 class Main : PApplet() {
     companion object {
@@ -39,12 +45,27 @@ class Main : PApplet() {
         Robot.MAX_ANGULAR_ACCELERATION = 0.5
         Robot.ANGULAR_VELOCITY_ERROR_LIMIT = 0.1
         LaserSensor.ANGLE_ERROR_LIMIT = 0.05
-        LaserSensor.MAX_DISTANCE = 500.0
         LaserSensor.DISTANCE_ERROR_LIMIT = 5.0
         sim = Simulator(this, sceneName)
     }
 
+    private fun getInferredLines() : MutableList<TwoPoints> {
+        val inferredLines = mutableListOf<TwoPoints>()
+
+        /* TODO fill the inferredLines with endpoints detected after RANSAC + Least Sqaures */
+        val point1 = DMatrix2(1.0, 0.0)
+        val point2 = DMatrix2(0.0, 1.0)
+        inferredLines.add(TwoPoints(point1, point2))
+
+
+        return inferredLines
+    }
+
     override fun draw() {
+        /* Update */
+        val inferedLines = mutableListOf<TwoPoints>()
+
+        /* Draw */
         background(0)
         stroke(1)
         sim!!.draw()

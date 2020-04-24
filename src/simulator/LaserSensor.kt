@@ -22,11 +22,9 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         var ANGLE_ERROR_LIMIT = 0.05
 
         // Distance
-        var MAX_DISTANCE = 500.0
+        const val MAX_DISTANCE = 500.0
         var DISTANCE_ERROR_LIMIT = 0.05
-        private fun invalidMeasurementValue(): Double {
-            return MAX_DISTANCE + 1
-        }
+        const val INVALID_MEASUREMENT = MAX_DISTANCE + 1
     }
 
     // Multi-thread access
@@ -34,14 +32,14 @@ class LaserSensor internal constructor(private val applet: PApplet) {
 
     init {
         for (i in 0 until COUNT) {
-            measurements.add(invalidMeasurementValue())
+            measurements.add(INVALID_MEASUREMENT)
         }
     }
 
     fun updateLaserScan(position: DMatrix2, orientation: Double, landmarks: List<Landmark>) {
         val newMeasurements: MutableList<Double> = ArrayList(COUNT)
         for (i in 0 until COUNT) {
-            newMeasurements.add(invalidMeasurementValue())
+            newMeasurements.add(INVALID_MEASUREMENT)
         }
 
         // For each laser beam
@@ -60,7 +58,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
             }
 
             // Add some noise to new measurements
-            if (newMeasurements[i] < invalidMeasurementValue()) {
+            if (newMeasurements[i] < INVALID_MEASUREMENT) {
                 val laserMeasurementError = ThreadLocalRandom.current().nextDouble(-DISTANCE_ERROR_LIMIT, DISTANCE_ERROR_LIMIT)
                 newMeasurements[i] += laserMeasurementError
             }
@@ -84,7 +82,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         val distances = getMeasurements()
         val lasers: MutableList<DMatrix2> = ArrayList(COUNT)
         for (i in distances.indices) {
-            if (distances[i] == invalidMeasurementValue()) {
+            if (distances[i] == INVALID_MEASUREMENT) {
                 continue
             }
             val percentage = i / (COUNT - 1.0)

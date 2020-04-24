@@ -1,5 +1,5 @@
 # Plan
-- [ ] Smooth the workflow
+- [x] Smooth the workflow
     - [x] Find a good linear algebra library
     - [x] Write operator overloads, extensions
     - [x] Test EJML and extensions
