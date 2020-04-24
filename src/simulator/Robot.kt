@@ -10,7 +10,7 @@ import kotlin.math.cos
 import kotlin.math.sign
 import kotlin.math.sin
 
-class Robot internal constructor(private val applet: PApplet, private val robotLength: Double, truePose: DMatrix3, var isRunning: Boolean) {
+class Robot internal constructor(private val applet: PApplet, val length: Double, truePose: DMatrix3, var isRunning: Boolean) {
     companion object {
         var MAX_LINEAR_ACCELERATION = 20.0
         var MAX_ANGULAR_ACCELERATION = 0.5
@@ -62,35 +62,45 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
         }
 
         // Run the dynamics via RK4
-        val k1 = getChangeInPose(truePose, noisyControl)
-        val x2 = truePose + k1 * (0.5f * dt)
-        val k2 = getChangeInPose(x2, noisyControl)
-        val x3 = truePose + k2 * (0.5f * dt)
-        val k3 = getChangeInPose(x3, noisyControl)
-        val x4 = truePose + k3 * dt
-        val k4 = getChangeInPose(x4, noisyControl)
-        val avgChangeInPose = DMatrix3()
-        avgChangeInPose += k1
-        avgChangeInPose += k2 * 2.0
-        avgChangeInPose += k3 * 2.0
-        avgChangeInPose += k4
-        avgChangeInPose *= dt / 6.0
-        truePose += avgChangeInPose
+        synchronized(truePose) {
+            val k1 = getChangeInPose(truePose, noisyControl)
+            val x2 = truePose + k1 * (0.5f * dt)
+            val k2 = getChangeInPose(x2, noisyControl)
+            val x3 = truePose + k2 * (0.5f * dt)
+            val k3 = getChangeInPose(x3, noisyControl)
+            val x4 = truePose + k3 * dt
+            val k4 = getChangeInPose(x4, noisyControl)
+            val avgChangeInPose = DMatrix3()
+            avgChangeInPose += k1
+            avgChangeInPose += k2 * 2.0
+            avgChangeInPose += k3 * 2.0
+            avgChangeInPose += k4
+            avgChangeInPose *= dt / 6.0
+            truePose += avgChangeInPose
+        }
     }
 
     fun updateSense(landmarks: List<Landmark>) {
         // Move the center of the scanner back from the center of the robot
-        val truePosition = getPositionFromPose(truePose)
-        val centerToHead = DMatrix2(cos(truePose.a3), sin(truePose.a3))
-        centerToHead *= 0.5 * robotLength
+        val truePosition : DMatrix2
+        val orientation : Double
+        synchronized(truePose) {
+            truePosition = getPositionFromPose(truePose)
+            orientation = truePose.a3
+        }
+        val centerToHead = DMatrix2(cos(orientation), sin(orientation))
+        centerToHead *= 0.5 * length
         val laserCenter = truePosition - centerToHead
-        laserSensor.updateLaserScan(laserCenter, truePose.a3, landmarks)
+        laserSensor.updateLaserScan(laserCenter, orientation, landmarks)
     }
 
     fun isCrashing(landmark: Landmark): Boolean {
-        return landmark.shortestDistanceFrom(getPositionFromPose(truePose)) < robotLength
+        synchronized(truePose) {
+            return landmark.shortestDistanceFrom(getPositionFromPose(truePose)) < length
+        }
     }
 
+    /* User callable */
     fun getTruePose(): DMatrix3 {
         val answer = DMatrix3()
         synchronized(truePose) { answer.set(truePose) }
@@ -111,7 +121,7 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
         val truePoseCopy = getTruePose()
         val position = getPositionFromPose(truePoseCopy)
         val centerToHead = DMatrix2(cos(truePoseCopy.a3), sin(truePoseCopy.a3))
-        centerToHead *= 0.5 * robotLength
+        centerToHead *= 0.5 * length
         val head = position + centerToHead
         val tail = position - centerToHead
 

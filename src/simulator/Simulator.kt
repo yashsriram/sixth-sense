@@ -24,6 +24,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
 
     // Robot
     private val robot: Robot
+    val initialPose: DMatrix3
 
     init {
         // Read scene
@@ -59,13 +60,14 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         val poseTokens = fileContents[0]
         assert(poseTokens.size == 4)
         // Fork off the main simulation loop
+        initialPose = DMatrix3(
+                poseTokens[0].toDouble() * SCALE,
+                poseTokens[1].toDouble() * SCALE,
+                poseTokens[2].toDouble())
         robot = Robot(
                 applet,
                 poseTokens[3].toDouble() * SCALE,
-                DMatrix3(
-                        poseTokens[0].toDouble() * SCALE,
-                        poseTokens[1].toDouble() * SCALE,
-                        poseTokens[2].toDouble()),
+                initialPose,
                 true
         )
         val robotLoop = Thread(Runnable { robotLoop() })
@@ -97,6 +99,13 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
             }
         }
     }
+
+    /* User callable */
+    val truePose: DMatrix3
+        get() = robot.getTruePose()
+
+    val robotLength: Double
+        get() = robot.length
 
     val laserScan: List<Double>
         get() = robot.laserSensor.getMeasurements()

@@ -72,6 +72,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         }
     }
 
+    /* User callable */
     fun getMeasurements(): List<Double> {
         var currentMeasurements: List<Double>
         synchronized(measurements) { currentMeasurements = ArrayList(measurements) }

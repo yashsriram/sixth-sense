@@ -1,14 +1,15 @@
 import camera.QueasyCam
+import extensions.minus
 import extensions.plus
 import extensions.timesAssign
 import org.ejml.data.DMatrix2
-import org.ejml.data.DMatrixRMaj
 import processing.core.PApplet
 import processing.core.PConstants
 import simulator.LaserSensor
 import simulator.Robot
 import simulator.Simulator
-import java.awt.Point
+import java.util.ArrayList
+import kotlin.math.roundToInt
 
 data class TwoPoints(val point1: DMatrix2, val point2: DMatrix2)
 
@@ -49,27 +50,64 @@ class Main : PApplet() {
         sim = Simulator(this, sceneName)
     }
 
-    private fun getInferredLines() : MutableList<TwoPoints> {
+    private fun getInferredLines(points: List<DMatrix2>): MutableList<TwoPoints> {
         val inferredLines = mutableListOf<TwoPoints>()
-
-        /* TODO fill the inferredLines with endpoints detected after RANSAC + Least Sqaures */
+        /* Visualization code - can be removed */
+        stroke(1f, 1f, 0f)
+        noFill()
+        for (point in points) {
+            circle3D(point.a1, point.a2, 5.0)
+        }
+        /* TODO fill "inferredLines" with endpoints detected after RANSAC + Least Squares */
         val point1 = DMatrix2(1.0, 0.0)
         val point2 = DMatrix2(0.0, 1.0)
         inferredLines.add(TwoPoints(point1, point2))
-
 
         return inferredLines
     }
 
     override fun draw() {
+        /* Clear screen */
+        background(0)
+
         /* Update */
-        val inferedLines = mutableListOf<TwoPoints>()
+        val poseCopy = sim!!.truePose // FIXME: should use estimated pose here later
+        val position = DMatrix2(poseCopy.a1, poseCopy.a2)
+        val orientation = poseCopy.a3
+        val centerToHead = DMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
+        centerToHead *= 0.5 * sim!!.robotLength
+        val tail = position - centerToHead
+
+        val distances = sim!!.laserScan
+        val laserEnds: MutableList<DMatrix2> = ArrayList(LaserSensor.COUNT)
+        for (i in distances.indices) {
+            if (distances[i] == LaserSensor.INVALID_MEASUREMENT) {
+                continue
+            }
+            val percentage = i / (LaserSensor.COUNT - 1.0)
+            val theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage
+            val laserBeam = DMatrix2(kotlin.math.cos(orientation + theta),
+                    kotlin.math.sin(orientation + theta))
+            laserBeam *= distances[i]
+            val laserEnd = tail + laserBeam
+            laserEnds.add(laserEnd)
+        }
+        val inferedLines = getInferredLines(laserEnds)
 
         /* Draw */
-        background(0)
         stroke(1)
         sim!!.draw()
-        surface.setTitle("Processing - FPS: " + Math.round(frameRate))
+        surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}")
+    }
+
+    private fun circle3D(x: Double, z: Double, radius: Double) {
+        beginShape()
+        val resolution = 20
+        for (i in 1..resolution) {
+            val theta = 2 * PI / (resolution - 1) * i
+            vertex((x + radius * cos(theta)).toFloat(), 0f, (z + radius * sin(theta)).toFloat())
+        }
+        endShape(CLOSE)
     }
 
     override fun keyPressed() {
