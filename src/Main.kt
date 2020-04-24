@@ -50,22 +50,6 @@ class Main : PApplet() {
         sim = Simulator(this, sceneName)
     }
 
-    private fun getInferredLines(points: List<DMatrix2>): MutableList<TwoPoints> {
-        val inferredLines = mutableListOf<TwoPoints>()
-        /* Visualization code - can be removed */
-        stroke(1f, 1f, 0f)
-        noFill()
-        for (point in points) {
-            circle3D(point.a1, point.a2, 5.0)
-        }
-        /* TODO fill "inferredLines" with endpoints detected after RANSAC + Least Squares */
-        val point1 = DMatrix2(1.0, 0.0)
-        val point2 = DMatrix2(0.0, 1.0)
-        inferredLines.add(TwoPoints(point1, point2))
-
-        return inferredLines
-    }
-
     override fun draw() {
         /* Clear screen */
         background(0)
@@ -91,6 +75,12 @@ class Main : PApplet() {
             laserBeam *= distances[i]
             val laserEnd = tail + laserBeam
             laserEnds.add(laserEnd)
+        }
+        /* Visualization code - can be removed */
+        stroke(1f, 1f, 0f)
+        noFill()
+        for (point in laserEnds) {
+            circle3D(point.a1, point.a2, 1.0)
         }
         val inferedLines = getInferredLines(laserEnds)
 
