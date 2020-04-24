@@ -466,7 +466,7 @@ class HW2 : PApplet() {
 }
 
 fun main(passedArgs: Array<String>) {
-    val appletArgs = arrayOf("Slam")
+    val appletArgs = arrayOf("HW2")
     if (passedArgs != null) {
         PApplet.main(PApplet.concat(appletArgs, passedArgs))
     } else {
