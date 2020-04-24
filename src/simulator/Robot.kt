@@ -29,9 +29,8 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
         }
     }
 
-    private val truePose = DMatrix3(truePose)
-
     // Multi-thread access
+    private val truePose = DMatrix3(truePose)
     private val goalControl = DMatrix2()
     private val currentControl = DMatrix2()
 
@@ -92,6 +91,12 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
         return landmark.shortestDistanceFrom(getPositionFromPose(truePose)) < robotLength
     }
 
+    fun getTruePose(): DMatrix3 {
+        val answer = DMatrix3()
+        synchronized(truePose) { answer.set(truePose) }
+        return answer
+    }
+
     fun getCurrentControl(): DMatrix2 {
         val answer = DMatrix2()
         synchronized(currentControl) { answer.set(currentControl) }
@@ -103,14 +108,15 @@ class Robot internal constructor(private val applet: PApplet, private val robotL
     }
 
     fun draw() {
-        val position = getPositionFromPose(truePose)
-        val centerToHead = DMatrix2(cos(truePose.a3), sin(truePose.a3))
+        val truePoseCopy = getTruePose()
+        val position = getPositionFromPose(truePoseCopy)
+        val centerToHead = DMatrix2(cos(truePoseCopy.a3), sin(truePoseCopy.a3))
         centerToHead *= 0.5 * robotLength
         val head = position + centerToHead
         val tail = position - centerToHead
 
         // Draw lasers
-        laserSensor.draw(tail, truePose.a3)
+        laserSensor.draw(tail, truePoseCopy.a3)
 
         // Draw robot body
         applet.stroke(1)
