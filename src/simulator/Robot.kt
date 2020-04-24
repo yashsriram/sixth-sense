@@ -82,8 +82,8 @@ class Robot internal constructor(private val applet: PApplet, val length: Double
 
     fun updateSense(obstacles: List<Obstacle>) {
         // Move the center of the scanner back from the center of the robot
-        val truePosition : DMatrix2
-        val orientation : Double
+        val truePosition: DMatrix2
+        val orientation: Double
         synchronized(truePose) {
             truePosition = getPositionFromPose(truePose)
             orientation = truePose.a3
@@ -96,7 +96,7 @@ class Robot internal constructor(private val applet: PApplet, val length: Double
 
     fun isCrashing(obstacle: Obstacle): Boolean {
         synchronized(truePose) {
-            return obstacle.shortestDistanceFrom(getPositionFromPose(truePose)) < length
+            return obstacle.shortestDistanceFrom(getPositionFromPose(truePose)) < length / 2
         }
     }
 
@@ -119,18 +119,25 @@ class Robot internal constructor(private val applet: PApplet, val length: Double
 
     fun draw() {
         val truePoseCopy = getTruePose()
-        val position = getPositionFromPose(truePoseCopy)
-        val centerToHead = DMatrix2(cos(truePoseCopy.a3), sin(truePoseCopy.a3))
-        centerToHead *= 0.5 * length
-        val head = position + centerToHead
-        val tail = position - centerToHead
+        val center = getPositionFromPose(truePoseCopy)
+        val centerToHeadUnit = DMatrix2(cos(truePoseCopy.a3), sin(truePoseCopy.a3))
+        centerToHeadUnit *= 0.5 * length
+        val head = center + centerToHeadUnit
+        val tail = center - centerToHeadUnit
 
         // Draw lasers
         laserSensor.draw(tail, truePoseCopy.a3)
 
         // Draw robot body
         applet.stroke(1)
-        applet.line(tail.a1.toFloat(), 0f, tail.a2.toFloat(), head.a1.toFloat(), 0f, head.a2.toFloat())
+        applet.line(center.a1.toFloat(), 0f, center.a2.toFloat(), head.a1.toFloat(), 0f, head.a2.toFloat())
+        applet.beginShape()
+        val resolution = 20
+        for (i in 1..resolution) {
+            val theta = 2 * PApplet.PI / (resolution - 1) * i
+            applet.vertex((center.a1 + (length * 0.5) * PApplet.cos(theta)).toFloat(), 0f, (center.a2 + (length * 0.5) * PApplet.sin(theta)).toFloat())
+        }
+        applet.endShape(PApplet.CLOSE)
     }
 
 }
