@@ -36,7 +36,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         }
     }
 
-    fun updateLaserScan(position: DMatrix2, orientation: Double, landmarks: List<Landmark>) {
+    fun updateLaserScan(position: DMatrix2, orientation: Double, obstacles: List<Obstacle>) {
         val newMeasurements: MutableList<Double> = ArrayList(COUNT)
         for (i in 0 until COUNT) {
             newMeasurements.add(INVALID_MEASUREMENT)
@@ -50,7 +50,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
             val v = DMatrix2(cos(theta), sin(theta))
 
             // Check intersection for each line feature
-            for (landmark in landmarks) {
+            for (landmark in obstacles) {
                 val rayDistance = landmark.shortestRayDistanceFrom(position, v)
                 if (rayDistance >= 0 && rayDistance < MAX_DISTANCE) {
                     newMeasurements[i] = min(rayDistance, newMeasurements[i])

@@ -80,7 +80,7 @@ class Robot internal constructor(private val applet: PApplet, val length: Double
         }
     }
 
-    fun updateSense(landmarks: List<Landmark>) {
+    fun updateSense(obstacles: List<Obstacle>) {
         // Move the center of the scanner back from the center of the robot
         val truePosition : DMatrix2
         val orientation : Double
@@ -90,13 +90,13 @@ class Robot internal constructor(private val applet: PApplet, val length: Double
         }
         val centerToHead = DMatrix2(cos(orientation), sin(orientation))
         centerToHead *= 0.5 * length
-        val laserCenter = truePosition - centerToHead
-        laserSensor.updateLaserScan(laserCenter, orientation, landmarks)
+        val laserSource = truePosition - centerToHead
+        laserSensor.updateLaserScan(laserSource, orientation, obstacles)
     }
 
-    fun isCrashing(landmark: Landmark): Boolean {
+    fun isCrashing(obstacle: Obstacle): Boolean {
         synchronized(truePose) {
-            return landmark.shortestDistanceFrom(getPositionFromPose(truePose)) < length
+            return obstacle.shortestDistanceFrom(getPositionFromPose(truePose)) < length
         }
     }
 

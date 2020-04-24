@@ -20,7 +20,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     }
 
     // Environment
-    private val lines: MutableList<Landmark> = ArrayList()
+    private val lines: MutableList<Obstacle> = ArrayList()
 
     // Robot
     private val robot: Robot
@@ -53,7 +53,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
             p1 *= SCALE
             val p2 = DMatrix2(lineFeatureTokens[2].toDouble(), lineFeatureTokens[3].toDouble())
             p2 *= SCALE
-            lines.add(LineSegmentLandmark(applet, p1, p2))
+            lines.add(LineSegmentObstacle(applet, p1, p2))
         }
 
         // Load robot pose

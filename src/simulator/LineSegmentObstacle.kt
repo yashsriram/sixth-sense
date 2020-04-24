@@ -6,7 +6,7 @@ import org.ejml.data.DMatrix2x2
 import processing.core.PApplet
 import kotlin.math.abs
 
-class LineSegmentLandmark internal constructor(private val applet: PApplet, p1: DMatrix2, p2: DMatrix2) : Landmark() {
+class LineSegmentObstacle internal constructor(private val applet: PApplet, p1: DMatrix2, p2: DMatrix2) : Obstacle() {
     companion object {
         private const val SINGULAR_LIMIT = 1e-6
     }
