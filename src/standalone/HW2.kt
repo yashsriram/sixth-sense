@@ -1,3 +1,5 @@
+package standalone
+
 import extensions.*
 import org.ejml.data.DMatrix2
 import org.ejml.data.DMatrixRMaj
@@ -466,7 +468,7 @@ class HW2 : PApplet() {
 }
 
 fun main(passedArgs: Array<String>) {
-    val appletArgs = arrayOf("HW2")
+    val appletArgs = arrayOf("standalone.HW2")
     if (passedArgs != null) {
         PApplet.main(PApplet.concat(appletArgs, passedArgs))
     } else {
