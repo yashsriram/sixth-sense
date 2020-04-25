@@ -130,6 +130,12 @@ class Main : PApplet() {
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable
         }
+        if (key == 'x') {
+            LaserSensor.DRAW_LASERS = !LaserSensor.DRAW_LASERS
+        }
+        if (key == 'l') {
+            Simulator.DRAW_OBSTACLES = !Simulator.DRAW_OBSTACLES
+        }
     }
 }
 

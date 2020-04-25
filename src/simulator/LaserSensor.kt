@@ -13,6 +13,7 @@ import kotlin.math.sin
 class LaserSensor internal constructor(private val applet: PApplet) {
 
     companion object {
+        var DRAW_LASERS = true
         const val COUNT = 181
 
         // Angle
@@ -80,6 +81,9 @@ class LaserSensor internal constructor(private val applet: PApplet) {
     }
 
     fun draw(position: DMatrix2, orientation: Double) {
+        if (!DRAW_LASERS) {
+            return
+        }
         val distances = getMeasurements()
         val lasers: MutableList<DMatrix2> = ArrayList(COUNT)
         for (i in distances.indices) {

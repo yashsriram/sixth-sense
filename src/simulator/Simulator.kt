@@ -19,6 +19,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
 
         // Graphics
         var SCALE = 100.0
+        var DRAW_OBSTACLES = true
     }
 
     // Environment
@@ -138,9 +139,11 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     }
 
     fun draw() {
-        // Draw landmarks
-        for (l in lines) {
-            l.draw()
+        if (DRAW_OBSTACLES) {
+            // Draw obstacles
+            for (l in lines) {
+                l.draw()
+            }
         }
         // Draw robot
         robot.draw()
