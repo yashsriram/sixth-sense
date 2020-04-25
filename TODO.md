@@ -8,9 +8,15 @@
     - [x] Find command line compile and run commands
 - [x] Reproduce HW2 EKF SLAM in java using processing.
 - [ ] Map corner features from lines
-    - [x] implement RANSAC from class
+    - [ ] implement RANSAC from class
+        - [ ] Change do-while to while
     - [ ] The least squares line fitting
-    - [x] Case based corner detection (using discontinuities, intersections etc...)
+    - [ ] Case based corner detection (using discontinuities, intersections etc...)
+        - [ ] Break obstacles using discontinuties
+        - [ ] Cull ghost intersection landmarks
+        - [ ] What is 501?
+        - [ ] for (i in 0 until lineSegments.size) {?
+        - [ ] breaking cases
     - [ ] Optimize this step
 - [ ] Estimate Sigma_N and Sigma_M from simulator
     - [ ] Give a control for some time and not errors, fit a gaussian with that
