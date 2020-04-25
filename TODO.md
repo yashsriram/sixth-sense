@@ -26,7 +26,7 @@
 # Efficiency
 - [ ] Use proper += -= implementations
 - [ ] Merge A * B^T operation as one
-- [ ] Don't create new memory for get block??
+- [ ] Don't create new memory for get block??~~~~
 
 # Simulator
 - [ ] significance of time in odometry and laser scan struct
