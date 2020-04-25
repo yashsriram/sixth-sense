@@ -35,16 +35,6 @@ class Main : PApplet() {
 
     private fun reset() {
         val sceneName = "data/apartment.scn"
-        // Play with these
-        Simulator.SCALE = 100.0
-        Simulator.CONTROL_FREQ = 1
-        Simulator.LASER_SCAN_FREQUENCY = 10
-        Robot.MAX_LINEAR_ACCELERATION = 20.0
-        Robot.LINEAR_VELOCITY_ERROR_LIMIT = 2.0
-        Robot.MAX_ANGULAR_ACCELERATION = 0.5
-        Robot.ANGULAR_VELOCITY_ERROR_LIMIT = 0.1
-        LaserSensor.ANGLE_ERROR_LIMIT = 0.05
-        LaserSensor.DISTANCE_ERROR_LIMIT = 5.0
         sim = Simulator(this, sceneName)
     }
 
@@ -129,6 +119,12 @@ class Main : PApplet() {
         }
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable
+        }
+        if (key == 'x') {
+            LaserSensor.DRAW_LASERS = !LaserSensor.DRAW_LASERS
+        }
+        if (key == 'l') {
+            Simulator.DRAW_OBSTACLES = !Simulator.DRAW_OBSTACLES
         }
     }
 }
