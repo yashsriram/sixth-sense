@@ -13,8 +13,8 @@ import kotlin.math.roundToInt
 
 class Main : PApplet() {
     companion object {
-        const val WIDTH = 800
-        const val HEIGHT = 800
+        const val WIDTH = 1000
+        const val HEIGHT = 1000
     }
 
     private var sim: Simulator? = null
