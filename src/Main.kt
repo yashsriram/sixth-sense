@@ -28,7 +28,6 @@ class Main : PApplet() {
         surface.setTitle("Processing")
         colorMode(PConstants.RGB, 1.0f)
         rectMode(PConstants.CENTER)
-        noStroke()
         cam = QueasyCam(this)
         reset()
     }
@@ -86,6 +85,9 @@ class Main : PApplet() {
     override fun keyPressed() {
         if (key == 'r') {
             reset()
+        }
+        if (key == 'p') {
+            sim!!.togglePaused()
         }
         if (key == 'z') {
             sim!!.applyControl(DMatrix2())

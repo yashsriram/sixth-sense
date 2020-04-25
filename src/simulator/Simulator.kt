@@ -19,12 +19,15 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         var DRAW_OBSTACLES = true
     }
 
+    // Simulation
+    private var isPaused = false
+
     // Environment
     private val lines: MutableList<Obstacle> = ArrayList()
 
     // Robot
     private val robot: Robot
-    val initialPose: DMatrix3
+    private val initialPose: DMatrix3
 
     init {
         // Read scene
@@ -97,6 +100,13 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         val loopDt = 1e-3 * loopDuration
         var iteration = 0
         while (robot.isRunning) {
+            val isPausedLocal: Boolean
+            synchronized(isPaused) {
+                isPausedLocal = isPaused
+            }
+            if (isPausedLocal) {
+                continue
+            }
             if (iteration % CONTROL_FREQ == 0) {
                 robot.updatePose(loopDt)
                 for (line in lines) {
@@ -133,6 +143,12 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
 
     fun applyControl(control: DMatrix2) {
         robot.applyControl(control)
+    }
+
+    fun togglePaused() {
+        synchronized(isPaused) {
+            isPaused = !isPaused
+        }
     }
 
     fun draw() {
