@@ -11,6 +11,7 @@
     - [x] implement RANSAC from class
     - [ ] The least squares line fitting
     - [ ] Case based corner detection (using discontinuities, intersections etc...)
+    - [ ] Optimize this step
 - [ ] Estimate Sigma_N and Sigma_M from simulator
     - [ ] Give a control for some time and not errors, fit a gaussian with that
     - [ ] Sigma_M needs the RANSAC/LS/Corner detector
