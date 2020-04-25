@@ -1,5 +1,6 @@
 package simulator
 
+import extensions.circleXZ
 import extensions.plus
 import extensions.timesAssign
 import org.ejml.data.DMatrix2
@@ -81,7 +82,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
             return
         }
         val distances = getMeasurements()
-        val lasers: MutableList<DMatrix2> = ArrayList(COUNT)
+        val lasersEnds: MutableList<DMatrix2> = ArrayList(COUNT)
         for (i in distances.indices) {
             if (distances[i] == INVALID_MEASUREMENT) {
                 continue
@@ -92,11 +93,14 @@ class LaserSensor internal constructor(private val applet: PApplet) {
                     sin(orientation + theta))
             laserBeam *= distances[i]
             val laserEnd = position + laserBeam
-            lasers.add(laserEnd)
+            lasersEnds.add(laserEnd)
         }
-        applet.stroke(1f, 0f, 0f)
-        for (l in lasers) {
-            applet.line(position.a1.toFloat(), 0f, position.a2.toFloat(), l.a1.toFloat(), 0f, l.a2.toFloat())
+        applet.noFill()
+        for (laserEnd in lasersEnds) {
+            applet.stroke(1f, 0f, 0f)
+            applet.line(position.a1.toFloat(), 0f, position.a2.toFloat(), laserEnd.a1.toFloat(), 0f, laserEnd.a2.toFloat())
+            applet.stroke(1f, 1f, 0f)
+            applet.circleXZ(laserEnd.a1, laserEnd.a2, 1.0)
         }
     }
 

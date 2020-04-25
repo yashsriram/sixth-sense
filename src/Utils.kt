@@ -1,4 +1,7 @@
 import org.ejml.data.DMatrix2
+import kotlin.math.abs
+import kotlin.math.sqrt
+import kotlin.math.pow
 
 data class ObservedLineSegmentObstacle(val point1: DMatrix2, val point2: DMatrix2)
 
@@ -13,15 +16,11 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
     val observedLineSegmentObstacles = mutableListOf<ObservedLineSegmentObstacle>()
     val observedLandmarks = mutableListOf<DMatrix2>()
 
-    /* -- */
-    /* TODO fill "observedLineSegmentObstacles" with endpoints detected after RANSAC + Least Squares, sample usage provided */
-    if (points.size > 0) {
-        val x0 = points[0].a1
-        val y0 = points[0].a2
+    // Do RANSAC and add the filtered points
+    val lineSegments = fitLineSegments(points, 1000, 4f, 12)
+    for (endPoints in lineSegments) {
+        observedLineSegmentObstacles.add(ObservedLineSegmentObstacle(endPoints.first, endPoints.second))
     }
-    val point1 = DMatrix2(10.0, 0.0)
-    val point2 = DMatrix2(0.0, 0.0)
-    observedLineSegmentObstacles.add(ObservedLineSegmentObstacle(point1, point2))
 
     /* TODO fill "observedLandmarks" with landmarks such as intersections of line or loose ends of lines */
     val corner = DMatrix2(10.0, 0.0)
@@ -29,4 +28,77 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
 
     /* -- */
     return Pair(observedLineSegmentObstacles, observedLandmarks)
+}
+
+/*
+* points: list of X, Y positions
+* iterations: number of iterations to run RANSAC for
+* threshold: max distance from the line to count as inlier
+* minInliers: min number of inliers to consider a good line
+* returns: MutableList<List<DMatrix2>> where each element is a list which contains the start and
+* end points of the line
+* */
+fun fitLineSegments(points: List<DMatrix2>, iterations: Int, threshold: Float, minInliers: Int): List<Pair<DMatrix2, DMatrix2>> {
+    // return object
+    val lineSegments = mutableListOf<Pair<DMatrix2, DMatrix2>>()
+
+    if (points.isNotEmpty()) {
+        // to keep track of all outliers after removal of inliers
+        var outlierPoints = points.toMutableList()
+        var nLines: Int
+
+        do {
+            // keep track of max inliers and remaining outliers after 
+            // identification of each line
+            var maxInliers = 0
+            var endPoints = Pair(DMatrix2(), DMatrix2())
+            var remainingPoints = mutableListOf<DMatrix2>()
+
+            // run RANSAC to find best fit points
+            for (i in 1..iterations) {
+                // keep track of outliers and inliers for the points chosen
+                var inliers = 0
+                val outliers = outlierPoints.shuffled().toMutableList()
+                val randPoints = outliers.take(2)
+
+                // calculate number of inliers
+                for (point in outlierPoints) {
+                    val dist = getPerpendicularDistance(randPoints[0], randPoints[1], point)
+                    if (dist < threshold) {
+                        inliers += 1
+                        outliers.removeAt(outliers.indexOf(point))
+                    }
+                }
+
+                // update the best fits 
+                if (inliers > maxInliers) {
+                    endPoints = Pair(randPoints[0], randPoints[1])
+                    maxInliers = inliers
+                    remainingPoints = outliers
+                }
+            }
+
+            // filter out spurious matches
+            nLines = lineSegments.size
+            if (maxInliers > minInliers) {
+                lineSegments.add(endPoints)
+                outlierPoints = remainingPoints
+            }
+
+            // exit if no new lines are found or we've run out of points
+        } while ((lineSegments.size > nLines) && (outlierPoints.size > 3))
+    }
+    return lineSegments
+}
+
+/* 
+* P1: First point of the line
+* P2: Second point of the line
+* P0: Point who's distance is to be calculated
+* return: distance of P0 from the line P1P2
+* */
+fun getPerpendicularDistance(P1: DMatrix2, P2: DMatrix2, P0: DMatrix2): Float {
+    val num = abs((P2.a2 - P1.a2) * P0.a1 - (P2.a1 - P1.a1) * P0.a2 + P2.a1 * P1.a2 - P2.a2 * P1.a1)
+    val den = sqrt((P2.a2 - P1.a2).pow(2.0) + (P2.a1 - P1.a1).pow(2.0))
+    return (num / den).toFloat()
 }
