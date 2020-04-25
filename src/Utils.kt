@@ -1,4 +1,8 @@
+import extensions.determinant
+import extensions.inverse
+import extensions.times
 import org.ejml.data.DMatrix2
+import org.ejml.data.DMatrix2x2
 import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlin.math.pow
@@ -23,12 +27,63 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
     }
 
     /* TODO fill "observedLandmarks" with landmarks such as intersections of line or loose ends of lines */
-    val corner = DMatrix2(10.0, 0.0)
-    observedLandmarks.add(corner)
+    //loose ends
+    val thr = 50.0
+    for (i in 1 until (points.size)){
+        if(distances[i] == 501.0 || distances[i]-distances[i-1] > thr) {
+            observedLandmarks.add(points[i - 1])
+        }
+        else if(distances[i-1] == 501.0 || distances[i-1]-distances[i] > thr)
+        {
+            observedLandmarks.add(points[i])
+        }
+    }
+    //intersection
+    for ( i in 0 until lineSegments.size){
+        for (j in i+1 until lineSegments.size){
+            //two points
+            //print(i)
+            //print(j)
+            val L1 = lineSegments[i]
+            val L2 = lineSegments[j]
 
+            val m1 = (L1.second.a2- L1.first.a2)/(L1.second.a1 - L1.first.a1)
+            val b1 = -m1* L1.first.a1  +  L1.first.a2
+
+            val m2 = (L2.second.a2- L2.first.a2)/(L2.second.a1 - L2.first.a1)
+            val b2 = -m2* L2.first.a1  +  L2.first.a2
+
+            val A = DMatrix2x2(-m1, 1.0,  -m2, 1.0)
+            val b = DMatrix2(b1,b2)
+            if (abs(A.determinant()) > 1e-6) {
+                val intersect = A.inverse() * b
+                var minDist = Double.MAX_VALUE
+                var minIdx = 0
+                for( p in 0 until (points.size)){
+                    if(dist(intersect,points[p]) <minDist) {
+                        minIdx = p
+                        minDist = dist(intersect,points[p])
+                    }
+                }
+                if(minDist<30)
+                    observedLandmarks.add(points[minIdx])
+            }
+        }
+    }
     /* -- */
     return Pair(observedLineSegmentObstacles, observedLandmarks)
 }
+
+/*
+* Pt1: First point
+* Pt2: Second point
+* return: distance between Pt1 and Pt2
+* */
+fun dist( pt1: DMatrix2, pt2: DMatrix2):Double
+{
+    return sqrt((pt1.a1-pt2.a1)*(pt1.a1-pt2.a1) + (pt1.a2-pt2.a2)*(pt1.a2-pt2.a2))
+}
+
 
 /*
 * points: list of X, Y positions
