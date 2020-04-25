@@ -87,7 +87,7 @@ class Main : PApplet() {
         if (key == 'r') {
             reset()
         }
-        if (key == 'p') {
+        if (key == 'z') {
             sim!!.applyControl(DMatrix2())
         }
         if (keyCode == PConstants.UP) {
