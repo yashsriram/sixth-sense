@@ -73,7 +73,7 @@ class Main : PApplet() {
         }
         val landmarks = observed.second
         for (landmark in landmarks) {
-            circleXZ(landmark.a1, landmark.a2, 1.0)
+            circleXZ(landmark.a1, landmark.a2, 2.0)
         }
 
         /* Draw */
