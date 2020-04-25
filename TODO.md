@@ -8,7 +8,7 @@
     - [x] Find command line compile and run commands
 - [x] Reproduce HW2 EKF SLAM in java using processing.
 - [ ] Map corner features from lines
-    - [ ] implement RANSAC from class
+    - [x] implement RANSAC from class
     - [ ] The least squares line fitting
     - [ ] Case based corner detection (using discontinuities, intersections etc...)
 - [ ] Estimate Sigma_N and Sigma_M from simulator
@@ -26,7 +26,7 @@
 # Efficiency
 - [ ] Use proper += -= implementations
 - [ ] Merge A * B^T operation as one
-- [ ] Don't create new memory for get block??~~~~
+- [ ] Don't create new memory for get block??
 
 # Simulator
 - [ ] significance of time in odometry and laser scan struct
