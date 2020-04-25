@@ -14,8 +14,8 @@
     - [ ] Case based corner detection (using discontinuities, intersections etc...)
         - [ ] Break obstacles using discontinuties
         - [ ] Cull ghost intersection landmarks
-        - [ ] What is 501?
-        - [ ] for (i in 0 until lineSegments.size) {?
+        - [x] What is 501?
+        - [x] for (i in 0 until lineSegments.size) {?
         - [ ] breaking cases
     - [ ] Optimize this step
 - [ ] Estimate Sigma_N and Sigma_M from simulator

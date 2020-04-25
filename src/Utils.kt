@@ -3,6 +3,7 @@ import extensions.inverse
 import extensions.times
 import org.ejml.data.DMatrix2
 import org.ejml.data.DMatrix2x2
+import simulator.LaserSensor
 import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlin.math.pow
@@ -30,14 +31,14 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
     //loose ends
     val thr = 50.0
     for (i in 1 until (points.size)) {
-        if (distances[i] == 501.0 || distances[i] - distances[i - 1] > thr) {
+        if (distances[i] == LaserSensor.INVALID_MEASUREMENT || distances[i] - distances[i - 1] > thr) {
             observedLandmarks.add(points[i - 1])
-        } else if (distances[i - 1] == 501.0 || distances[i - 1] - distances[i] > thr) {
+        } else if (distances[i - 1] == LaserSensor.INVALID_MEASUREMENT || distances[i - 1] - distances[i] > thr) {
             observedLandmarks.add(points[i])
         }
     }
     //intersection
-    for (i in 0 until lineSegments.size) {
+    for (i in 0 until lineSegments.size - 1) {
         for (j in i + 1 until lineSegments.size) {
             //two points
             //print(i)
