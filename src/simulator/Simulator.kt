@@ -13,12 +13,9 @@ import kotlin.system.exitProcess
 
 class Simulator(private val applet: PApplet, sceneFilepath: String) {
     companion object {
-        // Simulator settings
-        var CONTROL_FREQ = 1
-        var LASER_SCAN_FREQUENCY = 10
-
-        // Graphics
-        var SCALE = 100.0
+        const val CONTROL_FREQ = 1
+        const val LASER_SCAN_FREQUENCY = 10
+        const val SCALE = 100.0
         var DRAW_OBSTACLES = true
     }
 

@@ -12,10 +12,10 @@ import kotlin.math.sin
 
 class Robot internal constructor(private val applet: PApplet, val length: Double, truePose: DMatrix3, var isRunning: Boolean) {
     companion object {
-        var MAX_LINEAR_ACCELERATION = 20.0
-        var MAX_ANGULAR_ACCELERATION = 0.5
-        var LINEAR_VELOCITY_ERROR_LIMIT = 0.5
-        var ANGULAR_VELOCITY_ERROR_LIMIT = 0.1
+        const val MAX_LINEAR_ACCELERATION = 20.0
+        const val MAX_ANGULAR_ACCELERATION = 0.5
+        const val LINEAR_VELOCITY_ERROR_LIMIT = 2.0
+        const val ANGULAR_VELOCITY_ERROR_LIMIT = 0.1
         private fun getChangeInPose(pose: DMatrix3, control: DMatrix2): DMatrix3 {
             val changeInPose = DMatrix3()
             changeInPose.a1 = control.a1 * cos(pose.a3)

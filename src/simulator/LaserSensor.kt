@@ -15,16 +15,12 @@ class LaserSensor internal constructor(private val applet: PApplet) {
     companion object {
         var DRAW_LASERS = true
         const val COUNT = 181
-
-        // Angle
         const val MIN_THETA = -Math.PI / 2
         const val MAX_THETA = Math.PI / 2
         const val ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / COUNT
-        var ANGLE_ERROR_LIMIT = 0.05
-
-        // Distance
         const val MAX_DISTANCE = 500.0
-        var DISTANCE_ERROR_LIMIT = 0.05
+        const val DISTANCE_ERROR_LIMIT = 5.0
+        const val ANGLE_ERROR_LIMIT = 0.05
         const val INVALID_MEASUREMENT = MAX_DISTANCE + 1
     }
 
