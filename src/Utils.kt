@@ -17,9 +17,9 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
     val observedLandmarks = mutableListOf<DMatrix2>()
 
     // Do RANSAC and add the filtered points
-    var filteredPoints = doRansacFiltering(points, 1000, 4F, 12)
-    for (pointset in filteredPoints){
-        observedLineSegmentObstacles.add(ObservedLineSegmentObstacle(pointset[0], pointset[1]))
+    val lineSegments = fitLineSegments(points, 1000, 4f, 12)
+    for (endPoints in lineSegments) {
+        observedLineSegmentObstacles.add(ObservedLineSegmentObstacle(endPoints.first, endPoints.second))
     }
 
     /* TODO fill "observedLandmarks" with landmarks such as intersections of line or loose ends of lines */
@@ -38,14 +38,11 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
 * returns: MutableList<List<DMatrix2>> where each element is a list which contains the start and
 * end points of the line
 * */
-fun doRansacFiltering(points:List<DMatrix2>, iterations: Int, threshold: Float, minInliers:Int):
-        MutableList<List<DMatrix2>>{
-    
+fun fitLineSegments(points: List<DMatrix2>, iterations: Int, threshold: Float, minInliers: Int): List<Pair<DMatrix2, DMatrix2>> {
     // return object
-    val filteredPoints = mutableListOf<List<DMatrix2>>()
+    val lineSegments = mutableListOf<Pair<DMatrix2, DMatrix2>>()
 
-    if(points.isNotEmpty()) {
-        
+    if (points.isNotEmpty()) {
         // to keep track of all outliers after removal of inliers
         var outlierPoints = points.toMutableList()
         var nLines: Int
@@ -54,17 +51,16 @@ fun doRansacFiltering(points:List<DMatrix2>, iterations: Int, threshold: Float, 
             // keep track of max inliers and remaining outliers after 
             // identification of each line
             var maxInliers = 0
-            var fitPoints = listOf<DMatrix2>()
-            var fitOutliers = mutableListOf<DMatrix2>()
-            
+            var endPoints = Pair(DMatrix2(), DMatrix2())
+            var remainingPoints = mutableListOf<DMatrix2>()
+
             // run RANSAC to find best fit points
             for (i in 1..iterations) {
-                
                 // keep track of outliers and inliers for the points chosen
                 var inliers = 0
                 val outliers = outlierPoints.shuffled().toMutableList()
                 val randPoints = outliers.take(2)
-                
+
                 // calculate number of inliers
                 for (point in outlierPoints) {
                     val dist = getPerpendicularDistance(randPoints[0], randPoints[1], point)
@@ -73,26 +69,26 @@ fun doRansacFiltering(points:List<DMatrix2>, iterations: Int, threshold: Float, 
                         outliers.removeAt(outliers.indexOf(point))
                     }
                 }
-                
+
                 // update the best fits 
                 if (inliers > maxInliers) {
-                    fitPoints = randPoints
+                    endPoints = Pair(randPoints[0], randPoints[1])
                     maxInliers = inliers
-                    fitOutliers = outliers
+                    remainingPoints = outliers
                 }
             }
-            
+
             // filter out spurious matches
-            nLines = filteredPoints.size
+            nLines = lineSegments.size
             if (maxInliers > minInliers) {
-                filteredPoints.add(fitPoints)
-                outlierPoints = fitOutliers
+                lineSegments.add(endPoints)
+                outlierPoints = remainingPoints
             }
-            
+
             // exit if no new lines are found or we've run out of points
-        } while ((filteredPoints.size > nLines) && (outlierPoints.size > 3))
+        } while ((lineSegments.size > nLines) && (outlierPoints.size > 3))
     }
-    return filteredPoints
+    return lineSegments
 }
 
 /* 
@@ -101,11 +97,8 @@ fun doRansacFiltering(points:List<DMatrix2>, iterations: Int, threshold: Float, 
 * P0: Point who's distance is to be calculated
 * return: distance of P0 from the line P1P2
 * */
-fun getPerpendicularDistance(P1: DMatrix2, P2:DMatrix2, P0:DMatrix2):
-        Float{
-
-    val num = abs((P2.a2 - P1.a2)*P0.a1 - (P2.a1 - P1.a1)*P0.a2 + P2.a1*P1.a2  - P2.a2*P1.a1)
+fun getPerpendicularDistance(P1: DMatrix2, P2: DMatrix2, P0: DMatrix2): Float {
+    val num = abs((P2.a2 - P1.a2) * P0.a1 - (P2.a1 - P1.a1) * P0.a2 + P2.a1 * P1.a2 - P2.a2 * P1.a1)
     val den = sqrt((P2.a2 - P1.a2).pow(2.0) + (P2.a1 - P1.a1).pow(2.0))
-
     return (num / den).toFloat()
 }
