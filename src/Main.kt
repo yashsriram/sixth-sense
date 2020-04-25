@@ -1,4 +1,5 @@
 import camera.QueasyCam
+import extensions.circleXZ
 import extensions.minus
 import extensions.plus
 import extensions.timesAssign
@@ -6,9 +7,8 @@ import org.ejml.data.DMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
 import simulator.LaserSensor
-import simulator.Robot
 import simulator.Simulator
-import java.util.ArrayList
+import java.util.*
 import kotlin.math.roundToInt
 
 class Main : PApplet() {
@@ -65,11 +65,6 @@ class Main : PApplet() {
             laserEnds.add(laserEnd)
         }
 
-        stroke(1f, 1f, 0f)
-        noFill()
-        for (point in laserEnds) {
-            circleXZ(point.a1, point.a2, 1.0)
-        }
         val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
         stroke(0f, 1f, 1f)
         val obstacles = observed.first
@@ -86,16 +81,6 @@ class Main : PApplet() {
         stroke(1)
         sim!!.draw()
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}")
-    }
-
-    private fun circleXZ(x: Double, z: Double, radius: Double) {
-        beginShape()
-        val resolution = 20
-        for (i in 1..resolution) {
-            val theta = 2 * PI / (resolution - 1) * i
-            vertex((x + radius * cos(theta)).toFloat(), 0f, (z + radius * sin(theta)).toFloat())
-        }
-        endShape(CLOSE)
     }
 
     override fun keyPressed() {
