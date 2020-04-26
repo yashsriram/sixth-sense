@@ -7,9 +7,14 @@ import simulator.LaserSensor
 import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlin.math.pow
+import kotlin.math.*
+
 
 data class ObservedLineSegmentObstacle(val point1: DMatrix2, val point2: DMatrix2)
 
+private val LANDMARK_MARGIN = 60.0
+private val LOWER_LANDMARK_MARGIN = 1.0
+private val INTERSECTION_MARGIN = 30.0
 /*
 * points: list of X, Y positions
 * return: pair
@@ -29,20 +34,44 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
 
     /* TODO fill "observedLandmarks" with landmarks such as intersections of line or loose ends of lines */
     //loose ends
-    val thr = 50.0
-    for (i in 1 until (points.size)) {
-        if (distances[i] == LaserSensor.INVALID_MEASUREMENT || distances[i] - distances[i - 1] > thr) {
-            observedLandmarks.add(points[i - 1])
-        } else if (distances[i - 1] == LaserSensor.INVALID_MEASUREMENT || distances[i - 1] - distances[i] > thr) {
-            observedLandmarks.add(points[i])
+    var j =1
+    var i = 1
+    while ( i < (distances.size) && j<points.size){
+        if(((distances[i]-distances[i-1]) > LANDMARK_MARGIN) || ( distances[i] == LaserSensor.INVALID_MEASUREMENT && (distances[i]-distances[i-1]) > LOWER_LANDMARK_MARGIN)) {
+            observedLandmarks.add(points[j - 1])
         }
+        else if(((distances[i-1]-distances[i]) > LANDMARK_MARGIN) || ( distances[i-1] == LaserSensor.INVALID_MEASUREMENT && (distances[i-1]-distances[i]) > LOWER_LANDMARK_MARGIN)){
+            observedLandmarks.add(points[j])
+        }
+        if(distances[i] != LaserSensor.INVALID_MEASUREMENT){
+            j++
+        }
+        i++
     }
     //intersection
+    var intersectLandmarks = mutableListOf<DMatrix2>()
+    intersectLandmarks = getIntersectionPoints(lineSegments, points)
+    for ( pt in intersectLandmarks)
+    {
+        observedLandmarks.add(pt)
+    }
+    /* -- */
+    return Pair(observedLineSegmentObstacles, observedLandmarks)
+}
+
+
+/*
+* lineSegments: list of line segments
+* Points: list of points
+* return: list of intersection points
+* */
+
+fun getIntersectionPoints(lineSegments: List<Pair<DMatrix2, DMatrix2>>, points: List<DMatrix2>): MutableList<DMatrix2>
+{
+    var observedLandmarks = mutableListOf<DMatrix2>()
     for (i in 0 until lineSegments.size - 1) {
         for (j in i + 1 until lineSegments.size) {
             //two points
-            //print(i)
-            //print(j)
             val L1 = lineSegments[i]
             val L2 = lineSegments[j]
 
@@ -64,16 +93,14 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
                         minDist = dist(intersect, points[p])
                     }
                 }
-                if (minDist < 30) {
+                if(minDist<30 && checkLimit(points[minIdx] ,L1.first, L1.second,  L2.first, L2.second) ) {
                     observedLandmarks.add(points[minIdx])
                 }
             }
         }
     }
-    /* -- */
-    return Pair(observedLineSegmentObstacles, observedLandmarks)
+    return observedLandmarks
 }
-
 /*
 * Pt1: First point
 * Pt2: Second point
@@ -83,6 +110,35 @@ fun dist(pt1: DMatrix2, pt2: DMatrix2): Double {
     return sqrt((pt1.a1 - pt2.a1) * (pt1.a1 - pt2.a1) + (pt1.a2 - pt2.a2) * (pt1.a2 - pt2.a2))
 }
 
+/*
+* Pt: A point
+* p11: First point of the line1
+* p12: Second point of the line1
+* p21: First point of the line2
+* p22: Second point of the line2
+* return: true if pt lies on both the lines up to a margin
+* */
+fun checkLimit(pt: DMatrix2, p11: DMatrix2, p12: DMatrix2, p21: DMatrix2, p22: DMatrix2): Boolean
+{
+
+    var checkLine1 = false
+    var checkLine2 = false
+    var x1 = p11.a1
+    var y1 = p11.a2
+    var x2 = p12.a1
+    var y2 = p12.a2
+    if(pt.a1 > (min(x1, x2) - INTERSECTION_MARGIN) && pt.a1 < (max(x1, x2) + INTERSECTION_MARGIN) && pt.a2 > (min(y1, y2) - INTERSECTION_MARGIN) && pt.a2 < (max(y1, y2) + INTERSECTION_MARGIN)) //Line 1
+        checkLine1 = true
+    x1 = p21.a1
+    y1 = p21.a2
+    x2 = p22.a1
+    y2 = p22.a2
+   //
+    if(pt.a1 > (min(x1, x2) - INTERSECTION_MARGIN) && pt.a1 < (max(x1, x2) + INTERSECTION_MARGIN) && pt.a2 > (min(y1, y2) - INTERSECTION_MARGIN) && pt.a2 < (max(y1, y2) + INTERSECTION_MARGIN)) //Line 2
+        checkLine2 = true
+
+    return checkLine1 && checkLine2
+}
 
 /*
 * points: list of X, Y positions
