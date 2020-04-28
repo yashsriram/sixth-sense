@@ -8,8 +8,9 @@
     - [x] Find command line compile and run commands
 - [x] Reproduce HW2 EKF SLAM in java using processing.
 - [ ] Map corner features from lines
-    - [ ] implement RANSAC from class
-        - [ ] Change do-while to while
+    - [x] implement RANSAC from class
+        - [x] Change do-while to while
+        - [ ] separate in room and out of room measurements
     - [ ] The least squares line fitting
     - [ ] Case based corner detection (using discontinuities, intersections etc...)
         - [ ] Break obstacles using discontinuties
