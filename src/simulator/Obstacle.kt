@@ -1,9 +1,9 @@
 package simulator
 
-import org.ejml.data.DMatrix2
+import org.ejml.data.FMatrix2
 
 abstract class Obstacle {
-    abstract fun shortestRayDistanceFrom(position: DMatrix2, orientation: DMatrix2): Double
-    abstract fun shortestDistanceFrom(position: DMatrix2): Double
+    abstract fun shortestRayDistanceFrom(position: FMatrix2, orientation: FMatrix2): Float
+    abstract fun shortestDistanceFrom(position: FMatrix2): Float
     abstract fun draw()
 }

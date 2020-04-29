@@ -3,7 +3,7 @@ import extensions.circleXZ
 import extensions.minus
 import extensions.plus
 import extensions.timesAssign
-import org.ejml.data.DMatrix2
+import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
 import simulator.LaserSensor
@@ -36,7 +36,7 @@ class Main : PApplet() {
     private fun reset() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
-        hitGrid = HitGrid(this, DMatrix2(-1000.0, -1000.0), DMatrix2(1000.0, 1000.0), 1000, 1000)
+        hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
     }
 
     override fun draw() {
@@ -45,21 +45,21 @@ class Main : PApplet() {
 
         /* Update */
         val poseCopy = sim!!.truePose // FIXME: should use estimated pose here later
-        val position = DMatrix2(poseCopy.a1, poseCopy.a2)
+        val position = FMatrix2(poseCopy.a1, poseCopy.a2)
         val orientation = poseCopy.a3
-        val centerToHead = DMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
-        centerToHead *= 0.5 * sim!!.robotLength
+        val centerToHead = FMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
+        centerToHead *= 0.5f * sim!!.robotLength
         val tail = position - centerToHead
 
         val distances = sim!!.laserDistances
-        val laserEnds: MutableList<DMatrix2> = ArrayList(LaserSensor.COUNT)
+        val laserEnds: MutableList<FMatrix2> = ArrayList(LaserSensor.COUNT)
         for (i in distances.indices) {
             if (distances[i] == LaserSensor.INVALID_DISTANCE) {
                 continue
             }
-            val percentage = i / (LaserSensor.COUNT - 1.0)
+            val percentage = i / (LaserSensor.COUNT - 1f)
             val theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage
-            val laserBeam = DMatrix2(kotlin.math.cos(orientation + theta),
+            val laserBeam = FMatrix2(kotlin.math.cos(orientation + theta),
                     kotlin.math.sin(orientation + theta))
             laserBeam *= distances[i]
             val laserEnd = tail + laserBeam
@@ -67,17 +67,17 @@ class Main : PApplet() {
             hitGrid!!.addHit(laserEnd)
         }
 
-//        val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
-//        stroke(0f, 1f, 1f)
-//        val obstacles = observed.first
-//        for (segment in obstacles) {
-//            line(segment.point1.a1.toFloat(), 0f, segment.point1.a2.toFloat(),
-//                    segment.point2.a1.toFloat(), 0f, segment.point2.a2.toFloat())
-//        }
-//        val landmarks = observed.second
-//        for (landmark in landmarks) {
-//            circleXZ(landmark.a1, landmark.a2, 2.0)
-//        }
+        val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
+        stroke(0f, 1f, 1f)
+        val obstacles = observed.first
+        for (segment in obstacles) {
+            line(segment.point1.a1, 0f, segment.point1.a2,
+                    segment.point2.a1, 0f, segment.point2.a2)
+        }
+        val landmarks = observed.second
+        for (landmark in landmarks) {
+            circleXZ(landmark.a1, landmark.a2, 2f)
+        }
 
         /* Draw */
         sim!!.draw()
@@ -94,19 +94,19 @@ class Main : PApplet() {
             sim!!.togglePaused()
         }
         if (key == 'z') {
-            sim!!.applyControl(DMatrix2())
+            sim!!.applyControl(FMatrix2())
         }
         if (keyCode == PConstants.UP) {
-            sim!!.applyControl(DMatrix2(100.0, 0.0))
+            sim!!.applyControl(FMatrix2(100f, 0f))
         }
         if (keyCode == PConstants.DOWN) {
-            sim!!.applyControl(DMatrix2(-100.0, 0.0))
+            sim!!.applyControl(FMatrix2(-100f, 0f))
         }
         if (keyCode == PConstants.LEFT) {
-            sim!!.applyControl(DMatrix2(0.0, -0.5))
+            sim!!.applyControl(FMatrix2(0f, -0.5f))
         }
         if (keyCode == PConstants.RIGHT) {
-            sim!!.applyControl(DMatrix2(0.0, 0.5))
+            sim!!.applyControl(FMatrix2(0f, 0.5f))
         }
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable

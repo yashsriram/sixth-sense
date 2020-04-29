@@ -1,8 +1,8 @@
 package simulator
 
 import extensions.*
-import org.ejml.data.DMatrix2
-import org.ejml.data.DMatrix3
+import org.ejml.data.FMatrix2
+import org.ejml.data.FMatrix3
 import processing.core.PApplet
 import java.io.File
 import java.io.FileNotFoundException
@@ -15,7 +15,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     companion object {
         const val CONTROL_FREQ = 1
         const val LASER_SCAN_FREQUENCY = 10
-        const val SCALE = 100.0
+        const val SCALE = 100f
         var DRAW_OBSTACLES = true
     }
 
@@ -27,7 +27,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
 
     // Robot
     private val robot: Robot
-    private val initialPose: DMatrix3
+    private val initialPose: FMatrix3
 
     init {
         // Read scene
@@ -49,30 +49,30 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         assert(fileContents.size > 0)
 
         // Every line after 1st one in the file is a line segment
-        val minCorner = DMatrix2(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)
-        val maxCorner = DMatrix2(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY)
+        val minCorner = FMatrix2(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+        val maxCorner = FMatrix2(Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY)
         for (i in 1 until fileContents.size) {
             val lineFeatureTokens = fileContents[i]
             assert(lineFeatureTokens.size == 4)
-            minCorner.a1 = min(minCorner.a1, lineFeatureTokens[0].toDouble())
-            minCorner.a1 = min(minCorner.a1, lineFeatureTokens[2].toDouble())
-            minCorner.a2 = min(minCorner.a2, lineFeatureTokens[1].toDouble())
-            minCorner.a2 = min(minCorner.a2, lineFeatureTokens[3].toDouble())
+            minCorner.a1 = min(minCorner.a1, lineFeatureTokens[0].toFloat())
+            minCorner.a1 = min(minCorner.a1, lineFeatureTokens[2].toFloat())
+            minCorner.a2 = min(minCorner.a2, lineFeatureTokens[1].toFloat())
+            minCorner.a2 = min(minCorner.a2, lineFeatureTokens[3].toFloat())
 
-            maxCorner.a1 = max(maxCorner.a1, lineFeatureTokens[0].toDouble())
-            maxCorner.a1 = max(maxCorner.a1, lineFeatureTokens[2].toDouble())
-            maxCorner.a2 = max(maxCorner.a2, lineFeatureTokens[1].toDouble())
-            maxCorner.a2 = max(maxCorner.a2, lineFeatureTokens[3].toDouble())
+            maxCorner.a1 = max(maxCorner.a1, lineFeatureTokens[0].toFloat())
+            maxCorner.a1 = max(maxCorner.a1, lineFeatureTokens[2].toFloat())
+            maxCorner.a2 = max(maxCorner.a2, lineFeatureTokens[1].toFloat())
+            maxCorner.a2 = max(maxCorner.a2, lineFeatureTokens[3].toFloat())
         }
-        val center = minCorner + (maxCorner - minCorner) * 0.5
+        val center = minCorner + (maxCorner - minCorner) * 0.5f
 
         // Loading lines with scaling and center shifting
         for (i in 1 until fileContents.size) {
             val lineTokens = fileContents[i]
             assert(lineTokens.size == 4)
-            val p1 = DMatrix2(lineTokens[0].toDouble(), lineTokens[1].toDouble()) - center
+            val p1 = FMatrix2(lineTokens[0].toFloat(), lineTokens[1].toFloat()) - center
             p1 *= SCALE
-            val p2 = DMatrix2(lineTokens[2].toDouble(), lineTokens[3].toDouble()) - center
+            val p2 = FMatrix2(lineTokens[2].toFloat(), lineTokens[3].toFloat()) - center
             p2 *= SCALE
             lines.add(LineSegmentObstacle(applet, p1, p2))
         }
@@ -80,13 +80,13 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         // Load robot pose with scaling and center shifting
         val poseTokens = fileContents[0]
         assert(poseTokens.size == 4)
-        initialPose = DMatrix3(
-                (poseTokens[0].toDouble() - center.a1) * SCALE,
-                (poseTokens[1].toDouble() - center.a2) * SCALE,
-                poseTokens[2].toDouble())
+        initialPose = FMatrix3(
+                (poseTokens[0].toFloat() - center.a1) * SCALE,
+                (poseTokens[1].toFloat() - center.a2) * SCALE,
+                poseTokens[2].toFloat())
         robot = Robot(
                 applet,
-                poseTokens[3].toDouble() * SCALE,
+                poseTokens[3].toFloat() * SCALE,
                 initialPose,
                 true
         )
@@ -98,7 +98,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
 
     private fun robotLoop() {
         val loopDuration: Long = 10
-        val loopDt = 1e-3 * loopDuration
+        val loopDt = 1e-3f * loopDuration
         var iteration = 0
         while (robot.isRunning) {
             val isPausedLocal: Boolean
@@ -130,19 +130,19 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     }
 
     /* User callable */
-    val truePose: DMatrix3
+    val truePose: FMatrix3
         get() = robot.getTruePose()
 
-    val robotLength: Double
+    val robotLength: Float
         get() = robot.length
 
-    val laserDistances: List<Double>
+    val laserDistances: List<Float>
         get() = robot.laserSensor.getDistances()
 
-    val currentControl: DMatrix2
+    val currentControl: FMatrix2
         get() = robot.getCurrentControl()
 
-    fun applyControl(control: DMatrix2) {
+    fun applyControl(control: FMatrix2) {
         robot.applyControl(control)
     }
 

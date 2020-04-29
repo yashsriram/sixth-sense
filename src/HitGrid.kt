@@ -1,10 +1,10 @@
 import extensions.minus
-import org.ejml.data.DMatrix2
+import org.ejml.data.FMatrix2
 import processing.core.PApplet
 
 class HitGrid(private val applet: PApplet,
-              private val minCorner: DMatrix2,
-              private val maxCorner: DMatrix2,
+              private val minCorner: FMatrix2,
+              private val maxCorner: FMatrix2,
               private val numCellsX: Int,
               private val numCellsZ: Int) {
     private val cellSizeX = (maxCorner.a1 - minCorner.a1) / numCellsX
@@ -17,7 +17,7 @@ class HitGrid(private val applet: PApplet,
         return zIndex * numCellsX + xIndex
     }
 
-    fun addHit(point: DMatrix2) {
+    fun addHit(point: FMatrix2) {
         // If outside bounds ignore
         if (point.a1 < minCorner.a1 || point.a2 < minCorner.a2 || point.a1 > maxCorner.a1 || point.a2 > maxCorner.a2) {
             return
@@ -38,10 +38,10 @@ class HitGrid(private val applet: PApplet,
         applet.noFill()
         applet.stroke(0f, 0f, 1f)
         applet.beginShape(PApplet.QUADS)
-        applet.vertex(minCorner.a1.toFloat(), 0f, minCorner.a2.toFloat())
-        applet.vertex(minCorner.a1.toFloat(), 0f, maxCorner.a2.toFloat())
-        applet.vertex(maxCorner.a1.toFloat(), 0f, maxCorner.a2.toFloat())
-        applet.vertex(maxCorner.a1.toFloat(), 0f, minCorner.a2.toFloat())
+        applet.vertex(minCorner.a1, 0f, minCorner.a2)
+        applet.vertex(minCorner.a1, 0f, maxCorner.a2)
+        applet.vertex(maxCorner.a1, 0f, maxCorner.a2)
+        applet.vertex(maxCorner.a1, 0f, minCorner.a2)
         applet.endShape()
 
         // Heat map
@@ -53,10 +53,10 @@ class HitGrid(private val applet: PApplet,
             applet.fill(1f, 0f, 0f)
             val topLeftX = minCorner.a1 + i * cellSizeX
             val topLeftZ = minCorner.a2 + j * cellSizeZ
-            applet.vertex(topLeftX.toFloat(), 0f, topLeftZ.toFloat())
-            applet.vertex(topLeftX.toFloat(), 0f, topLeftZ.toFloat() + cellSizeZ.toFloat())
-            applet.vertex(topLeftX.toFloat() + cellSizeX.toFloat(), 0f, topLeftZ.toFloat() + cellSizeZ.toFloat())
-            applet.vertex(topLeftX.toFloat() + cellSizeX.toFloat(), 0f, topLeftZ.toFloat())
+            applet.vertex(topLeftX, 0f, topLeftZ)
+            applet.vertex(topLeftX, 0f, topLeftZ + cellSizeZ)
+            applet.vertex(topLeftX + cellSizeX, 0f, topLeftZ + cellSizeZ)
+            applet.vertex(topLeftX + cellSizeX, 0f, topLeftZ)
         }
         applet.endShape()
     }
