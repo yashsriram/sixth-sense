@@ -125,19 +125,13 @@ class Robot internal constructor(private val applet: PApplet, val length: Double
         val head = center + centerToHeadUnit
         val tail = center - centerToHeadUnit
 
-        // Draw lasers
-        laserSensor.draw(tail)
-
         // Draw robot body
         applet.stroke(1)
         applet.line(center.a1.toFloat(), 0f, center.a2.toFloat(), head.a1.toFloat(), 0f, head.a2.toFloat())
-        applet.beginShape()
-        val resolution = 20
-        for (i in 1..resolution) {
-            val theta = 2 * PApplet.PI / (resolution - 1) * i
-            applet.vertex((center.a1 + (length * 0.5) * PApplet.cos(theta)).toFloat(), 0f, (center.a2 + (length * 0.5) * PApplet.sin(theta)).toFloat())
-        }
-        applet.endShape(PApplet.CLOSE)
+        applet.circleXZ(center.a1, center.a2, length * 0.5)
+
+        // Draw lasers
+        laserSensor.draw(tail)
     }
 
 }
