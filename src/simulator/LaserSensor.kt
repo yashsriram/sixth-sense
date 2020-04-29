@@ -88,6 +88,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
                 continue
             }
             val percentage = i / (COUNT - 1.0)
+            // FIXME : Save and use noisy angles here, as everything else drawn is the noisy version or the one that happened really
             val theta = MIN_THETA + (MAX_THETA - MIN_THETA) * percentage
             val laserBeam = DMatrix2(cos(orientation + theta),
                     sin(orientation + theta))

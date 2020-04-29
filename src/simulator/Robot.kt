@@ -12,7 +12,7 @@ import kotlin.math.sin
 
 class Robot internal constructor(private val applet: PApplet, val length: Double, truePose: DMatrix3, var isRunning: Boolean) {
     companion object {
-        const val MAX_LINEAR_ACCELERATION = 2000000.0
+        const val MAX_LINEAR_ACCELERATION = 20.0
         const val MAX_ANGULAR_ACCELERATION = 0.5
         const val LINEAR_VELOCITY_ERROR_LIMIT = 2.0
         const val ANGULAR_VELOCITY_ERROR_LIMIT = 0.1

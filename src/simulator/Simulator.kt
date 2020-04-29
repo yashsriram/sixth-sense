@@ -80,7 +80,6 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         // Load robot pose with scaling and center shifting
         val poseTokens = fileContents[0]
         assert(poseTokens.size == 4)
-        // Fork off the main simulation loop
         initialPose = DMatrix3(
                 (poseTokens[0].toDouble() - center.a1) * SCALE,
                 (poseTokens[1].toDouble() - center.a2) * SCALE,
@@ -91,6 +90,8 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
                 initialPose,
                 true
         )
+
+        // Start the robot loop in a new thread
         val robotLoop = Thread(Runnable { robotLoop() })
         robotLoop.start()
     }
