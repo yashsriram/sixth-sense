@@ -126,7 +126,7 @@ class Robot internal constructor(private val applet: PApplet, val length: Double
         val tail = center - centerToHeadUnit
 
         // Draw lasers
-        laserSensor.draw(tail, truePoseCopy.a3)
+        laserSensor.draw(tail)
 
         // Draw robot body
         applet.stroke(1)

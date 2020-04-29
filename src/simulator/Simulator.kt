@@ -136,8 +136,8 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     val robotLength: Double
         get() = robot.length
 
-    val laserScan: List<Double>
-        get() = robot.laserSensor.getMeasurements()
+    val laserDistances: List<Double>
+        get() = robot.laserSensor.getDistances()
 
     val currentControl: DMatrix2
         get() = robot.getCurrentControl()

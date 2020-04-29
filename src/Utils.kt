@@ -49,13 +49,13 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
     var j =1
     var i = 1
     while ( i < (distances.size) && j<points.size){
-        if(((distances[i]-distances[i-1]) > LANDMARK_MARGIN) || ( distances[i] == LaserSensor.INVALID_MEASUREMENT && (distances[i]-distances[i-1]) > LOWER_LANDMARK_MARGIN)) {
+        if(((distances[i]-distances[i-1]) > LANDMARK_MARGIN) || ( distances[i] == LaserSensor.INVALID_DISTANCE && (distances[i]-distances[i-1]) > LOWER_LANDMARK_MARGIN)) {
             observedLandmarks.add(points[j - 1])
         }
-        else if(((distances[i-1]-distances[i]) > LANDMARK_MARGIN) || ( distances[i-1] == LaserSensor.INVALID_MEASUREMENT && (distances[i-1]-distances[i]) > LOWER_LANDMARK_MARGIN)){
+        else if(((distances[i-1]-distances[i]) > LANDMARK_MARGIN) || ( distances[i-1] == LaserSensor.INVALID_DISTANCE && (distances[i-1]-distances[i]) > LOWER_LANDMARK_MARGIN)){
             observedLandmarks.add(points[j])
         }
-        if(distances[i] != LaserSensor.INVALID_MEASUREMENT){
+        if(distances[i] != LaserSensor.INVALID_DISTANCE){
             j++
         }
         i++

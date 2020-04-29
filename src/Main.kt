@@ -49,10 +49,10 @@ class Main : PApplet() {
         centerToHead *= 0.5 * sim!!.robotLength
         val tail = position - centerToHead
 
-        val distances = sim!!.laserScan
+        val distances = sim!!.laserDistances
         val laserEnds: MutableList<DMatrix2> = ArrayList(LaserSensor.COUNT)
         for (i in distances.indices) {
-            if (distances[i] == LaserSensor.INVALID_MEASUREMENT) {
+            if (distances[i] == LaserSensor.INVALID_DISTANCE) {
                 continue
             }
             val percentage = i / (LaserSensor.COUNT - 1.0)
