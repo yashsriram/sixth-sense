@@ -1,22 +1,11 @@
-package tests
+package extensions.tests
 
 import extensions.*
-import org.ejml.data.DMatrix2
-import org.ejml.data.DMatrix2x2
+import org.ejml.data.DMatrix3
 
 fun main() {
-    val A = DMatrix2x2(
-            10.0, 2.0,
-            -1.0, 1.0
-    )
-    println("A = ${A.prettyPrint()}")
-    val X = DMatrix2(1.0, 2.0)
-    println("X = ${X.prettyPrint()}")
-    val B = A * X
-    println("A * X = ${B.prettyPrint()}")
-
-    val E = DMatrix2(1.0 , 5.0)
-    val F = DMatrix2(10.0 , -1.0)
+    val E = DMatrix3(1.0, 5.0, 11.0)
+    val F = DMatrix3(10.0, -1.0, 7.0)
     println("E = ${E.prettyPrint()}")
     println("F = ${F.prettyPrint()}")
     println("E + F = ${(E + F).prettyPrint()}")

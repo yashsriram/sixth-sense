@@ -1,4 +1,4 @@
-package tests
+package extensions.tests
 
 import extensions.*
 import org.ejml.data.DMatrixRMaj

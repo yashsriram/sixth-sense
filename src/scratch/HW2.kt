@@ -1,4 +1,4 @@
-package standalone
+package scratch
 
 import extensions.*
 import org.ejml.data.DMatrix2

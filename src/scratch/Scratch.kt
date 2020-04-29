@@ -1,4 +1,4 @@
-package standalone
+package scratch
 
 data class Foo(val a: Int, val b: Int)
 
