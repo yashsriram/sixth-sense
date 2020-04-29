@@ -10,4 +10,7 @@ fun main() {
     A = Foo(2, 3)
     println("A : $A")
     println("B : $B")
+
+    println("${(5.7 / 2).toInt()}")
+    println("${17 / 4}")
 }

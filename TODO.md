@@ -7,6 +7,8 @@
     - [x] Remove Mat2 Vec2 Vec3
     - [x] Find command line compile and run commands
 - [x] Reproduce HW2 EKF SLAM in java using processing.
+- [ ] Replace DMatrix2 with FMatrix2
+- [ ] Discrete-kernel based obstacle and landmark extraction
 - [ ] Map corner features from lines
     - [x] implement RANSAC from class
         - [x] Change do-while to while

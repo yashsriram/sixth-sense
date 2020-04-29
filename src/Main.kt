@@ -19,6 +19,7 @@ class Main : PApplet() {
 
     private var sim: Simulator? = null
     private var cam: QueasyCam? = null
+    private var hitGrid: HitGrid? = null
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -35,6 +36,7 @@ class Main : PApplet() {
     private fun reset() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
+        hitGrid = HitGrid(this, DMatrix2(-1000.0, -1000.0), DMatrix2(1000.0, 1000.0), 1000, 1000)
     }
 
     override fun draw() {
@@ -62,23 +64,25 @@ class Main : PApplet() {
             laserBeam *= distances[i]
             val laserEnd = tail + laserBeam
             laserEnds.add(laserEnd)
+            hitGrid!!.addHit(laserEnd)
         }
 
-        val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
-        stroke(0f, 1f, 1f)
-        val obstacles = observed.first
-        for (segment in obstacles) {
-            line(segment.point1.a1.toFloat(), 0f, segment.point1.a2.toFloat(),
-                    segment.point2.a1.toFloat(), 0f, segment.point2.a2.toFloat())
-        }
-        val landmarks = observed.second
-        for (landmark in landmarks) {
-            circleXZ(landmark.a1, landmark.a2, 2.0)
-        }
+//        val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
+//        stroke(0f, 1f, 1f)
+//        val obstacles = observed.first
+//        for (segment in obstacles) {
+//            line(segment.point1.a1.toFloat(), 0f, segment.point1.a2.toFloat(),
+//                    segment.point2.a1.toFloat(), 0f, segment.point2.a2.toFloat())
+//        }
+//        val landmarks = observed.second
+//        for (landmark in landmarks) {
+//            circleXZ(landmark.a1, landmark.a2, 2.0)
+//        }
 
         /* Draw */
-        stroke(1)
         sim!!.draw()
+        hitGrid!!.draw()
+
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}")
     }
 

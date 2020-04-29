@@ -60,6 +60,7 @@ class LineSegmentObstacle internal constructor(private val applet: PApplet, p1: 
     }
 
     override fun draw() {
+        applet.stroke(1)
         applet.line(
                 p1.a1.toFloat(), 0f,
                 p1.a2.toFloat(),
