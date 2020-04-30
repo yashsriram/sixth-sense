@@ -13,7 +13,7 @@ import kotlin.math.sin
 class Robot internal constructor(private val applet: PApplet, val length: Float, truePose: FMatrix3, var isRunning: Boolean) {
     companion object {
         const val MAX_LINEAR_ACCELERATION = 200000f
-        const val MAX_ANGULAR_ACCELERATION = 0.5f
+        const val MAX_ANGULAR_ACCELERATION = 5f
         const val LINEAR_VELOCITY_ERROR_LIMIT = 2f
         const val ANGULAR_VELOCITY_ERROR_LIMIT = 0.1f
         private fun getChangeInPose(pose: FMatrix3, control: FMatrix2): FMatrix3 {
@@ -126,6 +126,7 @@ class Robot internal constructor(private val applet: PApplet, val length: Float,
         val tail = center - centerToHeadUnit
 
         // Draw robot body
+        applet.noFill()
         applet.stroke(1)
         applet.line(center.a1, 0f, center.a2, head.a1, 0f, head.a2)
         applet.circleXZ(center.a1, center.a2, length * 0.5f)

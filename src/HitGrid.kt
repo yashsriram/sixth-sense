@@ -1,14 +1,22 @@
 import extensions.minus
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
+import java.lang.Float.min
 
 class HitGrid(private val applet: PApplet,
               private val minCorner: FMatrix2,
               private val maxCorner: FMatrix2,
               private val numCellsX: Int,
               private val numCellsZ: Int) {
+
+    companion object {
+        var DRAW = true
+        const val THRESHOLD_COUNT = 50
+    }
+
     private val cellSizeX = (maxCorner.a1 - minCorner.a1) / numCellsX
     private val cellSizeZ = (maxCorner.a2 - minCorner.a2) / numCellsZ
+    var maxCount = 0
 
     // Hits are stored in X-major order
     private val hitMap = hashMapOf<Int, Int>()
@@ -28,12 +36,19 @@ class HitGrid(private val applet: PApplet,
         val index1D = get1DIndex(xIndex2D, zIndex2D)
         if (hitMap.containsKey(index1D)) {
             hitMap[index1D] = hitMap[index1D]!! + 1
+            if (hitMap[index1D]!! > maxCount) {
+                maxCount = hitMap[index1D]!!
+            }
         } else {
             hitMap[index1D] = 1
         }
     }
 
     fun draw() {
+        if (!DRAW) {
+            return
+        }
+
         // Boundary
         applet.noFill()
         applet.stroke(0f, 0f, 1f)
@@ -50,7 +65,9 @@ class HitGrid(private val applet: PApplet,
         for (key in hitMap.keys) {
             val i = key % numCellsX
             val j = key / numCellsX
-            applet.fill(1f, 0f, 0f)
+            val count = hitMap[key]
+            val r = min(count!!.toFloat() / THRESHOLD_COUNT, 1f)
+            applet.fill(r, 0f, 0f)
             val topLeftX = minCorner.a1 + i * cellSizeX
             val topLeftZ = minCorner.a2 + j * cellSizeZ
             applet.vertex(topLeftX, 0f, topLeftZ)

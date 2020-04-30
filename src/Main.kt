@@ -66,18 +66,19 @@ class Main : PApplet() {
             laserEnds.add(laserEnd)
             hitGrid!!.addHit(laserEnd)
         }
+        PApplet.print("Max hits: " + hitGrid!!.maxCount + "\r")
 
-        val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
-        stroke(0f, 1f, 1f)
-        val obstacles = observed.first
-        for (segment in obstacles) {
-            line(segment.point1.a1, 0f, segment.point1.a2,
-                    segment.point2.a1, 0f, segment.point2.a2)
-        }
-        val landmarks = observed.second
-        for (landmark in landmarks) {
-            circleXZ(landmark.a1, landmark.a2, 2f)
-        }
+//        val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
+//        stroke(0f, 1f, 1f)
+//        val obstacles = observed.first
+//        for (segment in obstacles) {
+//            line(segment.point1.a1, 0f, segment.point1.a2,
+//                    segment.point2.a1, 0f, segment.point2.a2)
+//        }
+//        val landmarks = observed.second
+//        for (landmark in landmarks) {
+//            circleXZ(landmark.a1, landmark.a2, 2f)
+//        }
 
         /* Draw */
         sim!!.draw()
@@ -103,10 +104,10 @@ class Main : PApplet() {
             sim!!.applyControl(FMatrix2(-100f, 0f))
         }
         if (keyCode == PConstants.LEFT) {
-            sim!!.applyControl(FMatrix2(0f, -0.5f))
+            sim!!.applyControl(FMatrix2(0f, -1f))
         }
         if (keyCode == PConstants.RIGHT) {
-            sim!!.applyControl(FMatrix2(0f, 0.5f))
+            sim!!.applyControl(FMatrix2(0f, 1f))
         }
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable
@@ -116,6 +117,9 @@ class Main : PApplet() {
         }
         if (key == 'l') {
             Simulator.DRAW_OBSTACLES = !Simulator.DRAW_OBSTACLES
+        }
+        if (key == 'v') {
+            HitGrid.DRAW = !HitGrid.DRAW
         }
     }
 }
