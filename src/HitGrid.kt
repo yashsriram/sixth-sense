@@ -19,10 +19,12 @@ class HitGrid(private val applet: PApplet,
     var maxCount = 0
 
     // Hits are stored in X-major order
-    private val hitMap = hashMapOf<Int, Int>()
+    private val hitMap = arrayListOf<IntArray>()
 
-    private fun get1DIndex(xIndex: Int, zIndex: Int): Int {
-        return zIndex * numCellsX + xIndex
+    init {
+        for (i in 0 until numCellsZ) {
+            hitMap.add(IntArray(numCellsX))
+        }
     }
 
     fun addHit(point: FMatrix2) {
@@ -33,14 +35,9 @@ class HitGrid(private val applet: PApplet,
         val distances = point - minCorner
         val xIndex2D = (distances.a1 / cellSizeX).toInt()
         val zIndex2D = (distances.a2 / cellSizeZ).toInt()
-        val index1D = get1DIndex(xIndex2D, zIndex2D)
-        if (hitMap.containsKey(index1D)) {
-            hitMap[index1D] = hitMap[index1D]!! + 1
-            if (hitMap[index1D]!! > maxCount) {
-                maxCount = hitMap[index1D]!!
-            }
-        } else {
-            hitMap[index1D] = 1
+        hitMap[zIndex2D][xIndex2D] = hitMap[zIndex2D][xIndex2D] + 1
+        if (hitMap[zIndex2D][xIndex2D] > maxCount) {
+            maxCount = hitMap[zIndex2D][xIndex2D]
         }
     }
 
@@ -62,18 +59,21 @@ class HitGrid(private val applet: PApplet,
         // Heat map
         applet.noStroke()
         applet.beginShape(PApplet.QUADS)
-        for (key in hitMap.keys) {
-            val i = key % numCellsX
-            val j = key / numCellsX
-            val count = hitMap[key]
-            val r = min(count!!.toFloat() / THRESHOLD_COUNT, 1f)
-            applet.fill(r, 0f, 0f)
-            val topLeftX = minCorner.a1 + i * cellSizeX
-            val topLeftZ = minCorner.a2 + j * cellSizeZ
-            applet.vertex(topLeftX, 0f, topLeftZ)
-            applet.vertex(topLeftX, 0f, topLeftZ + cellSizeZ)
-            applet.vertex(topLeftX + cellSizeX, 0f, topLeftZ + cellSizeZ)
-            applet.vertex(topLeftX + cellSizeX, 0f, topLeftZ)
+        for (i in 0 until numCellsZ) {
+            for (j in 0 until numCellsX) {
+                val count = hitMap[i][j]
+                if (count == 0) {
+                    continue
+                }
+                val r = min(count.toFloat() / THRESHOLD_COUNT, 1f)
+                applet.fill(r, 0f, 0f)
+                val topLeftX = minCorner.a1 + j * cellSizeX
+                val topLeftZ = minCorner.a2 + i * cellSizeZ
+                applet.vertex(topLeftX, 0f, topLeftZ)
+                applet.vertex(topLeftX, 0f, topLeftZ + cellSizeZ)
+                applet.vertex(topLeftX + cellSizeX, 0f, topLeftZ + cellSizeZ)
+                applet.vertex(topLeftX + cellSizeX, 0f, topLeftZ)
+            }
         }
         applet.endShape()
     }
