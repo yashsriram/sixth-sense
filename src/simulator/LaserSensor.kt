@@ -109,7 +109,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         applet.noFill()
         for (laserEnd in lasersEnds) {
             applet.stroke(1f, 0f, 0f)
-            applet.line(position.a1.toFloat(), 0f, position.a2.toFloat(), laserEnd.a1.toFloat(), 0f, laserEnd.a2.toFloat())
+            applet.line(position.a1, 0f, position.a2, laserEnd.a1, 0f, laserEnd.a2)
             applet.stroke(1f, 1f, 0f)
             applet.circleXZ(laserEnd.a1, laserEnd.a2, 1f)
         }

@@ -30,7 +30,7 @@ class LineSegmentObstacle internal constructor(private val applet: PApplet, p1: 
         val t1t2 = A.inverse() * b
         // Check if the collision is off the ends of the line segment
         if (t1t2.a2 < 0 || t1t2.a2 > 1) {
-            return (-1).toFloat()
+            return -1f
         }
         // Check if the collision is behind the robot
         return if (t1t2.a1 <= 0) {

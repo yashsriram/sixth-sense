@@ -127,7 +127,7 @@ class Robot internal constructor(private val applet: PApplet, val length: Float,
 
         // Draw robot body
         applet.stroke(1)
-        applet.line(center.a1.toFloat(), 0f, center.a2.toFloat(), head.a1.toFloat(), 0f, head.a2.toFloat())
+        applet.line(center.a1, 0f, center.a2, head.a1, 0f, head.a2)
         applet.circleXZ(center.a1, center.a2, length * 0.5f)
 
         // Draw lasers

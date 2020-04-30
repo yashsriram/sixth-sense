@@ -100,22 +100,22 @@ class HW2 : PApplet() {
 
         // Note that these we passed by reference, so to return, just set them
         val x_TPDT = FMatrixRMaj(x_T)
-        x_TPDT[0] += dt * v * cos(theta_t.toFloat())
-        x_TPDT[1] += dt * v * sin(theta_t.toFloat())
+        x_TPDT[0] += dt * v * cos(theta_t)
+        x_TPDT[1] += dt * v * sin(theta_t)
         x_TPDT[2] += dt * w
 
         val sigma_TPDT = FMatrixRMaj(sigma_T)
         val A = FMatrixRMaj(
                 arrayOf(
-                        floatArrayOf(1f, 0f, -dt * v * sin(theta_t.toFloat())),
-                        floatArrayOf(0f, 1f, dt * v * cos(theta_t.toFloat())),
+                        floatArrayOf(1f, 0f, -dt * v * sin(theta_t)),
+                        floatArrayOf(0f, 1f, dt * v * cos(theta_t)),
                         floatArrayOf(0f, 0f, 1f)
                 )
         )
         val N = FMatrixRMaj(
                 arrayOf(
-                        floatArrayOf(dt * cos(theta_t.toFloat()), 0f),
-                        floatArrayOf(dt * sin(theta_t.toFloat()), 0f),
+                        floatArrayOf(dt * cos(theta_t), 0f),
+                        floatArrayOf(dt * sin(theta_t), 0f),
                         floatArrayOf(0f, dt)
                 )
         )
@@ -303,8 +303,8 @@ class HW2 : PApplet() {
         val uTmp = n + u
         val thetaOld = xTrueNew[2]
         val thetaNew = thetaOld + dt * uTmp.a2
-        xTrueNew[0] += uTmp.a1 / uTmp.a2 * (sin(thetaNew.toFloat()) - sin(thetaOld.toFloat()))
-        xTrueNew[1] += uTmp.a1 / uTmp.a2 * (-cos(thetaNew.toFloat()) + cos(thetaOld.toFloat()))
+        xTrueNew[0] += uTmp.a1 / uTmp.a2 * (sin(thetaNew) - sin(thetaOld))
+        xTrueNew[1] += uTmp.a1 / uTmp.a2 * (-cos(thetaNew) + cos(thetaOld))
         xTrueNew[2] = thetaNew
 
         // Run an EKFSLAMPropagation step
@@ -360,23 +360,23 @@ class HW2 : PApplet() {
         stroke(1f, 1f, 0f)
         // Draw true landmarks
         for (landmark in landmarks) {
-            circle(landmark[0].toFloat(), landmark[1].toFloat(), 10f)
+            circle(landmark[0], landmark[1], 10f)
         }
 
         // Draw the true trajectory
         stroke(0f, 1f, 0f)
         jointPoints(truePath)
         val trueState = truePath[truePath.size - 1]
-        circle(trueState[0].toFloat(), trueState[1].toFloat(), 2 * SENSOR_DISTANCE)
+        circle(trueState[0], trueState[1], 2 * SENSOR_DISTANCE)
         // Draw the laser hits
         for (laser in lasers) {
-            line(trueState[0].toFloat(), trueState[1].toFloat(), laser[0].toFloat(), laser[1].toFloat())
+            line(trueState[0], trueState[1], laser[0], laser[1])
         }
 
         // Draw the estimated trajectory
         stroke(0f, 0f, 1f)
         jointPoints(estimatedPath)
-        circle(estimatedPath[estimatedPath.size - 1][0].toFloat(), estimatedPath[estimatedPath.size - 1][1].toFloat(), 10f)
+        circle(estimatedPath[estimatedPath.size - 1][0], estimatedPath[estimatedPath.size - 1][1], 10f)
 
         // Draw the uncertainty of the robot
         visualizeCovariance(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
@@ -404,7 +404,7 @@ class HW2 : PApplet() {
         val eigenValue1 = decomposer.getEigenvalue(0)
         val eigenValue2 = decomposer.getEigenvalue(1)
         val eigenVectors = EigenOps_FDRM.createMatrixV(decomposer)
-        val ellipseTheta = atan2(eigenVectors[1, 0].toFloat(), eigenVectors[0, 0].toFloat())
+        val ellipseTheta = atan2(eigenVectors[1, 0], eigenVectors[0, 0])
         val sinEllipseTheta = sin(ellipseTheta)
         val cosEllipseTheta = cos(ellipseTheta)
         val rot = FMatrixRMaj(
@@ -438,7 +438,7 @@ class HW2 : PApplet() {
         for (i in 1 until points.size) {
             val prevState = points[i - 1]
             val currState = points[i]
-            line(prevState[0].toFloat(), prevState[1].toFloat(), currState[0].toFloat(), currState[1].toFloat())
+            line(prevState[0], prevState[1], currState[0], currState[1])
         }
     }
 
