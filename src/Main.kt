@@ -34,7 +34,7 @@ class Main : PApplet() {
     }
 
     private fun reset() {
-        val sceneName = "data/apartment.scn"
+        val sceneName = "data/simple_rectangle.scn"
         sim = Simulator(this, sceneName)
         hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
     }
@@ -64,25 +64,25 @@ class Main : PApplet() {
             laserBeam *= distances[i]
             val laserEnd = tail + laserBeam
             laserEnds.add(laserEnd)
-            hitGrid!!.addHit(laserEnd)
+//            hitGrid!!.addHit(laserEnd)
         }
-        PApplet.print("Max hits: " + hitGrid!!.maxCount + "\r")
+//        PApplet.print("Max hits: " + hitGrid!!.maxCount + "\r")
 
-//        val observed = getObservedObstaclesAndLandmarks(laserEnds, distances)
-//        stroke(0f, 1f, 1f)
-//        val obstacles = observed.first
-//        for (segment in obstacles) {
-//            line(segment.point1.a1, 0f, segment.point1.a2,
-//                    segment.point2.a1, 0f, segment.point2.a2)
-//        }
-//        val landmarks = observed.second
-//        for (landmark in landmarks) {
-//            circleXZ(landmark.a1, landmark.a2, 2f)
-//        }
+        val observed = LandmarkObstacleExtractionLogic.getObservedObstaclesAndLandmarks(laserEnds, distances)
+        stroke(0f, 1f, 1f)
+        val obstacles = observed.first
+        PApplet.print("# obstacles: ${obstacles.size}\r")
+        for (segment in obstacles) {
+            line(segment.point1.a1, 0f, segment.point1.a2, segment.point2.a1, 0f, segment.point2.a2)
+        }
+        val landmarks = observed.second
+        for (landmark in landmarks) {
+            circleXZ(landmark.a1, landmark.a2, 2f)
+        }
 
         /* Draw */
         sim!!.draw()
-        hitGrid!!.draw()
+//        hitGrid!!.draw()
 
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}")
     }

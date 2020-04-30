@@ -33,6 +33,10 @@ operator fun FMatrix2.timesAssign(t: Float) {
     this.a2 *= t
 }
 
+fun FMatrix2.dist(b: FMatrix2): Float {
+    return sqrt((a1 - b.a1) * (a1 - b.a1) + (a2 - b.a2) * (a2 - b.a2))
+}
+
 fun FMatrix2.dot(b: FMatrix2): Float {
     return CommonOps_FDF2.dot(this, b)
 }

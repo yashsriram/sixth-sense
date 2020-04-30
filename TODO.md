@@ -15,7 +15,7 @@
     - [x] Lines are obstacles, endpoints stored only for planning
 
 ## Compound measurement
-- [ ] Map corner features from lines
+- [ ] Extract landmarks and obstacles
     - [x] implement RANSAC from class
         - [x] Change do-while to while
         - [ ] separate in room and out of room measurements
@@ -29,15 +29,26 @@
     - [ ] Optimize this step
 
 ## Compound measurement over time
+- [ ] Octa map
 - [ ] Discrete-kernel based obstacle and landmark extraction
     - [x] Is long needed for count? Mostly No
-- [ ] Plan
-    - [ ] 0 control -> doesn't add more drift
-    - [ ] Initially no uncertainity in state
-    - [ ] Use two hitgrids, one for planning one for sensing
-    - [ ] Use multiple measrurements over time to form a sensing hitmap from which extract landmarks
-    - [ ] Ignore measurements while moving
-    - [ ] Move slowly and take frequent stops for landmark measurements
+- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
+- [ ] Estimating Sigma_n does it depend on controls? Should not be ideally
+- [ ] Ignore measurements while moving? maybe. Try doing it only while stationary
+- [ ] Move slowly and take frequent stops for landmark measurements
+- [ ] Use multiple measrurements over time to form a sensing hitmap from which extract landmarks
+- [ ] Use two hitgrids, one for planning one for sensing
+- [ ] SLAM and planning can be developed independently
+- Policy
+    - SLAM is not as transparent as first half, but
+    - Initially no noise assumption, No more noise while staying stationary
+    - 0 control -> doesn't add more drift
+    - While true
+        - Come to stop and measure
+        - Find landmarks with good uncertainity (augment/update)
+        - Find obstacles with good uncertainity
+        - Plan a path
+        - Small valued controls -> less noise, move very slowly (propogate)
 - [ ] Revert v, w, vdot_max, wdot_max to good values before proceeding
 
 ## Estimation
@@ -47,7 +58,6 @@
 
 ## SLAM
 - [ ] SLAM
-- [ ] SLAM and planning can be developed independently
 
 ## Planning
 - [ ] Planning
