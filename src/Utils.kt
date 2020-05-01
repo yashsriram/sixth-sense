@@ -102,12 +102,8 @@ fun segmentPoints(points: List<DMatrix2>, distances: List<Double>): List<Mutable
             if(Math.abs(distances[i] - distances[i-1]) > LANDMARK_MARGIN){
                 segments.add(mutableListOf<DMatrix2>())
             }
-            else{
-
-                // add the point to the latest segment
-                segments.get(segments.lastIndex).add(points[i])
-
-            }
+            // add the point to the latest segment
+            segments.get(segments.lastIndex).add(points[i])
         }
 
     }
