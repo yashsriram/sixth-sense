@@ -1,23 +1,13 @@
-import extensions.determinant
-import extensions.dist
-import extensions.inverse
-import extensions.times
 import org.ejml.data.FMatrix2
-import org.ejml.data.FMatrix2x2
 import processing.core.PApplet
-import simulator.LaserSensor
-import kotlin.math.*
+import kotlin.math.abs
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class LandmarkObstacleExtractionLogicIEP(private val applet: PApplet) {
     data class ObservedLineSegmentObstacle(val point1: FMatrix2, val point2: FMatrix2)
     companion object {
-        private const val RANSAC_ITER = 1000
-        private const val RANSAC_THRESHOLD = 4f
-        private const val RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 15
-
         private const val DISCONTINUITY_THRESHOLD = 60.0
-        private const val LOWER_LANDMARK_MARGIN = 1.0
-        private const val INTERSECTION_MARGIN = 30.0
     }
 
     fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<MutableList<ObservedLineSegmentObstacle>, MutableList<FMatrix2>> {
@@ -64,7 +54,7 @@ class LandmarkObstacleExtractionLogicIEP(private val applet: PApplet) {
 
     private fun fitLineSegments(points: List<FMatrix2>, epsilon: Float): List<Pair<FMatrix2, FMatrix2>> {
 
-        val ResultList = mutableListOf<Pair<FMatrix2, FMatrix2>>()
+        val resultList = mutableListOf<Pair<FMatrix2, FMatrix2>>()
         var dmax = 0.0F
         var index = 0
         val end = points.size
@@ -80,15 +70,15 @@ class LandmarkObstacleExtractionLogicIEP(private val applet: PApplet) {
             }
 
             if (dmax > epsilon) {
-                val ResultList1 = fitLineSegments(points.subList(0, index + 1), epsilon)
-                val ResultList2 = fitLineSegments(points.subList(index, end), epsilon)
-                ResultList.addAll(ResultList1)
-                ResultList.addAll(ResultList2)
+                val resultList1 = fitLineSegments(points.subList(0, index + 1), epsilon)
+                val resultList2 = fitLineSegments(points.subList(index, end), epsilon)
+                resultList.addAll(resultList1)
+                resultList.addAll(resultList2)
             } else {
-                ResultList.add(Pair(points[0], points[end - 1]))
+                resultList.add(Pair(points[0], points[end - 1]))
             }
         }
-        return ResultList.toList()
+        return resultList.toList()
     }
 
     private fun getPerpendicularDistance(P1: FMatrix2, P2: FMatrix2, P0: FMatrix2): Float {
