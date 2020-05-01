@@ -34,7 +34,7 @@ class Main : PApplet() {
     }
 
     private fun reset() {
-        val sceneName = "data/simple_rectangle.scn"
+        val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
         hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
     }

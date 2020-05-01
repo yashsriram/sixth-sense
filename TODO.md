@@ -19,13 +19,13 @@
     - [x] implement RANSAC from class
         - [x] Change do-while to while
         - [ ] separate in room and out of room measurements
-    - [ ] The least squares line fitting
-    - [ ] Case based corner detection (using discontinuities, intersections etc...)
-        - [ ] Break obstacles using discontinuties
-        - [ ] Cull ghost intersection landmarks
+    - [x] Case based corner detection (using discontinuities and intersections)
+        - [x] Break obstacles using discontinuties
+        - [x] Cull ghost intersection landmarks (line segment line segment intersection)
         - [x] What is 501?
         - [x] for (i in 0 until lineSegments.size) {?
-        - [ ] breaking cases
+        - [x] breaking cases
+    - [ ] The least squares line fitting
     - [ ] Optimize this step
 
 ## Compound measurement over time

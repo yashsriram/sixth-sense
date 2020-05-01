@@ -14,7 +14,7 @@ class LandmarkObstacleExtractionLogic {
         private const val RANSAC_THRESHOLD = 4f
         private const val RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 15
 
-        private const val LANDMARK_MARGIN = 60.0
+        private const val DISCONTINUITY_THRESHOLD = 60.0
         private const val LOWER_LANDMARK_MARGIN = 1.0
         private const val INTERSECTION_MARGIN = 30.0
 
@@ -24,8 +24,8 @@ class LandmarkObstacleExtractionLogic {
 
             // Partition points based on distance discontinuities
             val partitions = partitionBasedOnDiscontinuity(points, distances)
-            val lines = mutableListOf<Pair<FMatrix2, FMatrix2>>()
             // Find lines in each of the segments
+            val lines = mutableListOf<Pair<FMatrix2, FMatrix2>>()
             for (partition in partitions) {
                 // Do RANSAC and add the discovered line to the list of our lines
                 val linesInPartition = fitLines(partition)
@@ -41,9 +41,9 @@ class LandmarkObstacleExtractionLogic {
             var j = 1
             var i = 1
             while (i < (distances.size) && j < points.size) {
-                if (((distances[i] - distances[i - 1]) > LANDMARK_MARGIN) || (distances[i] == LaserSensor.INVALID_DISTANCE && (distances[i] - distances[i - 1]) > LOWER_LANDMARK_MARGIN)) {
+                if (((distances[i] - distances[i - 1]) > DISCONTINUITY_THRESHOLD) || (distances[i] == LaserSensor.INVALID_DISTANCE && (distances[i] - distances[i - 1]) > LOWER_LANDMARK_MARGIN)) {
                     observedLandmarks.add(points[j - 1])
-                } else if (((distances[i - 1] - distances[i]) > LANDMARK_MARGIN) || (distances[i - 1] == LaserSensor.INVALID_DISTANCE && (distances[i - 1] - distances[i]) > LOWER_LANDMARK_MARGIN)) {
+                } else if (((distances[i - 1] - distances[i]) > DISCONTINUITY_THRESHOLD) || (distances[i - 1] == LaserSensor.INVALID_DISTANCE && (distances[i - 1] - distances[i]) > LOWER_LANDMARK_MARGIN)) {
                     observedLandmarks.add(points[j])
                 }
                 if (distances[i] != LaserSensor.INVALID_DISTANCE) {
@@ -69,7 +69,7 @@ class LandmarkObstacleExtractionLogic {
 
                 for (i in 1 until points.size) {
                     // Add a new partition every time there is a significant change in distance
-                    if (abs(distances[i] - distances[i - 1]) > LANDMARK_MARGIN) {
+                    if (abs(distances[i] - distances[i - 1]) > DISCONTINUITY_THRESHOLD) {
                         partitions.add(mutableListOf())
                     }
                     // Add the point to the latest segment
@@ -79,61 +79,66 @@ class LandmarkObstacleExtractionLogic {
             return partitions
         }
 
-        private fun fitLines(points: List<FMatrix2>): List<Pair<FMatrix2, FMatrix2>> {
-            val lineSegments = mutableListOf<Pair<FMatrix2, FMatrix2>>()
+        private fun fitLines(originalPoints: List<FMatrix2>): List<Pair<FMatrix2, FMatrix2>> {
+            val lines = mutableListOf<Pair<FMatrix2, FMatrix2>>()
 
-            if (points.isNotEmpty() && points.size > 3) {
-                // To keep track of all outliers after removal of inliers
-                var outlierPoints = points.toMutableList()
+            // If 3 points
+            if (originalPoints.size <= 3) {
+                return lines
+            }
 
-                while (true) {
-                    // Keep track of max inliers and remaining outliers after
-                    // Identification of each line
-                    var maxInliers = 0
-                    var endPoints = Pair(FMatrix2(), FMatrix2())
-                    var remainingPoints = mutableListOf<FMatrix2>()
+            // To keep track of all outliers after removal of inliers
+            var points = originalPoints.toMutableList()
 
-                    // Run RANSAC to find best fit points
-                    for (i in 1..RANSAC_ITER) {
-                        // Keep track of outliers and inliers for the points chosen
-                        val outliersShuffledCopy = outlierPoints.shuffled().toMutableList()
-                        val randPoints = outliersShuffledCopy.take(2)
-                        // Calculate number of inliers
-                        var inliers = 0
-                        for (point in outlierPoints) {
-                            val dist = getPerpendicularDistance(randPoints[0], randPoints[1], point)
-                            if (dist < RANSAC_THRESHOLD) {
-                                inliers += 1
-                                outliersShuffledCopy.removeAt(outliersShuffledCopy.indexOf(point))
-                            }
-                        }
-                        // Update the best fits
-                        if (inliers > maxInliers) {
-                            endPoints = Pair(randPoints[0], randPoints[1])
-                            maxInliers = inliers
-                            remainingPoints = outliersShuffledCopy
+            while (true) {
+                // Run RANSAC to find best fit points
+                var maxInliers = 0
+                var bestEndPoints = Pair(FMatrix2(), FMatrix2())
+                var bestRemainingPoints = mutableListOf<FMatrix2>()
+                for (i in 1..RANSAC_ITER) {
+                    // Keep track of outliers and inliers for the points chosen
+                    val shuffledPointsCopy = points.shuffled().toMutableList()
+                    val definingPoints = shuffledPointsCopy.take(2)
+                    // Calculate number of inliers
+                    for (point in points) {
+                        val dist = getPerpendicularDistance(definingPoints[0], definingPoints[1], point)
+                        if (dist < RANSAC_THRESHOLD) {
+                            shuffledPointsCopy.removeAt(shuffledPointsCopy.indexOf(point))
                         }
                     }
-
-                    // Filter out spurious matches
-                    val prevLineCount = lineSegments.size
-                    if (maxInliers > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
-                        lineSegments.add(endPoints)
-                        outlierPoints = remainingPoints
+                    // Update the best fits
+                    val inliers = points.size - shuffledPointsCopy.size
+                    if (inliers > maxInliers) {
+                        bestEndPoints = Pair(definingPoints[0], definingPoints[1])
+                        maxInliers = inliers
+                        bestRemainingPoints = shuffledPointsCopy
                     }
+                }
 
-                    // Exit if no new lines are found or we've run out of points
-                    if ((lineSegments.size <= prevLineCount) or (outlierPoints.size <= 3)) {
-                        break
-                    }
+                // Filter out spurious matches
+                val prevLineCount = lines.size
+                if (maxInliers > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
+                    lines.add(bestEndPoints)
+                    points = bestRemainingPoints
+                }
+
+                // Exit if no new lines are found or we've run out of points
+                if ((lines.size <= prevLineCount) or (points.size <= 3)) {
+                    break
                 }
             }
 
-            return lineSegments
+            return lines
+        }
+
+        private fun getPerpendicularDistance(P1: FMatrix2, P2: FMatrix2, P0: FMatrix2): Float {
+            val num = abs((P2.a2 - P1.a2) * P0.a1 - (P2.a1 - P1.a1) * P0.a2 + P2.a1 * P1.a2 - P2.a2 * P1.a1)
+            val den = sqrt((P2.a2 - P1.a2).toDouble().pow(2.0) + (P2.a1 - P1.a1).toDouble().pow(2.0))
+            return (num / den).toFloat()
         }
 
         private fun getIntersectionPoints(lineSegments: List<Pair<FMatrix2, FMatrix2>>, points: List<FMatrix2>): MutableList<FMatrix2> {
-            var observedLandmarks = mutableListOf<FMatrix2>()
+            val observedLandmarks = mutableListOf<FMatrix2>()
             for (i in 0 until lineSegments.size - 1) {
                 for (j in i + 1 until lineSegments.size) {
                     //two points
@@ -196,19 +201,6 @@ class LandmarkObstacleExtractionLogic {
             }
             return checkLine1 && checkLine2
         }
-
-        /*
-        * P1: First point of the line
-        * P2: Second point of the line
-        * P0: Point who's distance is to be calculated
-        * return: distance of P0 from the line P1P2
-        * */
-        private fun getPerpendicularDistance(P1: FMatrix2, P2: FMatrix2, P0: FMatrix2): Float {
-            val num = abs((P2.a2 - P1.a2) * P0.a1 - (P2.a1 - P1.a1) * P0.a2 + P2.a1 * P1.a2 - P2.a2 * P1.a1)
-            val den = sqrt((P2.a2 - P1.a2).toDouble().pow(2.0) + (P2.a1 - P1.a1).toDouble().pow(2.0))
-            return (num / den).toFloat()
-        }
-
     }
 }
 
