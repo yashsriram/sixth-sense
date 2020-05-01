@@ -20,6 +20,7 @@ class Main : PApplet() {
     private var sim: Simulator? = null
     private var cam: QueasyCam? = null
     private var hitGrid: HitGrid? = null
+    private var extractionLogic: LandmarkObstacleExtractionLogic? = null
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -37,6 +38,7 @@ class Main : PApplet() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
         hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
+        extractionLogic = LandmarkObstacleExtractionLogic(this)
     }
 
     override fun draw() {
@@ -66,12 +68,12 @@ class Main : PApplet() {
             laserEnds.add(laserEnd)
 //            hitGrid!!.addHit(laserEnd)
         }
-//        PApplet.print("Max hits: " + hitGrid!!.maxCount + "\r")
+//        print("Max hits: " + hitGrid!!.maxCount + "\r")
 
-        val observed = LandmarkObstacleExtractionLogic.getObservedObstaclesAndLandmarks(laserEnds, distances)
+        val observed = extractionLogic!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
         stroke(0f, 1f, 1f)
         val obstacles = observed.first
-        PApplet.print("# obstacles: ${obstacles.size}\r")
+        print("# obstacles: ${observed.first.size} # landmarks: ${observed.second.size}\r")
         for (segment in obstacles) {
             line(segment.point1.a1, 0f, segment.point1.a2, segment.point2.a1, 0f, segment.point2.a2)
         }
