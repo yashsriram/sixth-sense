@@ -13,8 +13,6 @@ import kotlin.math.*
 data class ObservedLineSegmentObstacle(val point1: DMatrix2, val point2: DMatrix2)
 
 private val LANDMARK_MARGIN = 60.0
-private val LOWER_LANDMARK_MARGIN = 1.0
-private val INTERSECTION_MARGIN = 30.0
 
 /*
 * points: list of X, Y positions
@@ -29,48 +27,56 @@ fun getObservedObstaclesAndLandmarks(points: List<DMatrix2>, distances: List<Dou
 
     // segment the lines into sections
     val segments = segmentPoints(points, distances)
-    val lineSegments = mutableListOf<Pair<DMatrix2, DMatrix2>>()
 
     // find lines in each of the segments
     for (segment in segments){
 
         // Do RANSAC and add the discovered lines to the list of our lines
-        val linesInSegment = fitLineSegments(segment.toList(), 1000, 4f, 12)
-        lineSegments.addAll(linesInSegment)
+        val linesInSegment = fitLineSegments(segment.toList(),10F)
 
         // expose all discovered lines to the visualization
         for (endPoints in linesInSegment) {
+            observedLandmarks.add(endPoints.first)
+            observedLandmarks.add(endPoints.second)
             observedLineSegmentObstacles.add(ObservedLineSegmentObstacle(endPoints.first, endPoints.second))
         }
     }
 
-    /* TODO fill "observedLandmarks" with landmarks such as intersections of line or loose ends of lines */
-    //loose ends
-    var j =1
-    var i = 1
-    while ( i < (distances.size) && j<points.size){
-        if(((distances[i]-distances[i-1]) > LANDMARK_MARGIN) || ( distances[i] == LaserSensor.INVALID_MEASUREMENT && (distances[i]-distances[i-1]) > LOWER_LANDMARK_MARGIN)) {
-            observedLandmarks.add(points[j - 1])
-        }
-        else if(((distances[i-1]-distances[i]) > LANDMARK_MARGIN) || ( distances[i-1] == LaserSensor.INVALID_MEASUREMENT && (distances[i-1]-distances[i]) > LOWER_LANDMARK_MARGIN)){
-            observedLandmarks.add(points[j])
-        }
-        if(distances[i] != LaserSensor.INVALID_MEASUREMENT){
-            j++
-        }
-        i++
-    }
-    //intersection
-    var intersectLandmarks = mutableListOf<DMatrix2>()
-    intersectLandmarks = getIntersectionPoints(lineSegments, points)
-    for ( pt in intersectLandmarks)
-    {
-        observedLandmarks.add(pt)
-    }
-    /* -- */
-
-
     return Pair(observedLineSegmentObstacles, observedLandmarks)
+}
+
+/*
+* points: list of input points to fit the algorithm over
+* epsilon: distance margin to consider
+* return: the end points of each line segment
+*/
+fun fitLineSegments(points: List<DMatrix2>, epsilon: Float): List<Pair<DMatrix2, DMatrix2>> {
+
+    val ResultList = mutableListOf<Pair<DMatrix2, DMatrix2>>()
+    var dmax = 0.0F
+    var index = 0
+    val end = points.size
+
+    if(points.isNotEmpty()) {
+
+        for (i in 1 until end - 1) {
+            val dist = getPerpendicularDistance(points[0], points[end - 1], points[i])
+            if (dist > dmax) {
+                dmax = dist
+                index = i
+            }
+        }
+
+        if (dmax > epsilon) {
+            val ResultList1 = fitLineSegments(points.subList(0, index + 1), epsilon)
+            val ResultList2 = fitLineSegments(points.subList(index, end), epsilon)
+            ResultList.addAll(ResultList1)
+            ResultList.addAll(ResultList2)
+        } else {
+            ResultList.add(Pair(points[0], points[end - 1]))
+        }
+    }
+    return ResultList.toList()
 }
 
 
@@ -96,162 +102,16 @@ fun segmentPoints(points: List<DMatrix2>, distances: List<Double>): List<Mutable
             if(Math.abs(distances[i] - distances[i-1]) > LANDMARK_MARGIN){
                 segments.add(mutableListOf<DMatrix2>())
             }
+            else{
 
-            // add the point to the latest segment
-            segments.get(segments.lastIndex).add(points[i])
+                // add the point to the latest segment
+                segments.get(segments.lastIndex).add(points[i])
 
+            }
         }
 
     }
     return segments.toList()
-}
-
-
-/*
-* lineSegments: list of line segments
-* Points: list of points
-* return: list of intersection points
-* */
-fun getIntersectionPoints(lineSegments: List<Pair<DMatrix2, DMatrix2>>, points: List<DMatrix2>): MutableList<DMatrix2>
-{
-    var observedLandmarks = mutableListOf<DMatrix2>()
-    for (i in 0 until lineSegments.size - 1) {
-        for (j in i + 1 until lineSegments.size) {
-            //two points
-            val L1 = lineSegments[i]
-            val L2 = lineSegments[j]
-
-            val m1 = (L1.second.a2 - L1.first.a2) / (L1.second.a1 - L1.first.a1)
-            val b1 = -m1 * L1.first.a1 + L1.first.a2
-
-            val m2 = (L2.second.a2 - L2.first.a2) / (L2.second.a1 - L2.first.a1)
-            val b2 = -m2 * L2.first.a1 + L2.first.a2
-
-            val A = DMatrix2x2(-m1, 1.0, -m2, 1.0)
-            val b = DMatrix2(b1, b2)
-            if (abs(A.determinant()) > 1e-6) {
-                val intersect = A.inverse() * b
-                var minDist = Double.MAX_VALUE
-                var minIdx = 0
-                for (p in 0 until (points.size)) {
-                    if (dist(intersect, points[p]) < minDist) {
-                        minIdx = p
-                        minDist = dist(intersect, points[p])
-                    }
-                }
-                if(minDist<30 && checkLimit(points[minIdx] ,L1.first, L1.second,  L2.first, L2.second) ) {
-                    observedLandmarks.add(points[minIdx])
-                }
-            }
-        }
-    }
-    return observedLandmarks
-}
-
-
-/*
-* Pt1: First point
-* Pt2: Second point
-* return: distance between Pt1 and Pt2
-* */
-fun dist(pt1: DMatrix2, pt2: DMatrix2): Double {
-    return sqrt((pt1.a1 - pt2.a1) * (pt1.a1 - pt2.a1) + (pt1.a2 - pt2.a2) * (pt1.a2 - pt2.a2))
-}
-
-
-/*
-* Pt: A point
-* p11: First point of the line1
-* p12: Second point of the line1
-* p21: First point of the line2
-* p22: Second point of the line2
-* return: true if pt lies on both the lines up to a margin
-* */
-fun checkLimit(pt: DMatrix2, p11: DMatrix2, p12: DMatrix2, p21: DMatrix2, p22: DMatrix2): Boolean
-{
-
-    var checkLine1 = false
-    var checkLine2 = false
-    var x1 = p11.a1
-    var y1 = p11.a2
-    var x2 = p12.a1
-    var y2 = p12.a2
-    if(pt.a1 > (min(x1, x2) - INTERSECTION_MARGIN) && pt.a1 < (max(x1, x2) + INTERSECTION_MARGIN) && pt.a2 > (min(y1, y2) - INTERSECTION_MARGIN) && pt.a2 < (max(y1, y2) + INTERSECTION_MARGIN)) //Line 1
-        checkLine1 = true
-    x1 = p21.a1
-    y1 = p21.a2
-    x2 = p22.a1
-    y2 = p22.a2
-   //
-    if(pt.a1 > (min(x1, x2) - INTERSECTION_MARGIN) && pt.a1 < (max(x1, x2) + INTERSECTION_MARGIN) && pt.a2 > (min(y1, y2) - INTERSECTION_MARGIN) && pt.a2 < (max(y1, y2) + INTERSECTION_MARGIN)) //Line 2
-        checkLine2 = true
-
-    return checkLine1 && checkLine2
-}
-
-
-/*
-* points: list of X, Y positions
-* iterations: number of iterations to run RANSAC for
-* threshold: max distance from the line to count as inlier
-* minInliers: min number of inliers to consider a good line
-* returns: MutableList<List<DMatrix2>> where each element is a list which contains the start and
-* end points of the line
-* */
-fun fitLineSegments(points: List<DMatrix2>, iterations: Int, threshold: Float, minInliers: Int): List<Pair<DMatrix2, DMatrix2>> {
-    // return object
-    val lineSegments = mutableListOf<Pair<DMatrix2, DMatrix2>>()
-
-    if (points.isNotEmpty() && points.size > 3) {
-        // to keep track of all outliers after removal of inliers
-        var outlierPoints = points.toMutableList()
-        var nLines = 0
-
-        while(true){
-            // keep track of max inliers and remaining outliers after 
-            // identification of each line
-            var maxInliers = 0
-            var endPoints = Pair(DMatrix2(), DMatrix2())
-            var remainingPoints = mutableListOf<DMatrix2>()
-
-            // run RANSAC to find best fit points
-            for (i in 1..iterations) {
-                // keep track of outliers and inliers for the points chosen
-                var inliers = 0
-                val outliers = outlierPoints.shuffled().toMutableList()
-                val randPoints = outliers.take(2)
-
-                // calculate number of inliers
-                for (point in outlierPoints) {
-                    val dist = getPerpendicularDistance(randPoints[0], randPoints[1], point)
-                    if (dist < threshold) {
-                        inliers += 1
-                        outliers.removeAt(outliers.indexOf(point))
-                    }
-                }
-
-                // update the best fits 
-                if (inliers > maxInliers) {
-                    endPoints = Pair(randPoints[0], randPoints[1])
-                    maxInliers = inliers
-                    remainingPoints = outliers
-                }
-            }
-
-            // filter out spurious matches
-            nLines = lineSegments.size
-            if (maxInliers > minInliers) {
-                lineSegments.add(endPoints)
-                outlierPoints = remainingPoints
-            }
-
-            // exit if no new lines are found or we've run out of points
-            if ((lineSegments.size <= nLines) or (outlierPoints.size <= 3))
-                break
-        }
-    }
-
-    return lineSegments
 }
 
 
