@@ -3,7 +3,7 @@ package simulator
 import extensions.circleXZ
 import extensions.plus
 import extensions.timesAssign
-import org.ejml.data.DMatrix2
+import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
@@ -15,82 +15,93 @@ class LaserSensor internal constructor(private val applet: PApplet) {
 
     companion object {
         var DRAW_LASERS = true
+
         const val COUNT = 181
-        const val MIN_THETA = -Math.PI / 2
-        const val MAX_THETA = Math.PI / 2
+        const val MIN_THETA = -Math.PI.toFloat() / 2f
+        const val MAX_THETA = Math.PI.toFloat() / 2f
         const val ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / COUNT
-        const val MAX_DISTANCE = 500.0
-        const val DISTANCE_ERROR_LIMIT = 5.0
-        const val ANGLE_ERROR_LIMIT = 0.05
-        const val INVALID_MEASUREMENT = MAX_DISTANCE + 1
+
+        const val DISTANCE_ERROR_LIMIT = 5f
+        const val ANGLE_ERROR_LIMIT = 0.05f
+
+        const val MAX_DISTANCE = 500f
+        const val INVALID_DISTANCE = MAX_DISTANCE + 1f
     }
 
     // Multi-thread access
-    private val measurements: MutableList<Double> = ArrayList(COUNT)
+    private val distances: MutableList<Float> = ArrayList(COUNT)
+    private val angles: MutableList<Float> = ArrayList(COUNT)
 
     init {
         for (i in 0 until COUNT) {
-            measurements.add(INVALID_MEASUREMENT)
+            distances.add(INVALID_DISTANCE)
+            angles.add(i.toFloat())
         }
     }
 
-    fun updateLaserScan(position: DMatrix2, orientation: Double, obstacles: List<Obstacle>) {
-        val newMeasurements: MutableList<Double> = ArrayList(COUNT)
+    fun updateLaserScan(position: FMatrix2, orientation: Float, obstacles: List<Obstacle>) {
+        val newMeasurements: MutableList<Float> = ArrayList(COUNT)
         for (i in 0 until COUNT) {
-            newMeasurements.add(INVALID_MEASUREMENT)
+            newMeasurements.add(INVALID_DISTANCE)
         }
 
         // For each laser beam
         for (i in 0 until COUNT) {
-            val percentage = i / (COUNT - 1.0)
-            val laserThErr = ThreadLocalRandom.current().nextDouble(-ANGLE_ERROR_LIMIT * ANGULAR_RESOLUTION, ANGLE_ERROR_LIMIT * ANGULAR_RESOLUTION)
+            val percentage = i / (COUNT - 1f)
+            val laserThErr = ThreadLocalRandom.current().nextDouble((-ANGLE_ERROR_LIMIT * ANGULAR_RESOLUTION).toDouble(), (ANGLE_ERROR_LIMIT * ANGULAR_RESOLUTION).toDouble()).toFloat()
             val theta = MIN_THETA + (MAX_THETA - MIN_THETA) * percentage + orientation + laserThErr
-            val v = DMatrix2(cos(theta), sin(theta))
+            angles[i] = theta
+            val v = FMatrix2(cos(theta), sin(theta))
 
             // Check intersection for each line feature
             for (landmark in obstacles) {
                 val rayDistance = landmark.shortestRayDistanceFrom(position, v)
                 if (rayDistance >= 0 && rayDistance < MAX_DISTANCE) {
-                    newMeasurements[i] = min(rayDistance, newMeasurements[i])
+                    newMeasurements[i] = min(rayDistance.toDouble(), newMeasurements[i].toDouble()).toFloat()
                 }
             }
 
             // Add some noise to new measurements
-            if (newMeasurements[i] < INVALID_MEASUREMENT) {
-                val laserMeasurementError = ThreadLocalRandom.current().nextDouble(-DISTANCE_ERROR_LIMIT, DISTANCE_ERROR_LIMIT)
+            if (newMeasurements[i] < INVALID_DISTANCE) {
+                val laserMeasurementError = ThreadLocalRandom.current().nextDouble(-DISTANCE_ERROR_LIMIT.toDouble(), DISTANCE_ERROR_LIMIT.toDouble()).toFloat()
                 newMeasurements[i] += laserMeasurementError
             }
         }
 
         // Update measurements
-        synchronized(measurements) {
+        synchronized(distances) {
             for (i in newMeasurements.indices) {
-                measurements[i] = newMeasurements[i]
+                distances[i] = newMeasurements[i]
             }
         }
+    }
+
+    private fun getAngles(): List<Float> {
+        var currentAngles: List<Float>
+        synchronized(angles) { currentAngles = ArrayList(angles) }
+        return currentAngles
     }
 
     /* User callable */
-    fun getMeasurements(): List<Double> {
-        var currentMeasurements: List<Double>
-        synchronized(measurements) { currentMeasurements = ArrayList(measurements) }
-        return currentMeasurements
+    fun getDistances(): List<Float> {
+        var currentDistances: List<Float>
+        synchronized(distances) { currentDistances = ArrayList(distances) }
+        return currentDistances
     }
 
-    fun draw(position: DMatrix2, orientation: Double) {
+    fun draw(position: FMatrix2) {
         if (!DRAW_LASERS) {
             return
         }
-        val distances = getMeasurements()
-        val lasersEnds: MutableList<DMatrix2> = ArrayList(COUNT)
-        for (i in distances.indices) {
-            if (distances[i] == INVALID_MEASUREMENT) {
+        val distances = getDistances()
+        val angles = getAngles()
+        val lasersEnds: MutableList<FMatrix2> = ArrayList(COUNT)
+        for (i in 0 until COUNT) {
+            if (distances[i] == INVALID_DISTANCE) {
                 continue
             }
-            val percentage = i / (COUNT - 1.0)
-            val theta = MIN_THETA + (MAX_THETA - MIN_THETA) * percentage
-            val laserBeam = DMatrix2(cos(orientation + theta),
-                    sin(orientation + theta))
+            val theta = angles[i]
+            val laserBeam = FMatrix2(cos(theta), sin(theta))
             laserBeam *= distances[i]
             val laserEnd = position + laserBeam
             lasersEnds.add(laserEnd)
@@ -98,9 +109,9 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         applet.noFill()
         for (laserEnd in lasersEnds) {
             applet.stroke(1f, 0f, 0f)
-            applet.line(position.a1.toFloat(), 0f, position.a2.toFloat(), laserEnd.a1.toFloat(), 0f, laserEnd.a2.toFloat())
+            applet.line(position.a1, 0f, position.a2, laserEnd.a1, 0f, laserEnd.a2)
             applet.stroke(1f, 1f, 0f)
-            applet.circleXZ(laserEnd.a1, laserEnd.a2, 1.0)
+            applet.circleXZ(laserEnd.a1, laserEnd.a2, 1f)
         }
     }
 
