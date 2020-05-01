@@ -21,7 +21,7 @@ class Main : PApplet() {
     private var cam: QueasyCam? = null
     private var hitGrid: HitGrid? = null
     private var extractionLogic: LandmarkObstacleExtractionLogicIEP? = null
- 
+
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
     }

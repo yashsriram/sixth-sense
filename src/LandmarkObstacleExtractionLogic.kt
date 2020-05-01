@@ -188,5 +188,4 @@ class LandmarkObstacleExtractionLogic(private val applet: PApplet) {
         }
         return false
     }
-
 }
