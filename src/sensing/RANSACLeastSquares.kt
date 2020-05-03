@@ -1,3 +1,5 @@
+package sensing
+
 import extensions.determinant
 import extensions.dist
 import extensions.inverse
@@ -8,7 +10,7 @@ import processing.core.PApplet
 import simulator.LaserSensor
 import kotlin.math.*
 
-class LandmarkObstacleExtractionLogic(private val applet: PApplet) {
+class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtractionLogic {
     companion object {
         private const val RANSAC_ITER = 1000
         private const val RANSAC_THRESHOLD = 4f
@@ -19,7 +21,7 @@ class LandmarkObstacleExtractionLogic(private val applet: PApplet) {
         private const val INTERSECTION_MARGIN = 30.0
     }
 
-    fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {
+    override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {
         val observedLineSegmentObstacles = mutableListOf<Pair<FMatrix2, FMatrix2>>()
         val observedLandmarks = mutableListOf<FMatrix2>()
 

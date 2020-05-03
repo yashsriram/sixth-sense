@@ -27,7 +27,7 @@
         - [x] Partition based on discontinuity
         - [x] Return end point not defining points
         - [ ] Line fitting
-    - [ ] ITEP
+    - [ ] IEP
     - [ ] HitGrid
         - [ ] Octa map
         - [x] Is long needed for count? No.

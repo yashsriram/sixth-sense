@@ -6,6 +6,10 @@ import extensions.timesAssign
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
+import sensing.HitGrid
+import sensing.IEP
+import sensing.ObstacleLandmarkExtractionLogic
+import sensing.RANSACLeastSquares
 import simulator.LaserSensor
 import simulator.Simulator
 import java.util.*
@@ -20,7 +24,7 @@ class Main : PApplet() {
     private var sim: Simulator? = null
     private var cam: QueasyCam? = null
     private var hitGrid: HitGrid? = null
-    private var extractionLogic: LandmarkObstacleExtractionLogicIEP? = null
+    private var extractionLogic: ObstacleLandmarkExtractionLogic? = null
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -38,7 +42,7 @@ class Main : PApplet() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
         hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
-        extractionLogic = LandmarkObstacleExtractionLogicIEP(this)
+        extractionLogic = RANSACLeastSquares(this)
     }
 
     override fun draw() {
@@ -98,6 +102,12 @@ class Main : PApplet() {
     }
 
     override fun keyPressed() {
+        if (key == '1') {
+            extractionLogic = RANSACLeastSquares(this)
+        }
+        if (key == '2') {
+            extractionLogic = IEP(this)
+        }
         if (key == 'r') {
             reset()
         }

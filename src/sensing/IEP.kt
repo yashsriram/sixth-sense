@@ -1,33 +1,34 @@
+package sensing
+
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-class LandmarkObstacleExtractionLogicIEP(private val applet: PApplet) {
-    data class ObservedLineSegmentObstacle(val point1: FMatrix2, val point2: FMatrix2)
+class IEP(private val applet: PApplet) : ObstacleLandmarkExtractionLogic {
     companion object {
         private const val DISCONTINUITY_THRESHOLD = 60.0
     }
 
-    fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<MutableList<ObservedLineSegmentObstacle>, MutableList<FMatrix2>> {
-        val observedLineSegmentObstacles = mutableListOf<ObservedLineSegmentObstacle>()
+    override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<MutableList<Pair<FMatrix2, FMatrix2>>, MutableList<FMatrix2>> {
+        val observedLineSegmentObstacles = mutableListOf<Pair<FMatrix2, FMatrix2>>()
         val observedLandmarks = mutableListOf<FMatrix2>()
 
         // segment the lines into sections
         val segments = partitionBasedOnDiscontinuity(inputPoints, distances)
 
         // find lines in each of the segments
-        for (segment in segments){
+        for (segment in segments) {
 
             // Do IEP and add the discovered lines to the list of our lines
-            val linesInSegment = fitLineSegments(segment.toList(),10F)
+            val linesInSegment = fitLineSegments(segment.toList(), 10F)
 
             // expose all discovered lines to the visualization
             for (endPoints in linesInSegment) {
                 observedLandmarks.add(endPoints.first)
                 observedLandmarks.add(endPoints.second)
-                observedLineSegmentObstacles.add(ObservedLineSegmentObstacle(endPoints.first, endPoints.second))
+                observedLineSegmentObstacles.add(endPoints)
             }
         }
 
@@ -59,7 +60,7 @@ class LandmarkObstacleExtractionLogicIEP(private val applet: PApplet) {
         var index = 0
         val end = points.size
 
-        if(points.isNotEmpty()) {
+        if (points.isNotEmpty()) {
 
             for (i in 1 until end - 1) {
                 val dist = getPerpendicularDistance(points[0], points[end - 1], points[i])
