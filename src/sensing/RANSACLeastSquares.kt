@@ -1,13 +1,10 @@
 package sensing
 
-import extensions.determinant
-import extensions.dist
-import extensions.inverse
-import extensions.times
+import extensions.*
 import org.ejml.data.FMatrix2
 import org.ejml.data.FMatrix2x2
+import org.ejml.data.FMatrixRMaj
 import processing.core.PApplet
-import simulator.LaserSensor
 import kotlin.math.*
 
 class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtractor {
@@ -16,76 +13,78 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         private const val RANSAC_THRESHOLD = 4f
         private const val RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 15
 
-        private const val DISCONTINUITY_THRESHOLD = 60.0
+        private const val DISCONTINUITY_THRESHOLD = 30.0
         private const val LOWER_LANDMARK_MARGIN = 1.0
         private const val INTERSECTION_MARGIN = 30.0
     }
 
     override fun getName(): String {
-        return "RANSAC/LLS"
+        return "RANSAC/LS"
     }
 
-    override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {
-        val observedLineSegmentObstacles = mutableListOf<Pair<FMatrix2, FMatrix2>>()
-        val observedLandmarks = mutableListOf<FMatrix2>()
-
-        val partitions = partitionBasedOnDiscontinuity(inputPoints, distances)
-        for (partition in partitions) {
-            val linesInPartition = fitLines(partition)
-            observedLineSegmentObstacles.addAll(linesInPartition)
-        }
-
-        // Loose ends
-        var j = 1
-        var i = 1
-        while (i < (distances.size) && j < inputPoints.size) {
-            if (((distances[i] - distances[i - 1]) > DISCONTINUITY_THRESHOLD) || (distances[i] == LaserSensor.INVALID_DISTANCE && (distances[i] - distances[i - 1]) > LOWER_LANDMARK_MARGIN)) {
-                observedLandmarks.add(inputPoints[j - 1])
-            } else if (((distances[i - 1] - distances[i]) > DISCONTINUITY_THRESHOLD) || (distances[i - 1] == LaserSensor.INVALID_DISTANCE && (distances[i - 1] - distances[i]) > LOWER_LANDMARK_MARGIN)) {
-                observedLandmarks.add(inputPoints[j])
-            }
-            if (distances[i] != LaserSensor.INVALID_DISTANCE) {
-                j++
-            }
-            i++
-        }
-
-        // Intersection
-        val intersectLandmarks = getLandmarksAtIntersection(observedLineSegmentObstacles, inputPoints)
-        for (pt in intersectLandmarks) {
-            observedLandmarks.add(pt)
-        }
-
-        return Pair(observedLineSegmentObstacles, observedLandmarks)
+    private fun projectPointOnLine(m: Float, c: Float, point: FMatrix2): FMatrix2 {
+        val A = FMatrix2x2(
+                1 / m, 1f,
+                -m, 1f
+        )
+        val B = FMatrix2(
+                point.a2 + point.a1 / m,
+                c
+        )
+        return A.inverse() * B
     }
 
-    private fun partitionBasedOnDiscontinuity(points: List<FMatrix2>, distances: List<Float>): MutableList<MutableList<FMatrix2>> {
-        val partitions = mutableListOf<MutableList<FMatrix2>>()
-        if (points.isNotEmpty()) {
-            // Add the first point as
-            partitions.add(mutableListOf(points[0]))
-
-            for (i in 1 until points.size) {
-                // Add a new partition every time there is a significant change in distance
-                if (abs(distances[i] - distances[i - 1]) > DISCONTINUITY_THRESHOLD) {
-                    partitions.add(mutableListOf())
-                }
-                // Add the point to the latest segment
-                partitions[partitions.lastIndex].add(points[i])
+    private fun leastSquaresLineSegmentFit(bestInliers: List<FMatrix2>): Pair<FMatrix2, FMatrix2> {
+        // Check if it the line is perpendicular to x
+        var maxX = 0f
+        var minX = Float.POSITIVE_INFINITY
+        for (inlier in bestInliers) {
+            if (inlier.a1 > maxX) {
+                maxX = inlier.a1
+            }
+            if (inlier.a1 < minX) {
+                minX = inlier.a1
             }
         }
-        return partitions
+        // FIXME: use better method for lines perpendicular to x
+        if (maxX - minX < 20) {
+            val x = (maxX + minX) / 2f
+            val e1 = FMatrix2(x, bestInliers.first().a2)
+            val e2 = FMatrix2(x, bestInliers.last().a2)
+            return Pair(e1, e2)
+        } else {
+            // Least squares line fitting
+            val X = FMatrixRMaj(bestInliers.size, 2)
+            val Y = FMatrixRMaj(bestInliers.size, 1)
+            for ((t, inlier) in bestInliers.withIndex()) {
+                X[t, 0] = 1f
+                X[t, 1] = inlier.a1
+                Y[t, 0] = inlier.a2
+            }
+            val X_t = X.transpose()
+            val alpha = (X_t * X).inverse() * X_t * Y
+            val e1 = projectPointOnLine(alpha[1], alpha[0], bestInliers.first())
+            val e2 = projectPointOnLine(alpha[1], alpha[0], bestInliers.last())
+            return Pair(e1, e2)
+        }
+        //                if (prevLineCount % 2 == 0) {
+//                    applet.stroke(1f, 0f, 0f)
+//                } else {
+//                    applet.stroke(0f, 0f, 1f)
+//                }
+//                for (inlier in bestInliers) {
+//                    applet.circleXZ(inlier.a1, inlier.a2, 2f)
+//                }
     }
 
-    private fun fitLines(points: List<FMatrix2>): List<Pair<FMatrix2, FMatrix2>> {
+    private fun extractLines(partition: List<FMatrix2>): List<Pair<FMatrix2, FMatrix2>> {
         val lines = mutableListOf<Pair<FMatrix2, FMatrix2>>()
         // Make a copy of original points
-        var remainingPoints = points.toMutableList()
+        var remainingPoints = partition.toMutableList()
         while (true) {
-            // Find the biggest line
+            // Find the biggest line using RANSAC
             var bestInliers = mutableListOf<FMatrix2>()
             var bestRemainingPoints = mutableListOf<FMatrix2>()
-
             for (i in 0 until RANSAC_ITER) {
                 val remainingPointsCopy = remainingPoints.toMutableList()
                 val definingPoints = mutableListOf(remainingPointsCopy.random(), remainingPointsCopy.random())
@@ -111,7 +110,7 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
             // If number of inliers is big enough consider it as a line
             val prevLineCount = lines.size
             if (bestInliers.size > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
-                lines.add(Pair(bestInliers.first(), bestInliers.last()))
+                lines.add(leastSquaresLineSegmentFit(bestInliers))
                 remainingPoints = bestRemainingPoints
             }
             // Exit if no new lines are found or we've run out of points
@@ -121,6 +120,58 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         }
 
         return lines
+    }
+
+    private fun partitionBasedOnDiscontinuity(points: List<FMatrix2>, distances: List<Float>): MutableList<MutableList<FMatrix2>> {
+        val partitions = mutableListOf<MutableList<FMatrix2>>()
+        if (points.isNotEmpty()) {
+            // Add the first point as
+            partitions.add(mutableListOf(points[0]))
+
+            for (i in 1 until points.size) {
+                // Add a new partition every time there is a significant change in distance
+                if (abs(distances[i] - distances[i - 1]) > DISCONTINUITY_THRESHOLD) {
+                    partitions.add(mutableListOf())
+                }
+                // Add the point to the latest segment
+                partitions[partitions.lastIndex].add(points[i])
+            }
+        }
+        return partitions
+    }
+
+    override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {
+        val observedLineSegmentObstacles = mutableListOf<Pair<FMatrix2, FMatrix2>>()
+        val observedLandmarks = mutableListOf<FMatrix2>()
+
+        val partitions = partitionBasedOnDiscontinuity(inputPoints, distances)
+        for (partition in partitions) {
+            val linesInPartition = extractLines(partition)
+            observedLineSegmentObstacles.addAll(linesInPartition)
+        }
+
+        // Loose ends
+//        var j = 1
+//        var i = 1
+//        while (i < (distances.size) && j < inputPoints.size) {
+//            if (((distances[i] - distances[i - 1]) > DISCONTINUITY_THRESHOLD) || (distances[i] == LaserSensor.INVALID_DISTANCE && (distances[i] - distances[i - 1]) > LOWER_LANDMARK_MARGIN)) {
+//                observedLandmarks.add(inputPoints[j - 1])
+//            } else if (((distances[i - 1] - distances[i]) > DISCONTINUITY_THRESHOLD) || (distances[i - 1] == LaserSensor.INVALID_DISTANCE && (distances[i - 1] - distances[i]) > LOWER_LANDMARK_MARGIN)) {
+//                observedLandmarks.add(inputPoints[j])
+//            }
+//            if (distances[i] != LaserSensor.INVALID_DISTANCE) {
+//                j++
+//            }
+//            i++
+//        }
+//
+//        // Intersection
+//        val intersectLandmarks = getLandmarksAtIntersection(observedLineSegmentObstacles, inputPoints)
+//        for (pt in intersectLandmarks) {
+//            observedLandmarks.add(pt)
+//        }
+
+        return Pair(observedLineSegmentObstacles, observedLandmarks)
     }
 
     private fun getPerpendicularDistance(P1: FMatrix2, P2: FMatrix2, P0: FMatrix2): Float {
