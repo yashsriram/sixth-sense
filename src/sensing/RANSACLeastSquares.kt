@@ -16,10 +16,16 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         private const val DISCONTINUITY_THRESHOLD = 30.0
         private const val LOWER_LANDMARK_MARGIN = 1.0
         private const val INTERSECTION_MARGIN = 30.0
+
+        var USE_LEAST_SQUARE_FITTING = true
     }
 
     override fun getName(): String {
-        return "RANSAC/LS"
+        return if (USE_LEAST_SQUARE_FITTING) {
+            "RANSAC/LS"
+        } else {
+            "RANSAC"
+        }
     }
 
     private fun projectPointOnLine(m: Float, c: Float, point: FMatrix2): FMatrix2 {
@@ -110,7 +116,11 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
             // If number of inliers is big enough consider it as a line
             val prevLineCount = lines.size
             if (bestInliers.size > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
-                lines.add(leastSquaresLineSegmentFit(bestInliers))
+                if (USE_LEAST_SQUARE_FITTING) {
+                    lines.add(leastSquaresLineSegmentFit(bestInliers))
+                } else {
+                    lines.add(Pair(bestInliers.first(), bestInliers.last()))
+                }
                 remainingPoints = bestRemainingPoints
             }
             // Exit if no new lines are found or we've run out of points

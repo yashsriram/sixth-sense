@@ -99,14 +99,20 @@ class Main : PApplet() {
 
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}" +
                 " extractor=${extractor!!.getName()}" +
-                " #obs=${observed.first.size} #land=${observed.second.size}")
+                " #obs=${observed.first.size} #land=${observed.second.size}"
+        )
     }
 
     override fun keyPressed() {
         if (key == '1') {
             extractor = RANSACLeastSquares(this)
+            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = false
         }
         if (key == '2') {
+            extractor = RANSACLeastSquares(this)
+            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = true
+        }
+        if (key == '3') {
             extractor = IEP(this)
         }
         if (key == 'r') {
@@ -133,7 +139,7 @@ class Main : PApplet() {
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable
         }
-        if (key == 'x') {
+        if (key == 'k') {
             LaserSensor.DRAW_LASERS = !LaserSensor.DRAW_LASERS
         }
         if (key == 'l') {
