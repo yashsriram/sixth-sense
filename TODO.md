@@ -22,7 +22,7 @@
 
 ## Obstacle and landmark extraction
 - [ ] Extract obstacles
-    - [x] RANSAC/Linefitting
+    - [x] RANSAC/LS
         - [x] Change do-while to while
         - [x] Partition based on discontinuity
         - [x] Return end point not defining points
@@ -64,6 +64,7 @@
 - [ ] SLAM
 
 ## Planning
+- [ ] Keep track of obstacles detected
 - [ ] Planning
     - [ ] RRT for some time. Start going to furthest node until a new obstacle is detected?
     - [ ] Planning not the top priority rn
