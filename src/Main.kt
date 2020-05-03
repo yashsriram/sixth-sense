@@ -20,7 +20,7 @@ class Main : PApplet() {
     private var sim: Simulator? = null
     private var cam: QueasyCam? = null
     private var hitGrid: HitGrid? = null
-    private var extractionLogic: LandmarkObstacleExtractionLogic? = null
+    private var extractionLogic: LandmarkObstacleExtractionLogicIEP? = null
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -38,7 +38,7 @@ class Main : PApplet() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
         hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
-        extractionLogic = LandmarkObstacleExtractionLogic(this)
+        extractionLogic = LandmarkObstacleExtractionLogicIEP(this)
     }
 
     override fun draw() {
