@@ -24,12 +24,9 @@ class LandmarkObstacleExtractionLogic(private val applet: PApplet) {
         val observedLineSegmentObstacles = mutableListOf<ObservedLineSegmentObstacle>()
         val observedLandmarks = mutableListOf<FMatrix2>()
 
-        // Partition points based on distance discontinuities
         val partitions = partitionBasedOnDiscontinuity(inputPoints, distances)
-        // Find lines in each of the segments
         val ransacLines = mutableListOf<Pair<FMatrix2, FMatrix2>>()
         for (partition in partitions) {
-            // Do RANSAC and add the discovered line to the list of our lines
             val linesInPartition = fitLines(partition)
             ransacLines.addAll(linesInPartition)
         }
@@ -80,52 +77,45 @@ class LandmarkObstacleExtractionLogic(private val applet: PApplet) {
         return partitions
     }
 
-    private fun fitLines(originalPoints: List<FMatrix2>): List<Pair<FMatrix2, FMatrix2>> {
+    private fun fitLines(points: List<FMatrix2>): List<Pair<FMatrix2, FMatrix2>> {
         val lines = mutableListOf<Pair<FMatrix2, FMatrix2>>()
-
-        // If 3 points
-        if (originalPoints.size <= 3) {
-            return lines
-        }
-
         // Make a copy of original points
-        var points = originalPoints.toMutableList()
-
+        var remainingPoints = points.toMutableList()
         while (true) {
-            // Run RANSAC to find best fit points
+            // Find the biggest line
             var bestInliers = mutableListOf<FMatrix2>()
-            var bestEndPoints = Pair(FMatrix2(), FMatrix2())
             var bestRemainingPoints = mutableListOf<FMatrix2>()
-            for (i in 1..RANSAC_ITER) {
-                // FIXME: try to remove array copy here and index of
-                val outliers = points.shuffled().toMutableList()
-                val inliers = mutableListOf<FMatrix2>()
-                val definingPoints = outliers.take(2)
-                // Calculate number of inliers
-                for (point in points) {
-                    val dist = getPerpendicularDistance(definingPoints[0], definingPoints[1], point)
+
+            for (i in 0 until RANSAC_ITER) {
+                val remainingPointsCopy = remainingPoints.toMutableList()
+                val definingPoints = mutableListOf(remainingPointsCopy.random(), remainingPointsCopy.random())
+                // Get inlier indices
+                val inlierIndices = mutableListOf<Int>()
+                for ((k, possibleInlier) in remainingPointsCopy.withIndex()) {
+                    val dist = getPerpendicularDistance(definingPoints[0], definingPoints[1], possibleInlier)
                     if (dist < RANSAC_THRESHOLD) {
-                        outliers.removeAt(outliers.indexOf(point))
-                        inliers.add(point)
+                        inlierIndices.add(k)
                     }
                 }
+                // Collect the inliers
+                val inliers = mutableListOf<FMatrix2>()
+                for (index in inlierIndices.reversed()) {
+                    inliers.add(remainingPointsCopy.removeAt(index))
+                }
                 // Update the best fits
-                if (inliers.size > bestInliers.size) {
-                    bestEndPoints = Pair(definingPoints[0], definingPoints[1])
+                if (inlierIndices.size > bestInliers.size) {
                     bestInliers = inliers
-                    bestRemainingPoints = outliers
+                    bestRemainingPoints = remainingPointsCopy
                 }
             }
-
-            // Filter out spurious matches
+            // If number of inliers is big enough consider it as a line
             val prevLineCount = lines.size
             if (bestInliers.size > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
-                lines.add(bestEndPoints)
-                points = bestRemainingPoints
+                lines.add(Pair(bestInliers.first(), bestInliers.last()))
+                remainingPoints = bestRemainingPoints
             }
-
             // Exit if no new lines are found or we've run out of points
-            if ((lines.size <= prevLineCount) or (points.size <= 3)) {
+            if ((lines.size == prevLineCount) or (remainingPoints.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT + 2)) {
                 break
             }
         }

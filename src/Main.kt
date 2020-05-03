@@ -61,23 +61,31 @@ class Main : PApplet() {
             }
             val percentage = i / (LaserSensor.COUNT - 1f)
             val theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage
-            val laserBeam = FMatrix2(kotlin.math.cos(orientation + theta),
-                    kotlin.math.sin(orientation + theta))
+            val laserBeam = FMatrix2(kotlin.math.cos(orientation + theta), kotlin.math.sin(orientation + theta))
             laserBeam *= distances[i]
             val laserEnd = tail + laserBeam
             laserEnds.add(laserEnd)
 //            hitGrid!!.addHit(laserEnd)
         }
 //        print("Max hits: " + hitGrid!!.maxCount + "\r")
+//        noFill()
+//        for (laserEnd in laserEnds) {
+//            stroke(1f, 0f, 1f)
+//            line(tail.a1, 0f, tail.a2, laserEnd.a1, 0f, laserEnd.a2)
+//            stroke(1f, 1f, 1f)
+//            circleXZ(laserEnd.a1, laserEnd.a2, 1f)
+//        }
 
         val observed = extractionLogic!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
-        stroke(0f, 1f, 1f)
-        val obstacles = observed.first
         print("# obstacles: ${observed.first.size} # landmarks: ${observed.second.size}\r")
+
+        val obstacles = observed.first
+        stroke(1f, 0f, 1f)
         for (segment in obstacles) {
             line(segment.point1.a1, 0f, segment.point1.a2, segment.point2.a1, 0f, segment.point2.a2)
         }
         val landmarks = observed.second
+        stroke(0f, 1f, 1f)
         for (landmark in landmarks) {
             circleXZ(landmark.a1, landmark.a2, 2f)
         }
