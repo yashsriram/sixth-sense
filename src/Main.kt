@@ -8,7 +8,7 @@ import processing.core.PApplet
 import processing.core.PConstants
 import sensing.HitGrid
 import sensing.IEP
-import sensing.ObstacleLandmarkExtractionLogic
+import sensing.ObstacleLandmarkExtractor
 import sensing.RANSACLeastSquares
 import simulator.LaserSensor
 import simulator.Simulator
@@ -24,7 +24,7 @@ class Main : PApplet() {
     private var sim: Simulator? = null
     private var cam: QueasyCam? = null
     private var hitGrid: HitGrid? = null
-    private var extractionLogic: ObstacleLandmarkExtractionLogic? = null
+    private var extractor: ObstacleLandmarkExtractor? = null
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -42,7 +42,7 @@ class Main : PApplet() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
         hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
-        extractionLogic = RANSACLeastSquares(this)
+        extractor = RANSACLeastSquares(this)
     }
 
     override fun draw() {
@@ -80,8 +80,7 @@ class Main : PApplet() {
 //            circleXZ(laserEnd.a1, laserEnd.a2, 1f)
 //        }
 
-        val observed = extractionLogic!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
-        print("# obstacles: ${observed.first.size} # landmarks: ${observed.second.size}\r")
+        val observed = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
 
         val obstacles = observed.first
         stroke(1f, 0f, 1f)
@@ -98,15 +97,17 @@ class Main : PApplet() {
         sim!!.draw()
 //        hitGrid!!.draw()
 
-        surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}")
+        surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}" +
+                " extractor=${extractor!!.getName()}" +
+                " #obs=${observed.first.size} #land=${observed.second.size}")
     }
 
     override fun keyPressed() {
         if (key == '1') {
-            extractionLogic = RANSACLeastSquares(this)
+            extractor = RANSACLeastSquares(this)
         }
         if (key == '2') {
-            extractionLogic = IEP(this)
+            extractor = IEP(this)
         }
         if (key == 'r') {
             reset()

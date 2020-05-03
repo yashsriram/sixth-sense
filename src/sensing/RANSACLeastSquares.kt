@@ -10,7 +10,7 @@ import processing.core.PApplet
 import simulator.LaserSensor
 import kotlin.math.*
 
-class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtractionLogic {
+class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtractor {
     companion object {
         private const val RANSAC_ITER = 1000
         private const val RANSAC_THRESHOLD = 4f
@@ -19,6 +19,10 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracti
         private const val DISCONTINUITY_THRESHOLD = 60.0
         private const val LOWER_LANDMARK_MARGIN = 1.0
         private const val INTERSECTION_MARGIN = 30.0
+    }
+
+    override fun getName(): String {
+        return "RANSAC/LLS"
     }
 
     override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {

@@ -6,9 +6,13 @@ import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-class IEP(private val applet: PApplet) : ObstacleLandmarkExtractionLogic {
+class IEP(private val applet: PApplet) : ObstacleLandmarkExtractor {
     companion object {
         private const val DISCONTINUITY_THRESHOLD = 60.0
+    }
+
+    override fun getName(): String {
+        return "IEP"
     }
 
     override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<MutableList<Pair<FMatrix2, FMatrix2>>, MutableList<FMatrix2>> {
