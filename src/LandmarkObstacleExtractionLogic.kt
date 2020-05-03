@@ -9,7 +9,6 @@ import simulator.LaserSensor
 import kotlin.math.*
 
 class LandmarkObstacleExtractionLogic(private val applet: PApplet) {
-    data class ObservedLineSegmentObstacle(val point1: FMatrix2, val point2: FMatrix2)
     companion object {
         private const val RANSAC_ITER = 1000
         private const val RANSAC_THRESHOLD = 4f
@@ -20,19 +19,14 @@ class LandmarkObstacleExtractionLogic(private val applet: PApplet) {
         private const val INTERSECTION_MARGIN = 30.0
     }
 
-    fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<MutableList<ObservedLineSegmentObstacle>, MutableList<FMatrix2>> {
-        val observedLineSegmentObstacles = mutableListOf<ObservedLineSegmentObstacle>()
+    fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {
+        val observedLineSegmentObstacles = mutableListOf<Pair<FMatrix2, FMatrix2>>()
         val observedLandmarks = mutableListOf<FMatrix2>()
 
         val partitions = partitionBasedOnDiscontinuity(inputPoints, distances)
-        val ransacLines = mutableListOf<Pair<FMatrix2, FMatrix2>>()
         for (partition in partitions) {
             val linesInPartition = fitLines(partition)
-            ransacLines.addAll(linesInPartition)
-        }
-        // FIXME: return the line segment (using intersections of loose ends) not the defining points of the line
-        for (endPoints in ransacLines) {
-            observedLineSegmentObstacles.add(ObservedLineSegmentObstacle(endPoints.first, endPoints.second))
+            observedLineSegmentObstacles.addAll(linesInPartition)
         }
 
         // Loose ends
@@ -51,7 +45,7 @@ class LandmarkObstacleExtractionLogic(private val applet: PApplet) {
         }
 
         // Intersection
-        val intersectLandmarks = getLandmarksAtIntersection(ransacLines, inputPoints)
+        val intersectLandmarks = getLandmarksAtIntersection(observedLineSegmentObstacles, inputPoints)
         for (pt in intersectLandmarks) {
             observedLandmarks.add(pt)
         }

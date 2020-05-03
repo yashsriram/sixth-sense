@@ -82,7 +82,7 @@ class Main : PApplet() {
         val obstacles = observed.first
         stroke(1f, 0f, 1f)
         for (segment in obstacles) {
-            line(segment.point1.a1, 0f, segment.point1.a2, segment.point2.a1, 0f, segment.point2.a2)
+            line(segment.first.a1, 0f, segment.first.a2, segment.second.a1, 0f, segment.second.a2)
         }
         val landmarks = observed.second
         stroke(0f, 1f, 1f)
