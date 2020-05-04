@@ -14,8 +14,9 @@ import kotlin.math.roundToInt
 
 class Main : PApplet() {
     companion object {
-        const val WIDTH = 1000
-        const val HEIGHT = 1000
+        const val WIDTH = 900
+        const val HEIGHT = 900
+        var DRAW_OBSTACLES_LANDMARKS = true
     }
 
     private var sim: Simulator? = null
@@ -79,13 +80,15 @@ class Main : PApplet() {
 
         val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
 
-        stroke(1f, 0f, 1f)
-        for (segment in obstacles) {
-            line(segment.first.a1, 0f, segment.first.a2, segment.second.a1, 0f, segment.second.a2)
-        }
-        stroke(0f, 1f, 1f)
-        for (landmark in landmarks) {
-            circleXZ(landmark.a1, landmark.a2, 2f)
+        if (DRAW_OBSTACLES_LANDMARKS) {
+            stroke(1f, 0f, 1f)
+            for (segment in obstacles) {
+                line(segment.first.a1, 0f, segment.first.a2, segment.second.a1, 0f, segment.second.a2)
+            }
+            stroke(0f, 1f, 1f)
+            for (landmark in landmarks) {
+                circleXZ(landmark.a1, landmark.a2, 2f)
+            }
         }
 
         /* Draw */
@@ -146,6 +149,9 @@ class Main : PApplet() {
         if (key == 'f') {
             RANSACLeastSquares.DRAW_PARTITIONS = !RANSACLeastSquares.DRAW_PARTITIONS
             IEP.DRAW_PARTITIONS = !IEP.DRAW_PARTITIONS
+        }
+        if (key == 'm') {
+            DRAW_OBSTACLES_LANDMARKS = !DRAW_OBSTACLES_LANDMARKS
         }
         if (key == 'v') {
             HitGrid.DRAW = !HitGrid.DRAW

@@ -24,8 +24,7 @@
 - [x] RANSAC/LS too strict, IEP too loose -> take intersection of both
 - [x] Extract obstacles
     - [x] RANSAC/LS
-        - [x] Change do-while to while
-        - [x] Return end point not defining points
+        - [x] Return end points not defining points
         - [x] Line fitting
         - [x] Fix partition code
         - [x] use IEP for better partitioning
@@ -42,8 +41,9 @@
         - [ ] Sense line check (almost parallel to wall case)
 
 ## Considerations
+- [ ] Estimating Sigma_m does it depend on distance?
+- [ ] Estimating Sigma_n does it depend on controls?
 - [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
-- [ ] Estimating Sigma_n does it depend on controls? Should not be ideally
 - [ ] Ignore measurements while moving? maybe. Try doing it only while stationary
 - [ ] Move slowly and take frequent stops for landmark measurements
 - [ ] SLAM and planning can be developed independently

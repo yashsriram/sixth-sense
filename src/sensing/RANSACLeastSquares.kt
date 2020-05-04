@@ -6,7 +6,9 @@ import org.ejml.data.FMatrix2x2
 import org.ejml.data.FMatrixRMaj
 import processing.core.PApplet
 import simulator.LaserSensor
-import kotlin.math.*
+import kotlin.math.abs
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtractor {
     companion object {
@@ -187,7 +189,7 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         // Refine partitions using IEP and in the process find landmarks
         val landmarks = mutableListOf<FMatrix2>()
         // Detect (starting) loose end landmarks at start of first stage partitions
-        for ((k, partition) in firstStagePartitions.withIndex()) {
+        for (partition in firstStagePartitions) {
             // If points less than enough to find at least one line eventually do not consider this partition for landmarks
             if (partition.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
                 continue
@@ -208,7 +210,8 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
             landmarks.add(partition.first().first)
         }
         // Detect (ending) loose end landmarks of first stage partitions
-        for ((k, partition) in firstStagePartitions.withIndex()) {
+        for (partition in firstStagePartitions) {
+            // If points less than enough to find at least one line eventually do not consider this partition for landmarks
             if (partition.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
                 continue
             }
@@ -225,6 +228,7 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
             if (distances[distIter] > distances[distIter + 1]) {
                 continue
             }
+            // If all checks passed add landmark
             landmarks.add(partition.last().first)
         }
         // IEP refinement for the second stage
@@ -236,11 +240,17 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
             // For each intersection of lines
             for (j in 1 until iepPartitions.size) {
                 val iepPartition = iepPartitions[j]
-                // If each line is significantly big
-                if (iepPartition.size > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
-                    // Add landmark
-                    landmarks.add(iepPartition.first())
+                // If points less than enough to find at least one line eventually do not consider this partition for landmarks
+                if (iepPartition.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
+                    continue
                 }
+                val prevIEPPartition = iepPartitions[j - 1]
+                // If two partitions are far off then there might not be an intersection
+                if (prevIEPPartition.last().minus(iepPartition.first()).norm() > RANSAC_THRESHOLD) {
+                    continue
+                }
+                // If all checks passed add landmark
+                landmarks.add(iepPartition.first())
             }
         }
         return Pair(secondStagePartitions, landmarks)
