@@ -147,6 +147,7 @@ class Main : PApplet() {
         }
         if (key == 'f') {
             RANSACLeastSquares.DRAW_PARTITIONS = !RANSACLeastSquares.DRAW_PARTITIONS
+            IEP.DRAW_PARTITIONS = !IEP.DRAW_PARTITIONS
         }
         if (key == 'v') {
             HitGrid.DRAW = !HitGrid.DRAW
