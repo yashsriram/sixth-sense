@@ -21,6 +21,7 @@
 - [x] 3d rendering
 
 ## Obstacle and landmark extraction
+- [ ] RANSAC/LS too strict, IEP too loose -> take intersection of both
 - [ ] Extract obstacles
     - [x] RANSAC/LS
         - [x] Change do-while to while

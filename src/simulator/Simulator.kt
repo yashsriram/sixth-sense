@@ -136,8 +136,8 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     val truePose: FMatrix3
         get() = robot.getTruePose()
 
-    val robotLength: Float
-        get() = robot.length
+    val robotRadius: Float
+        get() = robot.radius
 
     val laserDistances: List<Float>
         get() = robot.laserSensor.getDistances()

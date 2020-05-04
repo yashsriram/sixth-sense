@@ -51,7 +51,7 @@ class Main : PApplet() {
         val position = FMatrix2(poseCopy.a1, poseCopy.a2)
         val orientation = poseCopy.a3
         val centerToHead = FMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
-        centerToHead *= 0.5f * sim!!.robotLength
+        centerToHead *= sim!!.robotRadius
         val tail = position - centerToHead
 
         val distances = sim!!.laserDistances

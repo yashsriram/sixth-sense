@@ -10,7 +10,7 @@ import kotlin.math.cos
 import kotlin.math.sign
 import kotlin.math.sin
 
-class Robot internal constructor(private val applet: PApplet, val length: Float, truePose: FMatrix3, var isRunning: Boolean) {
+class Robot internal constructor(private val applet: PApplet, val radius: Float, truePose: FMatrix3, var isRunning: Boolean) {
     companion object {
         const val MAX_LINEAR_ACCELERATION = 200000f
         const val MAX_ANGULAR_ACCELERATION = 5f
@@ -89,14 +89,14 @@ class Robot internal constructor(private val applet: PApplet, val length: Float,
             orientation = truePose.a3
         }
         val centerToHead = FMatrix2(cos(orientation), sin(orientation))
-        centerToHead *= 0.5f * length
+        centerToHead *= radius
         val laserSource = truePosition - centerToHead
         laserSensor.updateLaserScan(laserSource, orientation, obstacles)
     }
 
     fun isCrashing(obstacle: Obstacle): Boolean {
         synchronized(truePose) {
-            return obstacle.shortestDistanceFrom(getPositionFromPose(truePose)) < length / 2
+            return obstacle.shortestDistanceFrom(getPositionFromPose(truePose)) < radius
         }
     }
 
@@ -121,7 +121,7 @@ class Robot internal constructor(private val applet: PApplet, val length: Float,
         val truePoseCopy = getTruePose()
         val center = getPositionFromPose(truePoseCopy)
         val centerToHeadUnit = FMatrix2(cos(truePoseCopy.a3), sin(truePoseCopy.a3))
-        centerToHeadUnit *= 0.5f * length
+        centerToHeadUnit *= radius
         val head = center + centerToHeadUnit
         val tail = center - centerToHeadUnit
 
@@ -133,7 +133,7 @@ class Robot internal constructor(private val applet: PApplet, val length: Float,
             applet.stroke(1)
         }
         applet.line(center.a1, 0f, center.a2, head.a1, 0f, head.a2)
-        applet.circleXZ(center.a1, center.a2, length * 0.5f)
+        applet.circleXZ(center.a1, center.a2, radius)
 
         // Draw lasers
         laserSensor.draw(tail)
