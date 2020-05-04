@@ -157,48 +157,102 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         return resultList
     }
 
-    private fun partitionBasedOnDiscontinuity(points: List<FMatrix2>, distances: List<Float>): List<List<FMatrix2>> {
-        val partitions = mutableListOf<MutableList<FMatrix2>>()
-        if (points.isNotEmpty()) {
-            // Add the first point as
-            var distanceIter = 0
+    private fun partitionBasedOnDiscontinuity(points: List<FMatrix2>, distances: List<Float>): Pair<List<List<FMatrix2>>, List<FMatrix2>> {
+        val firstStagePartitions = mutableListOf<MutableList<Pair<FMatrix2, Int>>>()
+        if (points.isEmpty()) {
+            return Pair(mutableListOf(), mutableListOf())
+        }
+        // Find partitions using distance discontinuities
+        var distanceIter = 0
+        while (true) {
+            if (distances[distanceIter] != LaserSensor.INVALID_DISTANCE) {
+                break
+            }
+            distanceIter++
+        }
+        firstStagePartitions.add(mutableListOf(Pair(points[0], distanceIter)))
+        distanceIter++
+        for (i in 1 until points.size) {
             while (true) {
                 if (distances[distanceIter] != LaserSensor.INVALID_DISTANCE) {
                     break
                 }
                 distanceIter++
             }
-            partitions.add(mutableListOf(points[0]))
+            // Add a new partition every time there is a significant change in distance
+            if (abs(distances[distanceIter] - distances[distanceIter - 1]) > DISCONTINUITY_THRESHOLD) {
+                firstStagePartitions.add(mutableListOf())
+            }
+            // Add the point to the latest segment
+            firstStagePartitions[firstStagePartitions.lastIndex].add(Pair(points[i], distanceIter))
             distanceIter++
-            for (i in 1 until points.size) {
-                while (true) {
-                    if (distances[distanceIter] != LaserSensor.INVALID_DISTANCE) {
-                        break
-                    }
-                    distanceIter++
+        }
+        // Refine partitions using IEP and in the process find landmarks
+        val landmarks = mutableListOf<FMatrix2>()
+        // Detect (starting) loose end landmarks at start of first stage partitions
+        for ((k, partition) in firstStagePartitions.withIndex()) {
+            // If points less than enough to find at least one line eventually do not consider this partition for landmarks
+            if (partition.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
+                continue
+            }
+            val distIter = partition.first().second
+            // If the distance index corresponding to partition.first is 0, do not consider these as landmarks
+            if (distIter == 0) {
+                continue
+            }
+            // If the distance corresponding to partition.first is very near to max length, do not consider it as landmark
+            if (LaserSensor.MAX_DISTANCE - distances[distIter] < DISCONTINUITY_THRESHOLD) {
+                continue
+            }
+            // If the distance corresponding to partition.first is larger prev distance, do not consider it as landmark
+            if (distances[distIter] > distances[distIter - 1]) {
+                continue
+            }
+            landmarks.add(partition.first().first)
+        }
+        // Detect (ending) loose end landmarks of first stage partitions
+        for ((k, partition) in firstStagePartitions.withIndex()) {
+            if (partition.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
+                continue
+            }
+            val distIter = partition.last().second
+            // If the distance index corresponding to partition.last is LaserSensor.COUNT, do not consider these as landmark
+            if (distIter >= LaserSensor.COUNT - 1) {
+                continue
+            }
+            // If the distance corresponding to partition.last is very near to max length, do not consider it as landmark
+            if (LaserSensor.MAX_DISTANCE - distances[distIter] < DISCONTINUITY_THRESHOLD) {
+                continue
+            }
+            // If the distance corresponding to partition.last is larger than next distance, do not consider it as landmark
+            if (distances[distIter] > distances[distIter + 1]) {
+                continue
+            }
+            landmarks.add(partition.last().first)
+        }
+        // IEP refinement for the second stage
+        val secondStagePartitions = mutableListOf<List<FMatrix2>>()
+        for (partitionWithDistances in firstStagePartitions) {
+            val iepPartitions = iep(partitionWithDistances.map { pointDistancePair -> pointDistancePair.first }, 15f)
+            secondStagePartitions.addAll(iepPartitions)
+            // Detect intersection landmarks, simpler case all such inner intersections can be considered landmarks
+            // For each intersection of lines
+            for (j in 1 until iepPartitions.size) {
+                val iepPartition = iepPartitions[j]
+                // If each line is significantly big
+                if (iepPartition.size > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
+                    // Add landmark
+                    landmarks.add(iepPartition.first())
                 }
-                // Add a new partition every time there is a significant change in distance
-                if (abs(distances[distanceIter] - distances[distanceIter - 1]) > DISCONTINUITY_THRESHOLD) {
-                    partitions.add(mutableListOf())
-                }
-                // Add the point to the latest segment
-                partitions[partitions.lastIndex].add(points[i])
-                distanceIter++
             }
         }
-        val refinedPartitions = mutableListOf<List<FMatrix2>>()
-        for (partition in partitions) {
-            val iepPartitions = iep(partition, 10f)
-            refinedPartitions.addAll(iepPartitions)
-        }
-        return refinedPartitions
+        return Pair(secondStagePartitions, landmarks)
     }
 
     override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {
         val observedLineSegmentObstacles = mutableListOf<Pair<FMatrix2, FMatrix2>>()
-        val observedLandmarks = mutableListOf<FMatrix2>()
 
-        val partitions = partitionBasedOnDiscontinuity(inputPoints, distances)
+        val (partitions, observedLandmarks) = partitionBasedOnDiscontinuity(inputPoints, distances)
         if (DRAW_PARTITIONS) {
             print("#partitions=${partitions.size}\r")
             for ((i, partition) in partitions.withIndex()) {

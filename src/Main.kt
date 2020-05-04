@@ -77,14 +77,12 @@ class Main : PApplet() {
 //            circleXZ(laserEnd.a1, laserEnd.a2, 1f)
 //        }
 
-        val observed = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
+        val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
 
-        val obstacles = observed.first
         stroke(1f, 0f, 1f)
         for (segment in obstacles) {
             line(segment.first.a1, 0f, segment.first.a2, segment.second.a1, 0f, segment.second.a2)
         }
-        val landmarks = observed.second
         stroke(0f, 1f, 1f)
         for (landmark in landmarks) {
             circleXZ(landmark.a1, landmark.a2, 2f)
@@ -96,7 +94,7 @@ class Main : PApplet() {
 
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}" +
                 " extractor=${extractor!!.getName()}" +
-                " #obs=${observed.first.size} #land=${observed.second.size}"
+                " #obs=${obstacles.size} #land=${landmarks.size}"
         )
     }
 
