@@ -21,29 +21,15 @@
 - [x] 3d rendering
 
 ## Obstacle and landmark extraction
-- [ ] RANSAC/LS too strict, IEP too loose -> take intersection of both
-- [ ] Extract obstacles
+- [x] RANSAC/LS too strict, IEP too loose -> take intersection of both
+- [x] Extract obstacles
     - [x] RANSAC/LS
         - [x] Change do-while to while
         - [x] Return end point not defining points
         - [x] Line fitting
         - [x] Fix partition code
-    - [ ] IEP
-    - [ ] HitGrid
-        - [ ] Octa map
-        - [x] Is long needed for count? No.
-        - [ ] Use multiple measrurements over time to form a sensing hitmap from which extract landmarks
-        - [ ] Use two hitgrids, one for planning one for sensing
-        - Policy
-            - Initially no noise assumption, No more noise while staying stationary
-            - 0 control -> doesn't add more drift
-            - While true
-                - Come to stop and measure
-                - Find landmarks with good uncertainity (augment/update)
-                - Find obstacles with good uncertainity
-                - Plan a path
-                - Small valued controls -> less noise, move very slowly (propogate)
-        - [ ] Revert v, w, vdot_max, wdot_max to good values before proceeding
+        - [x] use IEP for better partitioning
+    - [x] IEP
 - [ ] Extract landmarks
     - [ ] Case based landmark detection (using discontinuities and intersections)
         - [ ] Fix line segment line segment intersection
@@ -66,6 +52,21 @@
 
 ## Planning
 - [ ] Keep track of obstacles detected
+- [ ] HitGrid
+    - [ ] Octa map
+    - [x] Is long needed for count? No.
+    - [ ] Use multiple measrurements over time to form a sensing hitmap from which extract landmarks
+    - [ ] Use two hitgrids, one for planning one for sensing
+    - Policy
+        - Initially no noise assumption, No more noise while staying stationary
+        - 0 control -> doesn't add more drift
+        - While true
+            - Come to stop and measure
+            - Find landmarks with good uncertainity (augment/update)
+            - Find obstacles with good uncertainity
+            - Plan a path
+            - Small valued controls -> less noise, move very slowly (propogate)
+    - [ ] Revert v, w, vdot_max, wdot_max to good values before proceeding
 - [ ] Planning
     - [ ] RRT for some time. Start going to furthest node until a new obstacle is detected?
     - [ ] Planning not the top priority rn
