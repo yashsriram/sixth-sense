@@ -42,7 +42,7 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
 
     private fun leastSquaresLineSegmentFit(bestInliers: List<FMatrix2>): Pair<FMatrix2, FMatrix2> {
         // Check if it the line is perpendicular to x
-        var maxX = 0f
+        var maxX = Float.NEGATIVE_INFINITY
         var minX = Float.POSITIVE_INFINITY
         for (inlier in bestInliers) {
             if (inlier.a1 > maxX) {
@@ -52,7 +52,6 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
                 minX = inlier.a1
             }
         }
-        // FIXME: use better method for lines perpendicular to x
         if (maxX - minX < 20) {
             val x = (maxX + minX) / 2f
             val e1 = FMatrix2(x, bestInliers.first().a2)
@@ -73,62 +72,58 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
             val e2 = projectPointOnLine(alpha[1], alpha[0], bestInliers.last())
             return Pair(e1, e2)
         }
-        //                if (prevLineCount % 2 == 0) {
-//                    applet.stroke(1f, 0f, 0f)
-//                } else {
-//                    applet.stroke(0f, 0f, 1f)
-//                }
-//                for (inlier in bestInliers) {
-//                    applet.circleXZ(inlier.a1, inlier.a2, 2f)
-//                }
+    }
+
+    private fun ransac(points: List<FMatrix2>): Pair<List<FMatrix2>, MutableList<FMatrix2>> {
+        // Find the biggest line using RANSAC
+        var bestInliers = mutableListOf<FMatrix2>()
+        var bestRemainingPoints = mutableListOf<FMatrix2>()
+        for (i in 0 until RANSAC_ITER) {
+            val remainingPointsCopy = points.toMutableList()
+            val definingPoints = mutableListOf(remainingPointsCopy.random(), remainingPointsCopy.random())
+            // Get inlier indices
+            val inlierIndices = mutableListOf<Int>()
+            for ((k, possibleInlier) in remainingPointsCopy.withIndex()) {
+                val dist = getPerpendicularDistance(definingPoints[0], definingPoints[1], possibleInlier)
+                if (dist < RANSAC_THRESHOLD) {
+                    inlierIndices.add(k)
+                }
+            }
+            // Collect the inliers
+            val inliers = mutableListOf<FMatrix2>()
+            for (index in inlierIndices.reversed()) {
+                inliers.add(remainingPointsCopy.removeAt(index))
+            }
+            // Update the best fits
+            if (inlierIndices.size > bestInliers.size) {
+                bestInliers = inliers
+                bestRemainingPoints = remainingPointsCopy
+            }
+        }
+        return Pair(bestInliers, bestRemainingPoints)
     }
 
     private fun extractLines(partition: List<FMatrix2>): List<Pair<FMatrix2, FMatrix2>> {
         val lines = mutableListOf<Pair<FMatrix2, FMatrix2>>()
         // Make a copy of original points
-        var remainingPoints = partition.toMutableList()
+        var points = partition.toMutableList()
         while (true) {
-            // Find the biggest line using RANSAC
-            var bestInliers = mutableListOf<FMatrix2>()
-            var bestRemainingPoints = mutableListOf<FMatrix2>()
-            for (i in 0 until RANSAC_ITER) {
-                val remainingPointsCopy = remainingPoints.toMutableList()
-                val definingPoints = mutableListOf(remainingPointsCopy.random(), remainingPointsCopy.random())
-                // Get inlier indices
-                val inlierIndices = mutableListOf<Int>()
-                for ((k, possibleInlier) in remainingPointsCopy.withIndex()) {
-                    val dist = getPerpendicularDistance(definingPoints[0], definingPoints[1], possibleInlier)
-                    if (dist < RANSAC_THRESHOLD) {
-                        inlierIndices.add(k)
-                    }
-                }
-                // Collect the inliers
-                val inliers = mutableListOf<FMatrix2>()
-                for (index in inlierIndices.reversed()) {
-                    inliers.add(remainingPointsCopy.removeAt(index))
-                }
-                // Update the best fits
-                if (inlierIndices.size > bestInliers.size) {
-                    bestInliers = inliers
-                    bestRemainingPoints = remainingPointsCopy
-                }
-            }
+            val (inliers, remainingPoints) = ransac(points)
             // If number of inliers is big enough consider it as a line
             val prevLineCount = lines.size
-            if (bestInliers.size > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
+            if (inliers.size > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
                 if (USE_LEAST_SQUARE_FITTING) {
-                    lines.add(leastSquaresLineSegmentFit(bestInliers))
+                    points = remainingPoints
+                    lines.add(leastSquaresLineSegmentFit(inliers))
                 } else {
-                    lines.add(Pair(bestInliers.first(), bestInliers.last()))
+                    lines.add(Pair(inliers.first(), inliers.last()))
                 }
-                remainingPoints = bestRemainingPoints
             }
             // Exit if no new lines are found or we've run out of points
-            if ((lines.size == prevLineCount) or (remainingPoints.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT + 2)) {
+            if ((lines.size == prevLineCount) or (points.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT + 2)) {
                 break
             }
         }
-
         return lines
     }
 

@@ -17,6 +17,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         const val LASER_SCAN_FREQUENCY = 10
         const val SCALE = 100f
         var DRAW_OBSTACLES = true
+        var GHOST_MODE = false
     }
 
     // Simulation
@@ -110,10 +111,12 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
             }
             if (iteration % CONTROL_FREQ == 0) {
                 robot.updatePose(loopDt)
-                for (line in lines) {
-                    if (robot.isCrashing(line)) {
-                        println("Robot: \"Oh No! I crashed!!!!\"")
-                        robot.isRunning = false
+                if (!GHOST_MODE) {
+                    for (line in lines) {
+                        if (robot.isCrashing(line)) {
+                            println("Robot: \"Oh No! I crashed!!!!\"")
+                            robot.isRunning = false
+                        }
                     }
                 }
             }

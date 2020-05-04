@@ -136,10 +136,13 @@ class Main : PApplet() {
         if (keyCode == PConstants.RIGHT) {
             sim!!.applyControl(FMatrix2(0f, 1f))
         }
+        if (key == 'g') {
+            Simulator.GHOST_MODE = !Simulator.GHOST_MODE
+        }
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable
         }
-        if (key == 'k') {
+        if (key == 'x') {
             LaserSensor.DRAW_LASERS = !LaserSensor.DRAW_LASERS
         }
         if (key == 'l') {
