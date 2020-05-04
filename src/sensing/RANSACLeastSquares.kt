@@ -113,11 +113,11 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
             val prevLineCount = lines.size
             if (inliers.size > RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
                 if (USE_LEAST_SQUARE_FITTING) {
-                    points = remainingPoints
                     lines.add(leastSquaresLineSegmentFit(inliers))
                 } else {
                     lines.add(Pair(inliers.first(), inliers.last()))
                 }
+                points = remainingPoints
             }
             // Exit if no new lines are found or we've run out of points
             if ((lines.size == prevLineCount) or (points.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT + 2)) {

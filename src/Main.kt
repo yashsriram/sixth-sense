@@ -98,6 +98,7 @@ class Main : PApplet() {
 //        hitGrid!!.draw()
 
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}" +
+                " ghost_mode: ${Simulator.GHOST_MODE}" +
                 " extractor=${extractor!!.getName()}" +
                 " #obs=${observed.first.size} #land=${observed.second.size}"
         )
