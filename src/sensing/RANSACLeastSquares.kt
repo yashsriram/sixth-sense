@@ -7,15 +7,14 @@ import org.ejml.data.FMatrixRMaj
 import processing.core.PApplet
 import simulator.LaserSensor
 import kotlin.math.*
-import kotlin.system.exitProcess
 
 class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtractor {
     companion object {
-        private const val DISCONTINUITY_THRESHOLD = 20.0
+        private const val DISCONTINUITY_THRESHOLD = 60.0
 
         private const val RANSAC_ITER = 1000
         private const val RANSAC_THRESHOLD = 4f
-        private const val RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 15
+        private const val RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 8
 
         private const val LOWER_LANDMARK_MARGIN = 1.0
         private const val INTERSECTION_MARGIN = 30.0
@@ -131,7 +130,34 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         return lines
     }
 
-    private fun partitionBasedOnDiscontinuity(points: List<FMatrix2>, distances: List<Float>): MutableList<MutableList<FMatrix2>> {
+    private fun iep(points: List<FMatrix2>, epsilon: Float): MutableList<List<FMatrix2>> {
+        val resultList = mutableListOf<List<FMatrix2>>()
+        var maxDistance = 0f
+        var maxIndex = 0
+        val end = points.size
+        if (points.isNotEmpty()) {
+            // Assume only one line by first and last points, and calculate max perpendicular distance to all middle points
+            for (i in 1 until end - 1) {
+                val perpendicularDistance = getPerpendicularDistance(points[0], points[end - 1], points[i])
+                if (perpendicularDistance > maxDistance) {
+                    maxDistance = perpendicularDistance
+                    maxIndex = i
+                }
+            }
+            // If a point is too far then split the line into two
+            if (maxDistance > epsilon) {
+                val resultList1 = iep(points.subList(0, maxIndex + 1), epsilon)
+                val resultList2 = iep(points.subList(maxIndex, end), epsilon)
+                resultList.addAll(resultList1)
+                resultList.addAll(resultList2)
+            } else {
+                resultList.add(points)
+            }
+        }
+        return resultList
+    }
+
+    private fun partitionBasedOnDiscontinuity(points: List<FMatrix2>, distances: List<Float>): List<List<FMatrix2>> {
         val partitions = mutableListOf<MutableList<FMatrix2>>()
         if (points.isNotEmpty()) {
             // Add the first point as
@@ -160,7 +186,12 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
                 distanceIter++
             }
         }
-        return partitions
+        val refinedPartitions = mutableListOf<List<FMatrix2>>()
+        for (partition in partitions) {
+            val iepPartitions = iep(partition, 10f)
+            refinedPartitions.addAll(iepPartitions)
+        }
+        return refinedPartitions
     }
 
     override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {
