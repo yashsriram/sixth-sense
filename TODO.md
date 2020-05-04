@@ -30,10 +30,16 @@
         - [x] Fix partition code
         - [x] use IEP for better partitioning
     - [x] IEP
-- [ ] Extract landmarks
-    - [ ] Case based landmark detection (using discontinuities and intersections)
-        - [ ] Fix line segment line segment intersection
-        - [ ] Fix spurious detections
+- [x] Extract landmarks
+    - [x] No need for checking intersections separately due to IEP
+    - [x] Loose end detection in first stage
+    - [x] Intersection detection in second stage
+- [ ] Advanced landmark detection
+    - [ ] Intersection landmarks
+        - [ ] use perpendicular projections points
+        - [ ] check distances (IEP shortcoming)
+    - [ ] Loose endpoints
+        - [ ] Sense line check (almost parallel to wall case)
 
 ## Considerations
 - [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
