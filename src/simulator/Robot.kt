@@ -127,7 +127,11 @@ class Robot internal constructor(private val applet: PApplet, val length: Float,
 
         // Draw robot body
         applet.noFill()
-        applet.stroke(1)
+        if (Simulator.GHOST_MODE) {
+            applet.stroke(1f, 1f, 0f)
+        } else {
+            applet.stroke(1)
+        }
         applet.line(center.a1, 0f, center.a2, head.a1, 0f, head.a2)
         applet.circleXZ(center.a1, center.a2, length * 0.5f)
 

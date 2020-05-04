@@ -1,8 +1,5 @@
 import camera.QueasyCam
-import extensions.circleXZ
-import extensions.minus
-import extensions.plus
-import extensions.timesAssign
+import extensions.*
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
@@ -98,7 +95,6 @@ class Main : PApplet() {
 //        hitGrid!!.draw()
 
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}" +
-                " ghost_mode: ${Simulator.GHOST_MODE}" +
                 " extractor=${extractor!!.getName()}" +
                 " #obs=${observed.first.size} #land=${observed.second.size}"
         )
@@ -148,6 +144,9 @@ class Main : PApplet() {
         }
         if (key == 'l') {
             Simulator.DRAW_OBSTACLES = !Simulator.DRAW_OBSTACLES
+        }
+        if (key == 'f') {
+            RANSACLeastSquares.DRAW_PARTITIONS = !RANSACLeastSquares.DRAW_PARTITIONS
         }
         if (key == 'v') {
             HitGrid.DRAW = !HitGrid.DRAW

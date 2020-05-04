@@ -25,7 +25,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         const val ANGLE_ERROR_LIMIT = 0.05f
 
         const val MAX_DISTANCE = 500f
-        const val INVALID_DISTANCE = MAX_DISTANCE + 1f
+        val INVALID_DISTANCE = Float.POSITIVE_INFINITY
     }
 
     // Multi-thread access

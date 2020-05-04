@@ -5,19 +5,23 @@ import org.ejml.data.FMatrix2
 import org.ejml.data.FMatrix2x2
 import org.ejml.data.FMatrixRMaj
 import processing.core.PApplet
+import simulator.LaserSensor
 import kotlin.math.*
+import kotlin.system.exitProcess
 
 class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtractor {
     companion object {
+        private const val DISCONTINUITY_THRESHOLD = 20.0
+
         private const val RANSAC_ITER = 1000
         private const val RANSAC_THRESHOLD = 4f
         private const val RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 15
 
-        private const val DISCONTINUITY_THRESHOLD = 30.0
         private const val LOWER_LANDMARK_MARGIN = 1.0
         private const val INTERSECTION_MARGIN = 30.0
 
         var USE_LEAST_SQUARE_FITTING = true
+        var DRAW_PARTITIONS = true
     }
 
     override fun getName(): String {
@@ -131,15 +135,29 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         val partitions = mutableListOf<MutableList<FMatrix2>>()
         if (points.isNotEmpty()) {
             // Add the first point as
+            var distanceIter = 0
+            while (true) {
+                if (distances[distanceIter] != LaserSensor.INVALID_DISTANCE) {
+                    break
+                }
+                distanceIter++
+            }
             partitions.add(mutableListOf(points[0]))
-
+            distanceIter++
             for (i in 1 until points.size) {
+                while (true) {
+                    if (distances[distanceIter] != LaserSensor.INVALID_DISTANCE) {
+                        break
+                    }
+                    distanceIter++
+                }
                 // Add a new partition every time there is a significant change in distance
-                if (abs(distances[i] - distances[i - 1]) > DISCONTINUITY_THRESHOLD) {
+                if (abs(distances[distanceIter] - distances[distanceIter - 1]) > DISCONTINUITY_THRESHOLD) {
                     partitions.add(mutableListOf())
                 }
                 // Add the point to the latest segment
                 partitions[partitions.lastIndex].add(points[i])
+                distanceIter++
             }
         }
         return partitions
@@ -150,6 +168,22 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         val observedLandmarks = mutableListOf<FMatrix2>()
 
         val partitions = partitionBasedOnDiscontinuity(inputPoints, distances)
+        if (DRAW_PARTITIONS) {
+            print("#partitions=${partitions.size}\r")
+            for ((i, partition) in partitions.withIndex()) {
+                when (i % 6) {
+                    0 -> applet.stroke(1f, 0f, 0f)
+                    1 -> applet.stroke(1f, 1f, 0f)
+                    2 -> applet.stroke(0f, 1f, 0f)
+                    3 -> applet.stroke(0f, 1f, 1f)
+                    4 -> applet.stroke(0f, 0f, 1f)
+                    5 -> applet.stroke(1f, 0f, 1f)
+                }
+                for (point in partition) {
+                    applet.circleXZ(point.a1, point.a2, 2f)
+                }
+            }
+        }
         for (partition in partitions) {
             val linesInPartition = extractLines(partition)
             observedLineSegmentObstacles.addAll(linesInPartition)

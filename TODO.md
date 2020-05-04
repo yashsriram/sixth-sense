@@ -24,9 +24,9 @@
 - [ ] Extract obstacles
     - [x] RANSAC/LS
         - [x] Change do-while to while
-        - [x] Partition based on discontinuity
         - [x] Return end point not defining points
-        - [ ] Line fitting
+        - [x] Line fitting
+        - [x] Fix partition code
     - [ ] IEP
     - [ ] HitGrid
         - [ ] Octa map
