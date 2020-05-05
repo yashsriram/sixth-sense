@@ -21,7 +21,6 @@
 - [x] 3d rendering
 
 ## Obstacle and landmark extraction
-- [x] RANSAC/LS too strict, IEP too loose -> take intersection of both
 - [x] Extract obstacles
     - [x] RANSAC/LS
         - [x] Return end points not defining points
@@ -36,7 +35,7 @@
 - [ ] Advanced landmark detection
     - [ ] Intersection landmarks
         - [ ] use perpendicular projections points
-        - [ ] check distances (IEP shortcoming)
+        - [x] check distances (IEP shortcoming)
     - [ ] Loose endpoints
         - [ ] Sense line check (almost parallel to wall case)
 
