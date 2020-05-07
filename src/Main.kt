@@ -103,15 +103,15 @@ class Main : PApplet() {
 
     override fun keyPressed() {
         if (key == '1') {
-            extractor = RANSACLeastSquares(this)
-            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = false
+            extractor = IEP(this)
         }
         if (key == '2') {
             extractor = RANSACLeastSquares(this)
-            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = true
+            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = false
         }
         if (key == '3') {
-            extractor = IEP(this)
+            extractor = RANSACLeastSquares(this)
+            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = true
         }
         if (key == 'r') {
             reset()

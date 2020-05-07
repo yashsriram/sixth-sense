@@ -24,9 +24,9 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
 
     override fun getName(): String {
         return if (USE_LEAST_SQUARE_FITTING) {
-            "RANSAC/LS"
+            "IEP/RANSAC/LS"
         } else {
-            "RANSAC"
+            "IEP/RANSAC"
         }
     }
 
