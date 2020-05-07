@@ -72,3 +72,14 @@ fun FMatrixRMaj.inverse(): FMatrixRMaj {
 fun FMatrixRMaj.determinant(): Float {
     return CommonOps_FDRM.det(this)
 }
+
+fun FMatrixRMaj.columnWiseMean(col: Int): Float {
+    if (col >= this.numCols) {
+        throw IllegalArgumentException("Bad col number")
+    }
+    var sum = 0f
+    for (i in 0 until this.numRows) {
+        sum += get(i, col)
+    }
+    return sum / numRows
+}

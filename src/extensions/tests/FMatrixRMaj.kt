@@ -14,6 +14,7 @@ fun main() {
             )
     )
     println("A = ${A}")
+    println("A 1 col mean = ${A.columnWiseMean(1)}")
     println("A transpose : ${A.transpose()}")
     println("A det: ${A.determinant()}")
     println("A inv : ${A.inverse()}")

@@ -19,22 +19,26 @@ class RK4Integrator {
             return changeInPose
         }
 
-        fun updatePose(pose: FMatrix3, control: FMatrix2, dt: Float): FMatrix3 {
-            // Run the dynamics via RK4
-            val k1 = getChangeInPose(pose, control)
-            val x2 = pose + k1 * (0.5f * dt)
-            val k2 = getChangeInPose(x2, control)
-            val x3 = pose + k2 * (0.5f * dt)
-            val k3 = getChangeInPose(x3, control)
-            val x4 = pose + k3 * dt
-            val k4 = getChangeInPose(x4, control)
-            val avgChangeInPose = FMatrix3()
-            avgChangeInPose += k1
-            avgChangeInPose += k2 * 2f
-            avgChangeInPose += k3 * 2f
-            avgChangeInPose += k4
-            avgChangeInPose *= dt / 6f
-            return pose + avgChangeInPose
+        fun updatePose(pose: FMatrix3, control: FMatrix2, dt: Float, numIter: Int): FMatrix3 {
+            val updatedPose = FMatrix3(pose)
+            for (i in 0 until numIter) {
+                // Run the dynamics via RK4
+                val k1 = getChangeInPose(pose, control)
+                val x2 = pose + k1 * (0.5f * dt)
+                val k2 = getChangeInPose(x2, control)
+                val x3 = pose + k2 * (0.5f * dt)
+                val k3 = getChangeInPose(x3, control)
+                val x4 = pose + k3 * dt
+                val k4 = getChangeInPose(x4, control)
+                val avgChangeInPose = FMatrix3()
+                avgChangeInPose += k1
+                avgChangeInPose += k2 * 2f
+                avgChangeInPose += k3 * 2f
+                avgChangeInPose += k4
+                avgChangeInPose *= dt / 6f
+                updatedPose += avgChangeInPose
+            }
+            return updatedPose
         }
 
     }
