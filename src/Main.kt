@@ -3,10 +3,10 @@ import extensions.*
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
-import sensing.HitGrid
-import sensing.IEP
-import sensing.ObstacleLandmarkExtractor
-import sensing.RANSACLeastSquares
+import robot.sensing.HitGrid
+import robot.sensing.IEP
+import robot.sensing.ObstacleLandmarkExtractor
+import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor
 import simulator.Simulator
 import java.util.*

@@ -51,17 +51,19 @@
 - [ ] Estimate Sigma_N and Sigma_M from simulator
     - [ ] Give a control for some time and not errors, fit a gaussian with that
     - [ ] Sigma_M needs the RANSAC/LS/Corner detector
+- [ ] Handle smooth differential drive agent
 
 ## SLAM
 - [ ] SLAM
+- [ ] Handle smooth differential drive agent
 
 ## Planning
 - [ ] Keep track of obstacles detected
 - [ ] HitGrid
     - [ ] Octa map
     - [x] Is long needed for count? No.
-    - [ ] Use multiple measrurements over time to form a sensing hitmap from which extract landmarks
-    - [ ] Use two hitgrids, one for planning one for sensing
+    - [ ] Use multiple measrurements over time to form a robot.sensing hitmap from which extract landmarks
+    - [ ] Use two hitgrids, one for planning one for robot.sensing
     - Policy
         - Initially no noise assumption, No more noise while staying stationary
         - 0 control -> doesn't add more drift
@@ -75,6 +77,7 @@
 - [ ] Planning
     - [ ] RRT for some time. Start going to furthest node until a new obstacle is detected?
     - [ ] Planning not the top priority rn
+- [ ] Handle smooth differential drive agent
 
 ## Advanced
 - [ ] Circular obstacles

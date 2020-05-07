@@ -12,8 +12,8 @@ import kotlin.math.sin
 
 class Robot internal constructor(private val applet: PApplet, val radius: Float, truePose: FMatrix3, var isRunning: Boolean) {
     companion object {
-        const val MAX_LINEAR_ACCELERATION = 200000f
-        const val MAX_ANGULAR_ACCELERATION = 5f
+        val MAX_LINEAR_ACCELERATION = Float.POSITIVE_INFINITY
+        val MAX_ANGULAR_ACCELERATION = Float.POSITIVE_INFINITY
         const val LINEAR_VELOCITY_ERROR_LIMIT = 2f
         const val ANGULAR_VELOCITY_ERROR_LIMIT = 0.1f
         private fun getChangeInPose(pose: FMatrix3, control: FMatrix2): FMatrix3 {
