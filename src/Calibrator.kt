@@ -16,7 +16,7 @@ class Calibrator: PApplet() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
         calibrate()
-        calibrate_Measurement()
+//        calibrate_Measurement()
     }
 
     private fun calibrate_Measurement(){
@@ -118,10 +118,10 @@ class Calibrator: PApplet() {
             val baselinePose = sim!!.truePose
 
             // rotate and move the bot
-            sim!!.applyControl(FMatrix2(velocity, 0f))
+            sim!!.applyControl(FMatrix2(velocity, 1f))
             Thread.sleep(500);
             val pose = sim!!.truePose
-            val estimatedPose = RK4Integrator.updatePose(baselinePose, FMatrix2(velocity, 0f), dt, PApplet.parseInt(dt * 500f));
+            val estimatedPose = RK4Integrator.updatePose(baselinePose, FMatrix2(velocity, 1f), dt, PApplet.parseInt(10f*dt*500f))
             noise.add(x,0, estimatedPose.a1 - pose.a1)
             noise.add(x,1, estimatedPose.a2 - pose.a2)
             noise.add(x,2, estimatedPose.a3 - pose.a3)
