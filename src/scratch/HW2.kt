@@ -296,7 +296,6 @@ class HW2 : PApplet() {
     override fun draw() {
         /* ---- ---- ---- ---- Update ---- ---- ---- ---- */
         iter++
-        val lasers = mutableListOf<FMatrixRMaj>()
         // True Propagation without approximation (we'll assume w is not close to 0):
         val xTrueNew = FMatrixRMaj(truePath[truePath.size - 1])
         val n = FMatrix2((std_N * random.nextGaussian()).toFloat(), (std_N * random.nextGaussian()).toFloat())
@@ -313,6 +312,7 @@ class HW2 : PApplet() {
         sigma_T = estimateTPDT.covariance
 
         // Run an update every 5 iterations
+        val lasers = mutableListOf<FMatrixRMaj>()
         if (iter % 5 == 0) {
             // Compute measurements to all the landmarks within vicinity
             val noisyMeasurements = mutableListOf<FMatrixRMaj>()
@@ -380,11 +380,6 @@ class HW2 : PApplet() {
 
         // Draw the uncertainty of the robot
         visualizeCovariance(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
-
-        // Draw the uncertainty of all the landmarks in the state
-        for (j in 3 until x_T.numRows step 2) {
-            visualizeCovariance(x_T[j, 0, 2, 1], sigma_T[j, j, 2, 2])
-        }
 
         // Draw the uncertainty of all the landmarks in the state
         for (j in 3 until x_T.numRows step 2) {
