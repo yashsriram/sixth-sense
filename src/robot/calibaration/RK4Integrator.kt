@@ -23,12 +23,12 @@ class RK4Integrator {
             val updatedPose = FMatrix3(pose)
             for (i in 0 until numIter) {
                 // Run the dynamics via RK4
-                val k1 = getChangeInPose(pose, control)
-                val x2 = pose + k1 * (0.5f * dt)
+                val k1 = getChangeInPose(updatedPose, control)
+                val x2 = updatedPose + k1 * (0.5f * dt)
                 val k2 = getChangeInPose(x2, control)
-                val x3 = pose + k2 * (0.5f * dt)
+                val x3 = updatedPose + k2 * (0.5f * dt)
                 val k3 = getChangeInPose(x3, control)
-                val x4 = pose + k3 * dt
+                val x4 = updatedPose + k3 * dt
                 val k4 = getChangeInPose(x4, control)
                 val avgChangeInPose = FMatrix3()
                 avgChangeInPose += k1
