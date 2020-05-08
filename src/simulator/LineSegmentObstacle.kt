@@ -59,6 +59,10 @@ class LineSegmentObstacle internal constructor(private val applet: PApplet, p1: 
         }
     }
 
+    override fun possibleLandmarks(): Set<FMatrix2> {
+        return hashSetOf(p1, p2)
+    }
+
     override fun draw() {
         applet.stroke(1)
         applet.line(

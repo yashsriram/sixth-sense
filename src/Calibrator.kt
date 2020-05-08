@@ -27,15 +27,13 @@ class Calibrator : PApplet() {
         val distanceThreshold = 20f
 
         // get room_landmarks
-        val roomLandmarks: MutableList<FMatrix2> = ArrayList() // FIXME: replace with sim func which returns true landmark positions
+        val roomLandmarks = sim!!.possibleLandmarks // FIXME: replace with sim func which returns true landmark positions
 
         // collect samples
         println("Collecting noise samples")
         for (x in 0..99) {
-
-            // rotate and move the bot
+            // Rotate and move the bot
             sim!!.applyControl(FMatrix2(velocity, 0f))
-            // get room landmarks
             Thread.sleep(500);
             val poseCopy = sim!!.truePose
             val position = FMatrix2(poseCopy.a1, poseCopy.a2)
@@ -71,7 +69,6 @@ class Calibrator : PApplet() {
             }
         }
 
-        // get column means
         println("Finding Mean")
         val mean: MutableList<Float> = ArrayList()
         val nCols = noise.numCols - 1
@@ -80,9 +77,8 @@ class Calibrator : PApplet() {
             mean.add(noise.columnWiseMean(x));
         }
 
-        // calculate covariance
         println("Finding Covariance")
-        val covariance: FMatrixRMaj = FMatrixRMaj(2, 2)
+        val covariance = FMatrixRMaj(2, 2)
         for (i in 0..nCols) {
             for (j in 0..nCols) {
                 var variance = 0f
@@ -94,20 +90,14 @@ class Calibrator : PApplet() {
             }
         }
 
-        // print covariance
-        for (i in 0..1) {
-            for (j in 0..1) {
-                print(covariance.get(i, j), ",")
-            }
-            println()
-        }
+        println(covariance)
     }
 
     private fun calibrateSigmaN() {
         println("Calibrating bot position covariance")
         Simulator.GHOST_MODE = true;
         val noise = FMatrixRMaj(100, 3)
-        val dt = 0.01f;
+        val dt = 0.01f
         val velocity = 100f
 
         println("Collecting noise samples")
@@ -118,7 +108,7 @@ class Calibrator : PApplet() {
             Thread.sleep(500)
             // Compare true pose and estimated pose
             val pose = sim!!.truePose
-            val estimatedPose = RK4Integrator.updatePose(baselinePose, FMatrix2(velocity, 1f), dt, PApplet.parseInt(10f * dt * 500f))
+            val estimatedPose = RK4Integrator.updatePose(baselinePose, FMatrix2(velocity, 1f), dt, (10f * dt * 500f).toInt())
             noise.add(x, 0, estimatedPose.a1 - pose.a1)
             noise.add(x, 1, estimatedPose.a2 - pose.a2)
             noise.add(x, 2, estimatedPose.a3 - pose.a3)

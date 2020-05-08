@@ -1,12 +1,16 @@
 package simulator
 
-import extensions.*
+import extensions.minus
+import extensions.plus
+import extensions.times
+import extensions.timesAssign
 import org.ejml.data.FMatrix2
 import org.ejml.data.FMatrix3
 import processing.core.PApplet
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.*
+import kotlin.collections.HashSet
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.system.exitProcess
@@ -24,7 +28,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     private var isPaused = false
 
     // Environment
-    private val lines: MutableList<Obstacle> = ArrayList()
+    private val obstacles: MutableList<Obstacle> = ArrayList()
 
     // Robot
     private val robot: Robot
@@ -67,7 +71,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         }
         val center = minCorner + (maxCorner - minCorner) * 0.5f
 
-        // Loading lines with scaling and center shifting
+        // Loading obstacles with scaling and center shifting
         for (i in 1 until fileContents.size) {
             val lineTokens = fileContents[i]
             assert(lineTokens.size == 4)
@@ -75,7 +79,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
             p1 *= SCALE
             val p2 = FMatrix2(lineTokens[2].toFloat(), lineTokens[3].toFloat()) - center
             p2 *= SCALE
-            lines.add(LineSegmentObstacle(applet, p1, p2))
+            obstacles.add(LineSegmentObstacle(applet, p1, p2))
         }
 
         // Load robot pose with scaling and center shifting
@@ -112,7 +116,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
             if (iteration % CONTROL_FREQ == 0) {
                 robot.updatePose(loopDt)
                 if (!GHOST_MODE) {
-                    for (line in lines) {
+                    for (line in obstacles) {
                         if (robot.isCrashing(line)) {
                             println("Robot: \"Oh No! I crashed!!!!\"")
                             robot.isRunning = false
@@ -121,7 +125,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
                 }
             }
             if (iteration % LASER_SCAN_FREQUENCY == 0) {
-                robot.updateSense(lines)
+                robot.updateSense(obstacles)
             }
             iteration++
             try {
@@ -133,6 +137,15 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     }
 
     /* User callable */
+    val possibleLandmarks: Set<FMatrix2>
+        get() {
+            val lineEnds = HashSet<FMatrix2>()
+            for (obstacle in obstacles) {
+                lineEnds += obstacle.possibleLandmarks()
+            }
+            return lineEnds
+        }
+
     val truePose: FMatrix3
         get() = robot.getTruePose()
 
@@ -158,7 +171,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     fun draw() {
         if (DRAW_OBSTACLES) {
             // Draw obstacles
-            for (l in lines) {
+            for (l in obstacles) {
                 l.draw()
             }
         }
