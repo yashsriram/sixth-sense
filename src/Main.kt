@@ -8,6 +8,7 @@ import robot.sensing.IEP
 import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor
+import simulator.Robot
 import simulator.Simulator
 import java.util.*
 import kotlin.math.roundToInt
@@ -37,10 +38,12 @@ class Main : PApplet() {
     }
 
     private fun reset() {
-        val sceneName = "data/apartment.scn"
+        val sceneName = "data/simple_rectangle.scn"
         sim = Simulator(this, sceneName)
         hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
         extractor = RANSACLeastSquares(this)
+        Simulator.GHOST_MODE = true
+        sim!!.applyControl(FMatrix2(4f, 0.15f))
     }
 
     override fun draw() {
@@ -122,21 +125,21 @@ class Main : PApplet() {
         if (key == 'z') {
             sim!!.applyControl(FMatrix2())
         }
-        if (keyCode == PConstants.UP) {
-            sim!!.applyControl(FMatrix2(100f, 0f))
-        }
-        if (keyCode == PConstants.DOWN) {
-            sim!!.applyControl(FMatrix2(-100f, 0f))
-        }
-        if (keyCode == PConstants.LEFT) {
-            sim!!.applyControl(FMatrix2(0f, -1f))
-        }
-        if (keyCode == PConstants.RIGHT) {
-            sim!!.applyControl(FMatrix2(0f, 1f))
-        }
-        if (key == 'g') {
-            Simulator.GHOST_MODE = !Simulator.GHOST_MODE
-        }
+//        if (keyCode == PConstants.UP) {
+//            sim!!.applyControl(FMatrix2(100f, 0f))
+//        }
+//        if (keyCode == PConstants.DOWN) {
+//            sim!!.applyControl(FMatrix2(-100f, 0f))
+//        }
+//        if (keyCode == PConstants.LEFT) {
+//            sim!!.applyControl(FMatrix2(0f, -1f))
+//        }
+//        if (keyCode == PConstants.RIGHT) {
+//            sim!!.applyControl(FMatrix2(0f, 1f))
+//        }
+//        if (key == 'g') {
+//            Simulator.GHOST_MODE = !Simulator.GHOST_MODE
+//        }
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable
         }

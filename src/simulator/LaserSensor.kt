@@ -21,7 +21,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         const val MAX_THETA = Math.PI.toFloat() / 2f
         const val ANGULAR_RESOLUTION = (MAX_THETA - MIN_THETA) / COUNT
 
-        const val DISTANCE_ERROR_LIMIT = 5f
+        const val DISTANCE_ERROR_LIMIT = 1f
         const val ANGLE_ERROR_LIMIT = 0.05f
 
         const val MAX_DISTANCE = 500f

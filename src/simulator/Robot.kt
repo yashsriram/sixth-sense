@@ -14,7 +14,7 @@ class Robot internal constructor(private val applet: PApplet, val radius: Float,
     companion object {
         val MAX_LINEAR_ACCELERATION = Float.POSITIVE_INFINITY
         val MAX_ANGULAR_ACCELERATION = Float.POSITIVE_INFINITY
-        const val LINEAR_VELOCITY_ERROR_LIMIT = 2f
+        const val LINEAR_VELOCITY_ERROR_LIMIT = 0.1f
         const val ANGULAR_VELOCITY_ERROR_LIMIT = 0.1f
         private fun getChangeInPose(pose: FMatrix3, control: FMatrix2): FMatrix3 {
             val changeInPose = FMatrix3()
