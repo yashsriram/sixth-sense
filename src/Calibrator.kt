@@ -6,8 +6,8 @@ import robot.calibaration.RK4Integrator
 import robot.sensing.ObstacleLandmarkExtractor
 import simulator.LaserSensor
 import simulator.Simulator
-import kotlin.collections.ArrayList
-class Calibrator: PApplet() {
+
+class Calibrator : PApplet() {
 
     private var sim: Simulator? = null
     private var extractor: ObstacleLandmarkExtractor? = null
@@ -15,14 +15,14 @@ class Calibrator: PApplet() {
     override fun setup() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
-        calibrate()
-//        calibrate_Measurement()
+        calibrateSigmaN()
+//        calibrateSigmaM()
     }
 
-    private fun calibrate_Measurement(){
+    private fun calibrateSigmaM() {
         println("Calibrating sensor measurement covariance")
         Simulator.GHOST_MODE = true;
-        val noise = FMatrixRMaj(100,2)
+        val noise = FMatrixRMaj(100, 2)
         val velocity = 100f
         val distanceThreshold = 20f
 
@@ -31,7 +31,7 @@ class Calibrator: PApplet() {
 
         // collect samples
         println("Collecting noise samples")
-        for(x in 0..99){
+        for (x in 0..99) {
 
             // rotate and move the bot
             sim!!.applyControl(FMatrix2(velocity, 0f))
@@ -60,12 +60,12 @@ class Calibrator: PApplet() {
 
             val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
 
-            for (landmark in landmarks){
-                for (trueLandmark in roomLandmarks){
+            for (landmark in landmarks) {
+                for (trueLandmark in roomLandmarks) {
                     val temp = landmark - trueLandmark
-                    if(temp.norm() < distanceThreshold){
-                        noise.add(x,1, trueLandmark.a1 - landmark.a1)
-                        noise.add(x,0, trueLandmark.a1 - landmark.a1)
+                    if (temp.norm() < distanceThreshold) {
+                        noise.add(x, 1, trueLandmark.a1 - landmark.a1)
+                        noise.add(x, 0, trueLandmark.a1 - landmark.a1)
                     }
                 }
             }
@@ -74,20 +74,20 @@ class Calibrator: PApplet() {
         // get column means
         println("Finding Mean")
         val mean: MutableList<Float> = ArrayList()
-        val nCols = noise.numCols-1
-        val nRows = noise.numRows-1
-        for(x in 0..nCols){
+        val nCols = noise.numCols - 1
+        val nRows = noise.numRows - 1
+        for (x in 0..nCols) {
             mean.add(noise.columnWiseMean(x));
         }
 
         // calculate covariance
         println("Finding Covariance")
-        val covariance: FMatrixRMaj = FMatrixRMaj(2,2)
-        for(i in 0..nCols){
-            for(j in 0..nCols){
+        val covariance: FMatrixRMaj = FMatrixRMaj(2, 2)
+        for (i in 0..nCols) {
+            for (j in 0..nCols) {
                 var variance = 0f
-                for(row in 0..nRows){
-                    variance += (noise.get(row, i) - mean[i])*(noise.get(row, j) - mean[j])
+                for (row in 0..nRows) {
+                    variance += (noise.get(row, i) - mean[i]) * (noise.get(row, j) - mean[j])
                 }
                 variance /= noise.numRows;
                 covariance.set(i, j, variance);
@@ -95,72 +95,60 @@ class Calibrator: PApplet() {
         }
 
         // print covariance
-        for(i in 0..1){
-            for(j in 0..1){
-                PApplet.print(covariance.get(i, j), ",")
+        for (i in 0..1) {
+            for (j in 0..1) {
+                print(covariance.get(i, j), ",")
             }
-            PApplet.println()
+            println()
         }
     }
 
-    private fun calibrate(){
+    private fun calibrateSigmaN() {
         println("Calibrating bot position covariance")
         Simulator.GHOST_MODE = true;
-        val noise = FMatrixRMaj(100,3)
+        val noise = FMatrixRMaj(100, 3)
         val dt = 0.01f;
         val velocity = 100f
-        // collect samples
 
         println("Collecting noise samples")
-        for(x in 0..99){
-
-            // move the bot forward
+        for (x in 0..99) {
             val baselinePose = sim!!.truePose
-
-            // rotate and move the bot
+            // Rotate and move the bot for some time
             sim!!.applyControl(FMatrix2(velocity, 1f))
-            Thread.sleep(500);
+            Thread.sleep(500)
+            // Compare true pose and estimated pose
             val pose = sim!!.truePose
-            val estimatedPose = RK4Integrator.updatePose(baselinePose, FMatrix2(velocity, 1f), dt, PApplet.parseInt(10f*dt*500f))
-            noise.add(x,0, estimatedPose.a1 - pose.a1)
-            noise.add(x,1, estimatedPose.a2 - pose.a2)
-            noise.add(x,2, estimatedPose.a3 - pose.a3)
+            val estimatedPose = RK4Integrator.updatePose(baselinePose, FMatrix2(velocity, 1f), dt, PApplet.parseInt(10f * dt * 500f))
+            noise.add(x, 0, estimatedPose.a1 - pose.a1)
+            noise.add(x, 1, estimatedPose.a2 - pose.a2)
+            noise.add(x, 2, estimatedPose.a3 - pose.a3)
         }
 
-        // get column means
         println("Finding Mean")
         val mean: MutableList<Float> = ArrayList()
-        val nCols = noise.numCols-1
-        val nRows = noise.numRows-1
-        for(x in 0..nCols){
+        val nCols = noise.numCols - 1
+        val nRows = noise.numRows - 1
+        for (x in 0..nCols) {
             mean.add(noise.columnWiseMean(x));
         }
 
-        // calculate covariance
         println("Finding Covariance")
-        val covariance: FMatrixRMaj = FMatrixRMaj(3,3)
-        for(i in 0..nCols){
-            for(j in 0..nCols){
+        val covariance = FMatrixRMaj(3, 3)
+        for (i in 0..nCols) {
+            for (j in 0..nCols) {
                 var variance = 0f
-                for(row in 0..nRows){
-                    variance += (noise.get(row, i) - mean[i])*(noise.get(row, j) - mean[j])
+                for (row in 0..nRows) {
+                    variance += (noise.get(row, i) - mean[i]) * (noise.get(row, j) - mean[j])
                 }
                 variance /= noise.numRows;
                 covariance.set(i, j, variance);
             }
         }
 
-        // print covariance
-        for(i in 0..2){
-            for(j in 0..2){
-                PApplet.print(covariance.get(i, j), ",")
-            }
-            PApplet.println()
-        }
+        println(covariance)
     }
 
-    override fun draw() {
-    }
+    override fun draw() {}
 }
 
 fun main(passedArgs: Array<String>) {
