@@ -139,8 +139,8 @@ class HW2 : PApplet() {
                             Sigma_ms: MutableList<FMatrixRMaj>): Estimate {
         // For each measurement, check if it matches any already in the state, and run an update for it.
         // For every unmatched measurement make sure it's sufficiently novel, then add to the state.
-        var x_TPDT = FMatrixRMaj(x_hat_t);
-        var sigma_TPDT = FMatrixRMaj(Sigma_x_t);
+        var x_Plus = FMatrixRMaj(x_hat_t);
+        var sigma_Plus = FMatrixRMaj(Sigma_x_t);
         for (i in 0 until zs.size) {
             // For each measurement
             val z = zs[i]
@@ -153,10 +153,10 @@ class HW2 : PApplet() {
             var best_S = FMatrixRMaj()
 
             // For each landmark check the Mahalanobis distance
-            for (j in 3 until x_TPDT.numRows step 2) {
-                val x_R_T = x_TPDT[0, 0]
-                val y_R_T = x_TPDT[1, 0]
-                val theta_T = x_TPDT[2, 0]
+            for (j in 3 until x_Plus.numRows step 2) {
+                val x_R_T = x_Plus[0, 0]
+                val y_R_T = x_Plus[1, 0]
+                val theta_T = x_Plus[2, 0]
                 val G_p_R = FMatrixRMaj(
                         arrayOf(
                                 floatArrayOf(x_R_T),
@@ -171,8 +171,8 @@ class HW2 : PApplet() {
                                 floatArrayOf(-sinTheta_T, cosTheta_T)
                         )
                 )
-                val x_L_T = x_TPDT[j, 0]
-                val y_L_t = x_TPDT[j + 1, 0]
+                val x_L_T = x_Plus[j, 0]
+                val y_L_t = x_Plus[j + 1, 0]
                 val G_p_L = FMatrixRMaj(
                         arrayOf(
                                 floatArrayOf(x_L_T),
@@ -186,11 +186,11 @@ class HW2 : PApplet() {
                         )
                 )
 
-                val H = FMatrixRMaj(2, x_TPDT.numRows)
+                val H = FMatrixRMaj(2, x_Plus.numRows)
                 H[0, 0, 2, 3] = H_R
                 H[0, j, 2, 2] = H_L_new
 
-                val S = H * sigma_TPDT * H.transpose() + Sigma_m
+                val S = H * sigma_Plus * H.transpose() + Sigma_m
                 val h_x_hat_0 = H_L_new * (G_p_L - G_p_R)
                 val residue = z - h_x_hat_0
                 val distance = residue.transpose() * S.inverse() * residue
@@ -208,21 +208,21 @@ class HW2 : PApplet() {
 
             // If looks like a landmark then do a regular update
             if (min_distance <= 20) {
-                val K = sigma_TPDT * best_H.transpose() * best_S.inverse()
-                val I = CommonOps_FDRM.identity(x_TPDT.numRows)
+                val K = sigma_Plus * best_H.transpose() * best_S.inverse()
+                val I = CommonOps_FDRM.identity(x_Plus.numRows)
 
                 // Note that these we passed by reference, so to return, just set them
-                x_TPDT.plusAssign(K * (z - best_h_x_hat_0))
+                x_Plus.plusAssign(K * (z - best_h_x_hat_0))
                 val term = I - K * best_H
-                sigma_TPDT = term * sigma_TPDT * term.transpose() + K * Sigma_m * K.transpose()
+                sigma_Plus = term * sigma_Plus * term.transpose() + K * Sigma_m * K.transpose()
                 continue
             }
 
             // If looks like no landmark seen until now augment SLAM state with the landmark information
             if (min_distance > 25) {
-                val x_R_T = x_TPDT[0, 0]
-                val y_R_T = x_TPDT[1, 0]
-                val theta_T = x_TPDT[2, 0]
+                val x_R_T = x_Plus[0, 0]
+                val y_R_T = x_Plus[1, 0]
+                val theta_T = x_Plus[2, 0]
                 val G_p_R = FMatrixRMaj(
                         arrayOf(
                                 floatArrayOf(x_R_T),
@@ -240,22 +240,22 @@ class HW2 : PApplet() {
 
                 // Expected value
                 // Copy previous state
-                val prevX = x_TPDT
-                x_TPDT = FMatrixRMaj(x_TPDT.numRows + 2, 1)
+                val prevX = x_Plus
+                x_Plus = FMatrixRMaj(x_Plus.numRows + 2, 1)
                 for (t in 0 until prevX.numRows) {
-                    x_TPDT[t, 0] = prevX[t, 0]
+                    x_Plus[t, 0] = prevX[t, 0]
                 }
                 // Add new landmark estimate
                 val h_x_hat_0 = H_L_new * (FMatrixRMaj(2, 1) - G_p_R)
-                x_TPDT[prevX.numRows, 0, 2, 1] = H_L_new.inverse() * (z - h_x_hat_0)
+                x_Plus[prevX.numRows, 0, 2, 1] = H_L_new.inverse() * (z - h_x_hat_0)
 
                 // Covariance
                 // Copy previous state
-                val prevSigma = sigma_TPDT
-                sigma_TPDT = FMatrixRMaj(sigma_TPDT.numRows + 2, sigma_TPDT.numCols + 2)
+                val prevSigma = sigma_Plus
+                sigma_Plus = FMatrixRMaj(sigma_Plus.numRows + 2, sigma_Plus.numCols + 2)
                 for (t in 0 until prevSigma.numRows) {
                     for (s in 0 until prevSigma.numCols) {
-                        sigma_TPDT[t, s] = prevSigma[t, s]
+                        sigma_Plus[t, s] = prevSigma[t, s]
                     }
                 }
                 // Augmentation
@@ -268,29 +268,29 @@ class HW2 : PApplet() {
                 val H_L_new_inv = H_L_new.inverse()
                 val top3x3 = prevSigma[0, 0, 3, 3]
                 // Top right block
-                sigma_TPDT[0, prevSigma.numCols, 3, 2] =
+                sigma_Plus[0, prevSigma.numCols, 3, 2] =
                         top3x3 * H_R.transpose() * H_L_new_inv.transpose() * -1f
                 // Bottom left block
-                sigma_TPDT[prevSigma.numRows, 0, 2, 3] =
+                sigma_Plus[prevSigma.numRows, 0, 2, 3] =
                         H_L_new_inv * H_R * top3x3 * -1f
                 // Bottom right block
-                sigma_TPDT[prevSigma.numRows, prevSigma.numCols, 2, 2] =
+                sigma_Plus[prevSigma.numRows, prevSigma.numCols, 2, 2] =
                         H_L_new_inv * (H_R * top3x3 * H_R.transpose() + Sigma_m) * H_L_new_inv.transpose()
                 // Bottom row
                 for (col in 3 until prevSigma.numCols step 2) {
-                    sigma_TPDT[prevSigma.numRows, col, 2, 2] =
+                    sigma_Plus[prevSigma.numRows, col, 2, 2] =
                             H_L_new_inv * H_R * prevSigma[0, col, 3, 2] * -1f
                 }
                 // Right row
                 for (row in 3 until prevSigma.numRows step 2) {
-                    sigma_TPDT[row, prevSigma.numCols, 2, 2] =
+                    sigma_Plus[row, prevSigma.numCols, 2, 2] =
                             prevSigma[row, 0, 2, 3] * H_R.transpose() * H_L_new_inv.transpose() * -1f
                 }
                 continue
             }
         }
 
-        return Estimate(mean = x_TPDT, covariance = sigma_TPDT)
+        return Estimate(mean = x_Plus, covariance = sigma_Plus)
     }
 
     override fun draw() {
@@ -318,8 +318,8 @@ class HW2 : PApplet() {
             val noisyMeasurements = mutableListOf<FMatrixRMaj>()
             val noisyMeasurementSigmas = mutableListOf<FMatrixRMaj>()
             for (lm in landmarks) {
-                val truePositionToLandmark = lm[0, 0, 2, 1] - xTrueNew[0, 0, 2, 1]
-                if (truePositionToLandmark.norm() < SENSOR_DISTANCE) {
+                val G_P_L__G_P_R = lm[0, 0, 2, 1] - xTrueNew[0, 0, 2, 1]
+                if (G_P_L__G_P_R.norm() < SENSOR_DISTANCE) {
                     lasers.add(FMatrixRMaj(lm))
                     val theta = xTrueNew[2]
                     val sinTheta = sin(theta)
@@ -330,14 +330,14 @@ class HW2 : PApplet() {
                                     floatArrayOf(-sinTheta, cosTheta)
                             )
                     )
-                    val measurement = C_T * truePositionToLandmark
+                    val R_P_L = C_T * G_P_L__G_P_R
                     val m = FMatrixRMaj(
                             arrayOf(
                                     floatArrayOf((std_M * random.nextGaussian()).toFloat()),
                                     floatArrayOf((std_M * random.nextGaussian()).toFloat())
                             )
                     )
-                    val noisyMeasurement = measurement + m
+                    val noisyMeasurement = R_P_L + m
                     noisyMeasurements.add(noisyMeasurement)
                     noisyMeasurementSigmas.add(sigma_M)
                 }
