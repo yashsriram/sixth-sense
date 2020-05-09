@@ -4,6 +4,7 @@ import org.ejml.data.FMatrixRMaj
 import processing.core.PApplet
 import robot.calibaration.RK4Integrator
 import robot.sensing.ObstacleLandmarkExtractor
+import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor
 import simulator.Simulator
 
@@ -11,20 +12,24 @@ class Calibrator : PApplet() {
 
     private var sim: Simulator? = null
     private var extractor: ObstacleLandmarkExtractor? = null
+    private var propagatedUntil = 0f
 
     override fun setup() {
         val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
+        extractor = RANSACLeastSquares(this)
+        propagatedUntil = 0f
         calibrateSigmaN()
-//        calibrateSigmaM()
+        calibrateSigmaM()
     }
 
     private fun calibrateSigmaM() {
-        println("Calibrating sensor measurement covariance")
+        println("Calibrating sensor measurement uncertainty")
         Simulator.GHOST_MODE = true;
         val noise = FMatrixRMaj(100, 2)
         val velocity = 100f
-        val distanceThreshold = 20f
+        val distanceThreshold = 2f
+        var landmarkCounter = 0
 
         // get room_landmarks
         val roomLandmarks = sim!!.getPossibleLandmarks() // FIXME: replace with sim func which returns true landmark positions
@@ -33,7 +38,7 @@ class Calibrator : PApplet() {
         println("Collecting noise samples")
         for (x in 0..99) {
             // Rotate and move the bot
-            sim!!.applyControl(FMatrix2(velocity, 0f))
+            sim!!.applyControl(FMatrix2(velocity, 1f))
             Thread.sleep(500);
             val poseCopy = sim!!.getTruePose()
             val position = FMatrix2(poseCopy.a1, poseCopy.a2)
@@ -62,8 +67,9 @@ class Calibrator : PApplet() {
                 for (trueLandmark in roomLandmarks) {
                     val temp = landmark - trueLandmark
                     if (temp.norm() < distanceThreshold) {
-                        noise.add(x, 1, trueLandmark.a1 - landmark.a1)
-                        noise.add(x, 0, trueLandmark.a1 - landmark.a1)
+                        noise.add(landmarkCounter, 0, trueLandmark.a1 - landmark.a1)
+                        noise.add(landmarkCounter, 1, trueLandmark.a2 - landmark.a2)
+                        landmarkCounter+=1
                     }
                 }
             }
@@ -72,7 +78,7 @@ class Calibrator : PApplet() {
         println("Finding Mean")
         val mean: MutableList<Float> = ArrayList()
         val nCols = noise.numCols - 1
-        val nRows = noise.numRows - 1
+        val nRows = landmarkCounter - 1
         for (x in 0..nCols) {
             mean.add(noise.columnWiseMean(x));
         }
@@ -85,7 +91,7 @@ class Calibrator : PApplet() {
                 for (row in 0..nRows) {
                     variance += (noise.get(row, i) - mean[i]) * (noise.get(row, j) - mean[j])
                 }
-                variance /= noise.numRows;
+                variance /= (nRows+1);
                 covariance.set(i, j, variance);
             }
         }
@@ -94,11 +100,12 @@ class Calibrator : PApplet() {
     }
 
     private fun calibrateSigmaN() {
-        println("Calibrating bot position covariance")
+        println("Calibrating bot position uncertainty")
         Simulator.GHOST_MODE = true;
         val noise = FMatrixRMaj(100, 3)
-        val dt = 0.01f
+        val numIter = 500f
         val velocity = 100f
+
 
         println("Collecting noise samples")
         for (x in 0..99) {
@@ -106,9 +113,12 @@ class Calibrator : PApplet() {
             // Rotate and move the bot for some time
             sim!!.applyControl(FMatrix2(velocity, 1f))
             Thread.sleep(500)
+            val latestTimeElapsed = sim!!.getTimeElapsed()
+            val dt = latestTimeElapsed - propagatedUntil
+            propagatedUntil = latestTimeElapsed
             // Compare true pose and estimated pose
             val pose = sim!!.getTruePose()
-            val estimatedPose = RK4Integrator.updatePose(baselinePose, FMatrix2(velocity, 1f), dt, (10f * dt * 500f).toInt())
+            val estimatedPose = RK4Integrator.updatePose(baselinePose, FMatrix2(velocity, 1f), dt/numIter, (numIter).toInt())
             noise.add(x, 0, estimatedPose.a1 - pose.a1)
             noise.add(x, 1, estimatedPose.a2 - pose.a2)
             noise.add(x, 2, estimatedPose.a3 - pose.a3)
