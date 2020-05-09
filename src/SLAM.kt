@@ -19,6 +19,8 @@ class SLAM : PApplet() {
     companion object {
         const val WIDTH = 900
         const val HEIGHT = 900
+        const val UPDATE_THRESHOLD = 20
+        const val AUGMENT_THRESHOLD = 100
         var DRAW_OBSTACLES_LANDMARKS = true
         var DRAW_ESTIMATED_LASERS = true
     }
@@ -35,6 +37,10 @@ class SLAM : PApplet() {
     // Propagation covariance
     private val std_N = 0.10f
     private val sigma_N = CommonOps_FDRM.identity(2) * (std_N * std_N)
+
+    // Measurement covariance
+    private val std_M = 1f
+    private val sigma_M = CommonOps_FDRM.identity(2) * (std_M * std_M)
 
     // Obstacle and landmark extractor
     private var extractor: ObstacleLandmarkExtractor? = null
@@ -122,6 +128,164 @@ class SLAM : PApplet() {
         return Pair(x_TPDT, sigma_TPDT)
     }
 
+    private fun augmentUpdateRelPosEKFSLAM(x_T: FMatrixRMaj,
+                                           sigma_x_T: FMatrixRMaj,
+                                           rel_pos_msmts: MutableList<FMatrixRMaj>,
+                                           sigma_Ms: MutableList<FMatrixRMaj>): Pair<FMatrixRMaj, FMatrixRMaj> {
+        var x_Plus = FMatrixRMaj(x_T)
+        var sigma_Plus = FMatrixRMaj(sigma_x_T)
+        // For each measurement
+        for (i in 0 until rel_pos_msmts.size) {
+            val rel_pos_msmt = rel_pos_msmts[i]
+            val sigma_M = sigma_Ms[i]
+
+            // Best match quantities
+            var min_distance = Float.POSITIVE_INFINITY
+            var best_H = FMatrixRMaj()
+            var best_h_x_hat_0 = FMatrixRMaj()
+            var best_S = FMatrixRMaj()
+
+            // For each landmark check the Mahalanobis distance
+            for (j in 3 until x_Plus.numRows step 2) {
+                val x_R_T = x_Plus[0, 0]
+                val y_R_T = x_Plus[1, 0]
+                val theta_T = x_Plus[2, 0]
+                val G_p_R = FMatrixRMaj(
+                        arrayOf(
+                                floatArrayOf(x_R_T),
+                                floatArrayOf(y_R_T)
+                        )
+                )
+                val sinTheta_T = sin(theta_T)
+                val cosTheta_T = cos(theta_T)
+                val H_L_new = FMatrixRMaj(
+                        arrayOf(
+                                floatArrayOf(cosTheta_T, sinTheta_T),
+                                floatArrayOf(-sinTheta_T, cosTheta_T)
+                        )
+                )
+                val x_L_T = x_Plus[j, 0]
+                val y_L_t = x_Plus[j + 1, 0]
+                val G_p_L = FMatrixRMaj(
+                        arrayOf(
+                                floatArrayOf(x_L_T),
+                                floatArrayOf(y_L_t)
+                        )
+                )
+                val H_R = FMatrixRMaj(
+                        arrayOf(
+                                floatArrayOf(-cosTheta_T, -sinTheta_T, -sinTheta_T * (x_L_T - x_R_T) + cosTheta_T * (y_L_t - y_R_T)),
+                                floatArrayOf(sinTheta_T, -cosTheta_T, -cosTheta_T * (x_L_T - x_R_T) - sinTheta_T * (y_L_t - y_R_T))
+                        )
+                )
+
+                val H = FMatrixRMaj(2, x_Plus.numRows)
+                H[0, 0, 2, 3] = H_R
+                H[0, j, 2, 2] = H_L_new
+
+                val S = H * sigma_Plus * H.transpose() + sigma_M
+                val h_x_hat_0 = H_L_new * (G_p_L - G_p_R)
+                val residue = rel_pos_msmt - h_x_hat_0
+                val distance = residue.transpose() * S.inverse() * residue
+
+                assert(distance.numElements == 1)
+
+                // Track the most likely landmark
+                if (distance[0, 0] < min_distance) {
+                    min_distance = distance[0, 0]
+                    best_H = H
+                    best_h_x_hat_0 = h_x_hat_0
+                    best_S = S
+                }
+            }
+
+            // Check if it matches any already in the state, and run an update for it.
+            if (min_distance <= UPDATE_THRESHOLD) {
+                val K = sigma_Plus * best_H.transpose() * best_S.inverse()
+                val I = CommonOps_FDRM.identity(x_Plus.numRows)
+
+                // Note that these we passed by reference, so to return, just set them
+                x_Plus.plusAssign(K * (rel_pos_msmt - best_h_x_hat_0))
+                val term = I - K * best_H
+                sigma_Plus = term * sigma_Plus * term.transpose() + K * sigma_M * K.transpose()
+                continue
+            }
+
+            // For unmatched measurement make sure it's sufficiently novel, then add to the state.
+            if (min_distance > AUGMENT_THRESHOLD) {
+                val x_R_T = x_Plus[0, 0]
+                val y_R_T = x_Plus[1, 0]
+                val theta_T = x_Plus[2, 0]
+                val G_p_R = FMatrixRMaj(
+                        arrayOf(
+                                floatArrayOf(x_R_T),
+                                floatArrayOf(y_R_T)
+                        )
+                )
+                val sinTheta_T = sin(theta_T)
+                val cosTheta_T = cos(theta_T)
+                val H_L_new = FMatrixRMaj(
+                        arrayOf(
+                                floatArrayOf(cosTheta_T, sinTheta_T),
+                                floatArrayOf(-sinTheta_T, cosTheta_T)
+                        )
+                )
+
+                // Expected value
+                // Copy previous state
+                val prevX = x_Plus
+                x_Plus = FMatrixRMaj(x_Plus.numRows + 2, 1)
+                for (t in 0 until prevX.numRows) {
+                    x_Plus[t, 0] = prevX[t, 0]
+                }
+                // Add new landmark estimate
+                val h_x_hat_0 = H_L_new * (FMatrixRMaj(2, 1) - G_p_R)
+                x_Plus[prevX.numRows, 0, 2, 1] = H_L_new.inverse() * (rel_pos_msmt - h_x_hat_0)
+
+                // Covariance
+                // Copy previous state
+                val prevSigma = sigma_Plus
+                sigma_Plus = FMatrixRMaj(sigma_Plus.numRows + 2, sigma_Plus.numCols + 2)
+                for (t in 0 until prevSigma.numRows) {
+                    for (s in 0 until prevSigma.numCols) {
+                        sigma_Plus[t, s] = prevSigma[t, s]
+                    }
+                }
+                // Augmentation
+                val H_R = FMatrixRMaj(
+                        arrayOf(
+                                floatArrayOf(-cosTheta_T, -sinTheta_T, -(0 - x_R_T) * sinTheta_T + (0 - y_R_T) * cosTheta_T),
+                                floatArrayOf(sinTheta_T, -cosTheta_T, -(0 - x_R_T) * cosTheta_T - (0 - y_R_T) * sinTheta_T)
+                        )
+                )
+                val H_L_new_inv = H_L_new.inverse()
+                val top3x3 = prevSigma[0, 0, 3, 3]
+                // Top right block
+                sigma_Plus[0, prevSigma.numCols, 3, 2] =
+                        top3x3 * H_R.transpose() * H_L_new_inv.transpose() * -1f
+                // Bottom left block
+                sigma_Plus[prevSigma.numRows, 0, 2, 3] =
+                        H_L_new_inv * H_R * top3x3 * -1f
+                // Bottom right block
+                sigma_Plus[prevSigma.numRows, prevSigma.numCols, 2, 2] =
+                        H_L_new_inv * (H_R * top3x3 * H_R.transpose() + sigma_M) * H_L_new_inv.transpose()
+                // Bottom row
+                for (col in 3 until prevSigma.numCols step 2) {
+                    sigma_Plus[prevSigma.numRows, col, 2, 2] =
+                            H_L_new_inv * H_R * prevSigma[0, col, 3, 2] * -1f
+                }
+                // Right row
+                for (row in 3 until prevSigma.numRows step 2) {
+                    sigma_Plus[row, prevSigma.numCols, 2, 2] =
+                            prevSigma[row, 0, 2, 3] * H_R.transpose() * H_L_new_inv.transpose() * -1f
+                }
+                continue
+            }
+        }
+
+        return Pair(x_Plus, sigma_Plus)
+    }
+
     override fun draw() {
         /* Clear screen */
         background(0)
@@ -179,6 +343,35 @@ class SLAM : PApplet() {
                     circleXZ(landmark.a1, landmark.a2, 2f)
                 }
             }
+            // If > 0 landmarks detected
+            // Run an EKFSLAMAugmentUpdate step
+            val rel_pos_msmts = mutableListOf<FMatrixRMaj>()
+            val sigma_Ms = mutableListOf<FMatrixRMaj>()
+            if (landmarks.isNotEmpty()) {
+                for (G_P_L in landmarks) {
+                    val G_P_L__G_P_R_FMat2 = G_P_L - position
+                    val G_P_L__G_P_R = FMatrixRMaj(
+                            arrayOf(
+                                    floatArrayOf(G_P_L__G_P_R_FMat2.a1),
+                                    floatArrayOf(G_P_L__G_P_R_FMat2.a2)
+                            )
+                    )
+                    val sinTheta = sin(orientation)
+                    val cosTheta = cos(orientation)
+                    val C_T = FMatrixRMaj(
+                            arrayOf(
+                                    floatArrayOf(cosTheta, sinTheta),
+                                    floatArrayOf(-sinTheta, cosTheta)
+                            )
+                    )
+                    val R_P_L = C_T * G_P_L__G_P_R
+                    rel_pos_msmts.add(R_P_L)
+                    sigma_Ms.add(sigma_M)
+                }
+            }
+            val (x_Plus, sigma_Plus) = augmentUpdateRelPosEKFSLAM(x_T, sigma_T, rel_pos_msmts, sigma_Ms)
+            x_T = x_Plus
+            sigma_T = sigma_Plus
             // Update last measured
             lastMeasured = timestamp
         }
@@ -199,9 +392,14 @@ class SLAM : PApplet() {
         circleXZ(estimatedPath.last().a1, estimatedPath.last().a2, sim!!.getRobotRadius())
         // Draw the uncertainty of the robot
         covarianceXZ(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
+        // Draw the uncertainty of all the landmarks in the state
+        for (j in 3 until x_T.numRows step 2) {
+            covarianceXZ(x_T[j, 0, 2, 1], sigma_T[j, j, 2, 2])
+        }
 
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}"
                 + " extractor=${extractor!!.getName()}"
+                + " #landmarks=${(x_T.numRows - 3) / 2}"
         )
     }
 

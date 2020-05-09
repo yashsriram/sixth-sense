@@ -10,13 +10,9 @@
     - [x] Find command line compile and run commands
 - [x] Reproduce HW2 EKF SLAM in java using processing.
 - [x] Replace DMatrix2 with FMatrix2
-- [x] Landmarks and obstacles are not the same
-    - [x] Here corners are landmarks and stored in slam state
-    - [x] Lines are obstacles, endpoints stored only for planning
-- [x] SLAM is not as transparent as first half due to matrix gymnastics
 
 ## Simulator
-- [ ] significance of time in odometry and laser scan struct
+- [x] significance of time in odometry and laser scan struct
 - [x] scaling
 - [x] 3d rendering
 
@@ -32,8 +28,18 @@
     - [x] No need for checking intersections separately due to IEP
     - [x] Loose end detection in first stage
     - [x] Intersection detection in second stage
+- [ ] Advanced landmark detection
+    - [ ] Intersection landmarks
+        - [ ] use perpendicular projections points
+        - [x] check distances (IEP shortcoming)
+    - [ ] Loose endpoints
+        - [ ] Sense line check (almost parallel to wall case)
 
 ## Observations
+- [x] SLAM is not as transparent as first half due to matrix gymnastics
+- [x] Landmarks and obstacles are not the same
+    - [x] Here corners are landmarks and stored in slam state
+    - [x] Lines are obstacles, endpoints stored only for planning
 - [x] Use time elapsed for robot to calculate dt for propagation, augment and update
 - [x] RK4 vs Eular stability vs dt graph
 - [x] Ignore measurements while moving, do it only while stationary? Moving slowly is fine
@@ -43,12 +49,6 @@
 - [ ] Estimating Sigma_m does it depend on distance?
 - [ ] Estimating Sigma_n does it depend on controls?
 - [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
-- [ ] Advanced landmark detection
-    - [ ] Intersection landmarks
-        - [ ] use perpendicular projections points
-        - [x] check distances (IEP shortcoming)
-    - [ ] Loose endpoints
-        - [ ] Sense line check (almost parallel to wall case)
 
 ## Estimation
 - [ ] Estimate Sigma_N and Sigma_M from simulator
@@ -57,10 +57,12 @@
 
 ## SLAM
 - [ ] SLAM
-    - [ ] Propogation
-    - [ ] Augement
-    - [ ] Update
-- [ ] Handle smooth differential drive agent
+    - [x] Propogation
+    - [x] Augement
+    - [x] Update
+    - [ ] Use better augment update like bobby's
+    - [ ] Periodically clean landmarks which have very less number of hits
+    - [ ] Tune params
 
 ## Planning
 - [ ] Keep track of obstacles detected
@@ -82,6 +84,15 @@
 - [ ] Planning
     - [ ] RRT for some time. Start going to furthest node until a new obstacle is detected?
     - [ ] Planning not the top priority rn
+
+## Smooth differential agent
+- [ ] Handle smooth differential drive agent. Maybe just use small speeds?
+
+## Demos
+- [ ] Check the command line compilation
+- [ ] Simple rectangle
+- [ ] Simple block
+- [ ] Apartment
 
 ## Optimizations
 - [ ] Use proper += -= implementations
