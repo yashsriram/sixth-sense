@@ -17,6 +17,8 @@ import kotlin.system.exitProcess
 
 class Simulator(private val applet: PApplet, sceneFilepath: String) {
     companion object {
+        const val ROBOT_LOOP_DURATION = 100f / 6
+        const val ROBOT_LOOP_DT = 1e-2f
         const val CONTROL_FREQ = 1
         const val LASER_SCAN_FREQUENCY = 10
         const val SCALE = 100f
@@ -33,6 +35,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     // Robot
     private val robot: Robot
     private val initialPose: FMatrix3
+    private var robotTimeElapsed = 0f
 
     init {
         // Read scene
@@ -102,8 +105,6 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     }
 
     private fun robotLoop() {
-        val loopDuration: Long = 10
-        val loopDt = 1e-3f * loopDuration
         var iteration = 0
         while (robot.isRunning) {
             val isPausedLocal: Boolean
@@ -114,7 +115,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
                 continue
             }
             if (iteration % CONTROL_FREQ == 0) {
-                robot.updatePose(loopDt)
+                robot.updatePose(ROBOT_LOOP_DT)
                 if (!GHOST_MODE) {
                     for (line in obstacles) {
                         if (robot.isCrashing(line)) {
@@ -128,8 +129,11 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
                 robot.updateSense(obstacles)
             }
             iteration++
+            synchronized(robotTimeElapsed) {
+                robotTimeElapsed += ROBOT_LOOP_DT
+            }
             try {
-                Thread.sleep(loopDuration)
+                Thread.sleep(ROBOT_LOOP_DURATION.toLong())
             } catch (e: InterruptedException) {
                 e.printStackTrace()
             }
@@ -137,6 +141,14 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
     }
 
     /* User callable */
+    fun getTimeElapsed(): Float {
+        var timeElapsed: Float
+        synchronized(robotTimeElapsed) {
+            timeElapsed = robotTimeElapsed
+        }
+        return timeElapsed
+    }
+
     val possibleLandmarks: Set<FMatrix2>
         get() {
             val lineEnds = HashSet<FMatrix2>()

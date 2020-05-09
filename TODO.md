@@ -39,6 +39,9 @@
     - [ ] Loose endpoints
         - [ ] Sense line check (almost parallel to wall case)
 
+## Add time elapsed to simulator
+- [x] Use time passed for robot to calculate dt for propagation, augment and update
+
 ## Considerations
 - [ ] Estimating Sigma_m does it depend on distance?
 - [ ] Estimating Sigma_n does it depend on controls?
