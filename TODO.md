@@ -36,8 +36,12 @@
         - [ ] Sense line check (almost parallel to wall case)
 
 ## Estimation
-- [ ] Estimate Sigma_N and Sigma_M from simulator
+- [ ] Estimating Sigma_m does it depend on distance?
+- [ ] Estimating Sigma_n does it depend on controls?
+- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
+- [ ] Estimate Sigma_N
     - [ ] Give a control for some time and not errors, fit a gaussian with that
+- [ ] Estimate Sigma_M
     - [ ] Sigma_M needs the RANSAC/LS/Corner detector
 
 ## SLAM
@@ -46,8 +50,7 @@
     - [x] Augement
     - [x] Update
     - [ ] Use better augment update like bobby's
-    - [ ] Periodically clean landmarks which have very less number of hits
-    - [ ] Tune params
+    - [x] Periodically clean landmarks which have very less number of hits
 
 ## Planning
 - [ ] Keep track of obstacles detected
@@ -83,16 +86,12 @@
 - [x] Ignore measurements while moving, do it only while stationary? Moving slowly is fine
 - [x] SLAM and planning can be developed independently
 
-## Considerations
-- [ ] Estimating Sigma_m does it depend on distance?
-- [ ] Estimating Sigma_n does it depend on controls?
-- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
-
 ## Demos
 - [ ] Check the command line compilation
 - [ ] Simple rectangle
 - [ ] Simple block
 - [ ] Apartment
+- [ ] Tune params
 
 ## Optimizations
 - [ ] Use proper += -= implementations

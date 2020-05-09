@@ -23,4 +23,9 @@ fun main() {
     a.set(100f, 101f)
     println(a.prettyPrint())
     println(list[0].prettyPrint())
+
+    val l = mutableListOf(0, 1, 2, 3, 4)
+    println(l)
+    println(l.removeAt(1))
+    println(l)
 }
