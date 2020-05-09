@@ -3,8 +3,6 @@ import extensions.*
 import org.ejml.data.FMatrix2
 import org.ejml.data.FMatrixRMaj
 import org.ejml.dense.row.CommonOps_FDRM
-import org.ejml.dense.row.EigenOps_FDRM
-import org.ejml.dense.row.decomposition.eig.SwitchingEigenDecomposition_FDRM
 import processing.core.PApplet
 import processing.core.PConstants
 import robot.sensing.HitGrid
@@ -148,73 +146,17 @@ class SLAM : PApplet() {
         sim!!.draw()
         // Draw the true trajectory
         stroke(0f, 1f, 0f)
-        drawPath(truePath)
+        pathXZ(truePath)
         // Draw the estimated trajectory
         stroke(0f, 0f, 1f)
-        drawPath(estimatedPath)
+        pathXZ(estimatedPath)
         circleXZ(estimatedPath.last().a1, estimatedPath.last().a2, sim!!.getRobotRadius())
         // Draw the uncertainty of the robot
-        drawCovariance(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
+        covarianceXZ(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
 
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}"
                 + " extractor=${extractor!!.getName()}"
         )
-    }
-
-    private fun drawCovariance(x_T: FMatrixRMaj, sigma_T: FMatrixRMaj) {
-        val sigma_T_copy = FMatrixRMaj(sigma_T)
-        val decomposer = SwitchingEigenDecomposition_FDRM(2, true, 1e-6f)
-        val success = decomposer.decompose(sigma_T_copy)
-        if (!success) {
-            throw IllegalStateException("Can't find eigen vectors/values of matrix")
-        }
-        val eigenValue1 = decomposer.getEigenvalue(0)
-        val eigenValue2 = decomposer.getEigenvalue(1)
-        val eigenVectors = EigenOps_FDRM.createMatrixV(decomposer)
-        val ellipseTheta = atan2(eigenVectors[1, 0], eigenVectors[0, 0])
-        val sinEllipseTheta = sin(ellipseTheta)
-        val cosEllipseTheta = cos(ellipseTheta)
-        val rot = FMatrixRMaj(
-                arrayOf(
-                        floatArrayOf(cosEllipseTheta, -sinEllipseTheta),
-                        floatArrayOf(sinEllipseTheta, cosEllipseTheta)
-                )
-        )
-        val ellipseResolution = 20
-        val ellipse = mutableListOf<FMatrixRMaj>()
-        for (i in 0 until ellipseResolution) {
-            // Only ellipseResolution - 1 points as the first and last points are the same (completing the loop)
-            val theta = 2 * PI * i / (ellipseResolution - 1)
-
-            // Scale by major / minor axis, then rotate and offset
-            // 5.991 (=chi2inv(.95,2)) is the 95% confidence scaling bound for a 2D covariance ellipse
-            // 2f * gives 99% conficence interval
-            val pointOnEllipse = FMatrixRMaj(
-                    arrayOf(
-                            floatArrayOf(2f * sqrt((5.991 * eigenValue1.real).toFloat()) * cos(theta)),
-                            floatArrayOf(2f * sqrt((5.991 * eigenValue2.real).toFloat()) * sin(theta))
-                    )
-            )
-            ellipse.add(x_T + rot * pointOnEllipse)
-        }
-        stroke(1f, 0f, 0f)
-        drawPath1(ellipse)
-    }
-
-    private fun drawPath(points: MutableList<FMatrix2>) {
-        for (i in 1 until points.size) {
-            val prevState = points[i - 1]
-            val currState = points[i]
-            line(prevState.a1, 0f, prevState.a2, currState.a1, 0f, currState.a2)
-        }
-    }
-
-    private fun drawPath1(points: MutableList<FMatrixRMaj>) {
-        for (i in 1 until points.size) {
-            val prevState = points[i - 1]
-            val currState = points[i]
-            line(prevState[0], 0f, prevState[1], currState[0], 0f, currState[1])
-        }
     }
 
     override fun keyPressed() {
