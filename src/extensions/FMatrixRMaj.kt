@@ -41,6 +41,10 @@ operator fun FMatrixRMaj.times(t: Float): FMatrixRMaj {
     return scaled
 }
 
+operator fun FMatrixRMaj.timesAssign(t: Float) {
+    CommonOps_FDRM.scale(t, this)
+}
+
 operator fun FMatrixRMaj.plusAssign(b: FMatrixRMaj) {
     CommonOps_FDRM.addEquals(this, b)
 }

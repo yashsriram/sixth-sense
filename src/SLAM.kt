@@ -5,11 +5,11 @@ import org.ejml.data.FMatrixRMaj
 import org.ejml.dense.row.CommonOps_FDRM
 import processing.core.PApplet
 import processing.core.PConstants
+import robot.calibaration.RK4Integrator
 import robot.sensing.HitGrid
 import robot.sensing.IEP
 import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
-import scratch.Estimate
 import simulator.LaserSensor
 import simulator.Simulator
 import kotlin.math.roundToInt
@@ -81,17 +81,12 @@ class SLAM : PApplet() {
                                  sigma_T: FMatrixRMaj,
                                  u: FMatrix2,
                                  sigma_N: FMatrixRMaj,
-                                 dt: Float): Estimate {
-        val theta_t = x_T[2]
-        val v = u.a1
-        val w = u.a2
-
-        val x_TPDT = FMatrixRMaj(x_T)
-        x_TPDT[0] += dt * v * cos(theta_t)
-        x_TPDT[1] += dt * v * sin(theta_t)
-        x_TPDT[2] += dt * w
+                                 dt: Float): Pair<FMatrixRMaj, FMatrixRMaj> {
+        val x_TPDT = RK4Integrator.updatePose(x_T, u, dt, 1)
 
         val sigma_TPDT = FMatrixRMaj(sigma_T)
+        val theta_t = x_T[2]
+        val v = u.a1
         val A = FMatrixRMaj(
                 arrayOf(
                         floatArrayOf(1f, 0f, -dt * v * sin(theta_t)),
@@ -117,10 +112,8 @@ class SLAM : PApplet() {
         for (row in 3 until sigma_TPDT.numRows step 2) {
             sigma_TPDT[row, 0, 2, 3] = sigma_TPDT[row, 0, 2, 3] * A.transpose()
         }
-        return Estimate(mean = x_TPDT, covariance = sigma_TPDT)
+        return Pair(x_TPDT, sigma_TPDT)
     }
-
-    var sumdt = 0f
 
     override fun draw() {
         /* Clear screen */
@@ -133,11 +126,11 @@ class SLAM : PApplet() {
         timePropagatedTo = latestTimeElapsed
 
         // Run an EKFSLAMPropagation step
-        val estimateTPDT = propagateEKFSLAM(x_T, sigma_T, u, sigma_N, dt)
+        val (x_TPDT, sigma_TPDT) = propagateEKFSLAM(x_T, sigma_T, u, sigma_N, dt)
+        x_T = x_TPDT
+        sigma_T = sigma_TPDT
 
-        x_T = estimateTPDT.mean
-        sigma_T = estimateTPDT.covariance
-
+        // Keep track of path
         val truePose = sim!!.getTruePose()
         truePath.add(FMatrix2(truePose.a1, truePose.a2))
         estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
