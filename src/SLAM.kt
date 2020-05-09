@@ -20,7 +20,9 @@ class SLAM : PApplet() {
         const val WIDTH = 900
         const val HEIGHT = 900
         const val UPDATE_THRESHOLD = 20
-        const val AUGMENT_THRESHOLD = 100
+        const val AUGMENT_THRESHOLD = 200
+        const val PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES = 25
+        const val PERIODICAL_CLEAN_THRESHOLD = 5
         var DRAW_OBSTACLES_LANDMARKS = true
         var DRAW_ESTIMATED_LASERS = true
     }
@@ -33,6 +35,7 @@ class SLAM : PApplet() {
     // State estimate
     private var x_T = FMatrixRMaj()
     private var sigma_T = FMatrixRMaj()
+    private var landmarkHitMap = mutableListOf<Int>()
 
     // Propagation covariance
     private val std_N = 0.10f
@@ -41,6 +44,7 @@ class SLAM : PApplet() {
     // Measurement covariance
     private val std_M = 1f
     private val sigma_M = CommonOps_FDRM.identity(2) * (std_M * std_M)
+    private var numAugmentUpdates = 1
 
     // Obstacle and landmark extractor
     private var extractor: ObstacleLandmarkExtractor? = null
@@ -144,6 +148,7 @@ class SLAM : PApplet() {
             var best_H = FMatrixRMaj()
             var best_h_x_hat_0 = FMatrixRMaj()
             var best_S = FMatrixRMaj()
+            var best_j = -1
 
             // For each landmark check the Mahalanobis distance
             for (j in 3 until x_Plus.numRows step 2) {
@@ -196,23 +201,26 @@ class SLAM : PApplet() {
                     best_H = H
                     best_h_x_hat_0 = h_x_hat_0
                     best_S = S
+                    best_j = j
                 }
             }
 
             // Check if it matches any already in the state, and run an update for it.
             if (min_distance <= UPDATE_THRESHOLD) {
+                // EKF Update
                 val K = sigma_Plus * best_H.transpose() * best_S.inverse()
                 val I = CommonOps_FDRM.identity(x_Plus.numRows)
-
-                // Note that these we passed by reference, so to return, just set them
                 x_Plus.plusAssign(K * (rel_pos_msmt - best_h_x_hat_0))
                 val term = I - K * best_H
                 sigma_Plus = term * sigma_Plus * term.transpose() + K * sigma_M * K.transpose()
+                // Update number of hits map
+                landmarkHitMap[(best_j - 3) / 2]++
                 continue
             }
 
             // For unmatched measurement make sure it's sufficiently novel, then add to the state.
             if (min_distance > AUGMENT_THRESHOLD) {
+                // EKF Augment
                 val x_R_T = x_Plus[0, 0]
                 val y_R_T = x_Plus[1, 0]
                 val theta_T = x_Plus[2, 0]
@@ -279,8 +287,65 @@ class SLAM : PApplet() {
                     sigma_Plus[row, prevSigma.numCols, 2, 2] =
                             prevSigma[row, 0, 2, 3] * H_R.transpose() * H_L_new_inv.transpose() * -1f
                 }
+                // Add to number of hits map
+                landmarkHitMap.add(1)
                 continue
             }
+        }
+        numAugmentUpdates++
+        // Periodically remove measurements with very low hit rate
+        if (numAugmentUpdates % PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES == 0) {
+            kotlin.io.println("cleaning")
+            // Collect indices to be kept
+            val correctLandmarkIndices = mutableListOf<Int>()
+            val badLandmarkMask = mutableListOf<Boolean>()
+            for ((i, hits) in landmarkHitMap.withIndex()) {
+                if (hits > PERIODICAL_CLEAN_THRESHOLD) {
+                    correctLandmarkIndices.add(i)
+                    badLandmarkMask.add(false)
+                } else {
+                    badLandmarkMask.add(true)
+                }
+            }
+            // Make a corrected copy
+            val landmarkHitMap_Corrected = mutableListOf<Int>()
+            // x_Plus_Corrected
+            val x_Plus_Corrected = FMatrixRMaj(3 + 2 * correctLandmarkIndices.size, 1)
+            x_Plus_Corrected[0, 0, 3, 1] = x_Plus[0, 0, 3, 1]
+            for ((i, correctLandmarkIndex) in correctLandmarkIndices.withIndex()) {
+                // Add correct landmark hits
+                landmarkHitMap_Corrected.add(landmarkHitMap[correctLandmarkIndex])
+                // Add correct landmarks to corrected state
+                x_Plus_Corrected[3 + 2 * i, 0, 2, 1] = x_Plus[3 + 2 * correctLandmarkIndex, 0, 2, 1]
+            }
+            // sigma_Plus_Corrected
+            val bad_sigma_Plus_Mask = sigma_Plus.createLike()
+            for (i in 0 until bad_sigma_Plus_Mask.numRows) {
+                for (j in 0 until bad_sigma_Plus_Mask.numCols) {
+                    if (((i - 3) / 2 >= 0 && badLandmarkMask[(i - 3) / 2])
+                            || ((j - 3) / 2 >= 0 && badLandmarkMask[(j - 3) / 2])) {
+                        bad_sigma_Plus_Mask[i, j] = 1f
+                    }
+                }
+            }
+            val sigma_Plus_Corrected = FMatrixRMaj(3 + 2 * correctLandmarkIndices.size, 3 + 2 * correctLandmarkIndices.size)
+            var corrected_i = 0
+            for (i in 0 until bad_sigma_Plus_Mask.numRows) {
+                var corrected_j = 0
+                for (j in 0 until bad_sigma_Plus_Mask.numCols) {
+                    if (bad_sigma_Plus_Mask[i, j] == 0f) {
+                        sigma_Plus_Corrected[corrected_i, corrected_j] = sigma_Plus[i, j]
+                        corrected_j++
+                        if (corrected_j == 3 + 2 * correctLandmarkIndices.size) {
+                            corrected_i++
+                        }
+                    }
+                }
+            }
+            // Update variables
+            landmarkHitMap = landmarkHitMap_Corrected
+            x_Plus = x_Plus_Corrected
+            sigma_Plus = sigma_Plus_Corrected
         }
 
         return Pair(x_Plus, sigma_Plus)

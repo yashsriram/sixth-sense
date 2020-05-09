@@ -46,7 +46,7 @@
     - [x] Augement
     - [x] Update
     - [ ] Use better augment update like bobby's
-    - [ ] Periodically clean landmarks which have very less number of hits
+    - [x] Periodically clean landmarks which have very less number of hits
     - [ ] Tune params
 
 ## Planning
