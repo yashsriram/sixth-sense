@@ -99,13 +99,13 @@ class LaserSensor internal constructor(private val applet: PApplet) {
         return Pair(currentDistances, currentTimestamp)
     }
 
-    fun draw(position: FMatrix2) {
+    fun draw(source: FMatrix2) {
         if (!DRAW_LASERS) {
             return
         }
         val (distances, _) = getDistances()
         val angles = getAngles()
-        val lasersEnds: MutableList<FMatrix2> = ArrayList(COUNT)
+        val laserEnds: MutableList<FMatrix2> = ArrayList(COUNT)
         for (i in 0 until COUNT) {
             if (distances[i] == INVALID_DISTANCE) {
                 continue
@@ -113,13 +113,13 @@ class LaserSensor internal constructor(private val applet: PApplet) {
             val theta = angles[i]
             val laserBeam = FMatrix2(cos(theta), sin(theta))
             laserBeam *= distances[i]
-            val laserEnd = position + laserBeam
-            lasersEnds.add(laserEnd)
+            val laserEnd = source + laserBeam
+            laserEnds.add(laserEnd)
         }
         applet.noFill()
-        for (laserEnd in lasersEnds) {
+        for (laserEnd in laserEnds) {
             applet.stroke(1f, 0f, 0f)
-            applet.line(position.a1, 0f, position.a2, laserEnd.a1, 0f, laserEnd.a2)
+            applet.line(source.a1, 0f, source.a2, laserEnd.a1, 0f, laserEnd.a2)
             applet.stroke(1f, 1f, 0f)
             applet.circleXZ(laserEnd.a1, laserEnd.a2, 1f)
         }

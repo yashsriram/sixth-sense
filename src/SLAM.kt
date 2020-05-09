@@ -12,6 +12,7 @@ import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor
 import simulator.Simulator
+import java.util.*
 import kotlin.math.roundToInt
 
 class SLAM : PApplet() {
@@ -19,6 +20,7 @@ class SLAM : PApplet() {
         const val WIDTH = 900
         const val HEIGHT = 900
         var DRAW_OBSTACLES_LANDMARKS = true
+        var DRAW_ESTIMATED_LASERS = true
     }
 
     private var sim: Simulator? = null
@@ -137,10 +139,49 @@ class SLAM : PApplet() {
         truePath.add(FMatrix2(truePose.a1, truePose.a2))
         estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
 
-        kotlin.io.println("dot")
         val (distances, timestamp) = sim!!.getLaserMeasurement()
         if (timestamp > lastMeasured) {
-            kotlin.io.println("msmt")
+            // Get the estimate of laser source position
+            val position = FMatrix2(x_T[0], x_T[1])
+            val orientation = x_T[2]
+            val centerToHead = FMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
+            centerToHead *= sim!!.getRobotRadius()
+            val tail = position - centerToHead
+            // Get the estimate of laser ends
+            val laserEnds: MutableList<FMatrix2> = ArrayList(LaserSensor.COUNT)
+            for (i in distances.indices) {
+                if (distances[i] == LaserSensor.INVALID_DISTANCE) {
+                    continue
+                }
+                val percentage = i / (LaserSensor.COUNT - 1f)
+                val theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage
+                val laserBeam = FMatrix2(kotlin.math.cos(orientation + theta), kotlin.math.sin(orientation + theta))
+                laserBeam *= distances[i]
+                val laserEnd = tail + laserBeam
+                laserEnds.add(laserEnd)
+            }
+            if (DRAW_ESTIMATED_LASERS) {
+                noFill()
+                for (laserEnd in laserEnds) {
+                    stroke(1f, 1f, 0f)
+                    line(tail.a1, 0f, tail.a2, laserEnd.a1, 0f, laserEnd.a2)
+                    stroke(1f, 0f, 0f)
+                    circleXZ(laserEnd.a1, laserEnd.a2, 1f)
+                }
+            }
+            // Extract obstacles and landmarks
+            val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
+            if (DRAW_OBSTACLES_LANDMARKS) {
+                stroke(1f, 0f, 1f)
+                for (segment in obstacles) {
+                    line(segment.first.a1, 0f, segment.first.a2, segment.second.a1, 0f, segment.second.a2)
+                }
+                stroke(0f, 1f, 1f)
+                for (landmark in landmarks) {
+                    circleXZ(landmark.a1, landmark.a2, 2f)
+                }
+            }
+            // Update last measured
             lastMeasured = timestamp
         }
 
@@ -181,6 +222,9 @@ class SLAM : PApplet() {
         }
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable
+        }
+        if (key == 'z') {
+            DRAW_ESTIMATED_LASERS = !DRAW_ESTIMATED_LASERS
         }
         if (key == 'x') {
             LaserSensor.DRAW_LASERS = !LaserSensor.DRAW_LASERS
