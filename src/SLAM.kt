@@ -35,7 +35,6 @@ class SLAM : PApplet() {
     // State estimate
     private var x_T = FMatrixRMaj()
     private var sigma_T = FMatrixRMaj()
-    private var landmarkHitMap = mutableListOf<Int>()
 
     // Propagation covariance
     private val std_N = 0.10f
@@ -44,6 +43,7 @@ class SLAM : PApplet() {
     // Measurement covariance
     private val std_M = 1f
     private val sigma_M = CommonOps_FDRM.identity(2) * (std_M * std_M)
+    private var landmarkHitMap = mutableListOf<Int>()
     private var numAugmentUpdates = 1
 
     // Obstacle and landmark extractor
