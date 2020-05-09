@@ -62,7 +62,7 @@ class SLAM : PApplet() {
         // Start simulator
         val sceneName = "data/simple_rectangle.scn"
         sim = Simulator(this, sceneName)
-        val initialTruePose = sim!!.truePose
+        val initialTruePose = sim!!.getTruePose()
         // Init estimates with zero uncertainty
         x_T = FMatrixRMaj(
                 arrayOf(
@@ -140,7 +140,7 @@ class SLAM : PApplet() {
         x_T = estimateTPDT.mean
         sigma_T = estimateTPDT.covariance
 
-        val truePose = sim!!.truePose
+        val truePose = sim!!.getTruePose()
         truePath.add(FMatrix2(truePose.a1, truePose.a2))
         estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
 
@@ -152,7 +152,7 @@ class SLAM : PApplet() {
         // Draw the estimated trajectory
         stroke(0f, 0f, 1f)
         drawPath(estimatedPath)
-        circleXZ(estimatedPath.last().a1, estimatedPath.last().a2, sim!!.robotRadius)
+        circleXZ(estimatedPath.last().a1, estimatedPath.last().a2, sim!!.getRobotRadius())
         // Draw the uncertainty of the robot
         drawCovariance(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
 

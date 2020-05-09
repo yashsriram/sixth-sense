@@ -1,5 +1,8 @@
 import camera.QueasyCam
-import extensions.*
+import extensions.circleXZ
+import extensions.minus
+import extensions.plus
+import extensions.timesAssign
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
@@ -8,7 +11,6 @@ import robot.sensing.IEP
 import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor
-import simulator.Robot
 import simulator.Simulator
 import java.util.*
 import kotlin.math.roundToInt
@@ -43,7 +45,6 @@ class Main : PApplet() {
         hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
         extractor = RANSACLeastSquares(this)
         Simulator.GHOST_MODE = true
-        sim!!.applyControl(FMatrix2(4f, 0.15f))
     }
 
     override fun draw() {
@@ -51,14 +52,14 @@ class Main : PApplet() {
         background(0)
 
         /* Update */
-        val poseCopy = sim!!.truePose // FIXME: should use estimated pose here later
+        val poseCopy = sim!!.getTruePose() // FIXME: should use estimated pose here later
         val position = FMatrix2(poseCopy.a1, poseCopy.a2)
         val orientation = poseCopy.a3
         val centerToHead = FMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
-        centerToHead *= sim!!.robotRadius
+        centerToHead *= sim!!.getRobotRadius()
         val tail = position - centerToHead
 
-        val distances = sim!!.laserDistances
+        val (distances, timestamp) = sim!!.getLaserMeasurement()
         val laserEnds: MutableList<FMatrix2> = ArrayList(LaserSensor.COUNT)
         for (i in distances.indices) {
             if (distances[i] == LaserSensor.INVALID_DISTANCE) {
@@ -125,21 +126,21 @@ class Main : PApplet() {
         if (key == 'z') {
             sim!!.applyControl(FMatrix2())
         }
-//        if (keyCode == PConstants.UP) {
-//            sim!!.applyControl(FMatrix2(100f, 0f))
-//        }
-//        if (keyCode == PConstants.DOWN) {
-//            sim!!.applyControl(FMatrix2(-100f, 0f))
-//        }
-//        if (keyCode == PConstants.LEFT) {
-//            sim!!.applyControl(FMatrix2(0f, -1f))
-//        }
-//        if (keyCode == PConstants.RIGHT) {
-//            sim!!.applyControl(FMatrix2(0f, 1f))
-//        }
-//        if (key == 'g') {
-//            Simulator.GHOST_MODE = !Simulator.GHOST_MODE
-//        }
+        if (keyCode == PConstants.UP) {
+            sim!!.applyControl(FMatrix2(100f, 0f))
+        }
+        if (keyCode == PConstants.DOWN) {
+            sim!!.applyControl(FMatrix2(-100f, 0f))
+        }
+        if (keyCode == PConstants.LEFT) {
+            sim!!.applyControl(FMatrix2(0f, -1f))
+        }
+        if (keyCode == PConstants.RIGHT) {
+            sim!!.applyControl(FMatrix2(0f, 1f))
+        }
+        if (key == 'g') {
+            Simulator.GHOST_MODE = !Simulator.GHOST_MODE
+        }
         if (key == 'c') {
             cam!!.controllable = !cam!!.controllable
         }

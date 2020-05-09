@@ -31,6 +31,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
     // Multi-thread access
     private val distances: MutableList<Float> = ArrayList(COUNT)
     private val angles: MutableList<Float> = ArrayList(COUNT)
+    private var timestamp = 0L
 
     init {
         for (i in 0 until COUNT) {
@@ -70,8 +71,11 @@ class LaserSensor internal constructor(private val applet: PApplet) {
 
         // Update measurements
         synchronized(distances) {
-            for (i in newMeasurements.indices) {
-                distances[i] = newMeasurements[i]
+            synchronized(timestamp) {
+                for (i in newMeasurements.indices) {
+                    distances[i] = newMeasurements[i]
+                }
+                timestamp = System.nanoTime()
             }
         }
     }
@@ -83,17 +87,23 @@ class LaserSensor internal constructor(private val applet: PApplet) {
     }
 
     /* User callable */
-    fun getDistances(): List<Float> {
+    fun getDistances(): Pair<List<Float>, Long> {
         var currentDistances: List<Float>
-        synchronized(distances) { currentDistances = ArrayList(distances) }
-        return currentDistances
+        var currentTimestamp: Long
+        synchronized(distances) {
+            synchronized(timestamp) {
+                currentDistances = ArrayList(distances)
+                currentTimestamp = timestamp
+            }
+        }
+        return Pair(currentDistances, currentTimestamp)
     }
 
     fun draw(position: FMatrix2) {
         if (!DRAW_LASERS) {
             return
         }
-        val distances = getDistances()
+        val (distances, _) = getDistances()
         val angles = getAngles()
         val lasersEnds: MutableList<FMatrix2> = ArrayList(COUNT)
         for (i in 0 until COUNT) {

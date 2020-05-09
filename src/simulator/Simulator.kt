@@ -149,26 +149,29 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         return timeElapsed
     }
 
-    val possibleLandmarks: Set<FMatrix2>
-        get() {
-            val lineEnds = HashSet<FMatrix2>()
-            for (obstacle in obstacles) {
-                lineEnds += obstacle.possibleLandmarks()
-            }
-            return lineEnds
+    fun getPossibleLandmarks(): Set<FMatrix2> {
+        val lineEnds = HashSet<FMatrix2>()
+        for (obstacle in obstacles) {
+            lineEnds += obstacle.possibleLandmarks()
         }
+        return lineEnds
+    }
 
-    val truePose: FMatrix3
-        get() = robot.getTruePose()
+    fun getTruePose(): FMatrix3 {
+        return robot.getTruePose()
+    }
 
-    val robotRadius: Float
-        get() = robot.radius
+    fun getRobotRadius(): Float {
+        return robot.radius
+    }
 
-    val laserDistances: List<Float>
-        get() = robot.laserSensor.getDistances()
+    fun getLaserMeasurement(): Pair<List<Float>, Long> {
+        return robot.laserSensor.getDistances()
+    }
 
-    val currentControl: FMatrix2
-        get() = robot.getCurrentControl()
+    fun getCurrentControl(): FMatrix2 {
+        return robot.getCurrentControl()
+    }
 
     fun applyControl(control: FMatrix2) {
         robot.applyControl(control)
