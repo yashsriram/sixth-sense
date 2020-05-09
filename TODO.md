@@ -35,21 +35,6 @@
     - [ ] Loose endpoints
         - [ ] Sense line check (almost parallel to wall case)
 
-## Observations
-- [x] SLAM is not as transparent as first half due to matrix gymnastics
-- [x] Landmarks and obstacles are not the same
-    - [x] Here corners are landmarks and stored in slam state
-    - [x] Lines are obstacles, endpoints stored only for planning
-- [x] Use time elapsed for robot to calculate dt for propagation, augment and update
-- [x] RK4 vs Eular stability vs dt graph
-- [x] Ignore measurements while moving, do it only while stationary? Moving slowly is fine
-- [x] SLAM and planning can be developed independently
-
-## Considerations
-- [ ] Estimating Sigma_m does it depend on distance?
-- [ ] Estimating Sigma_n does it depend on controls?
-- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
-
 ## Estimation
 - [ ] Estimate Sigma_N and Sigma_M from simulator
     - [ ] Give a control for some time and not errors, fit a gaussian with that
@@ -87,6 +72,21 @@
 
 ## Smooth differential agent
 - [ ] Handle smooth differential drive agent. Maybe just use small speeds?
+
+## Observations
+- [x] SLAM is not as transparent as first half due to matrix gymnastics
+- [x] Landmarks and obstacles are not the same
+    - [x] Here corners are landmarks and stored in slam state
+    - [x] Lines are obstacles, endpoints stored only for planning
+- [x] Use time elapsed for robot to calculate dt for propagation, augment and update
+- [x] RK4 vs Eular stability vs dt graph
+- [x] Ignore measurements while moving, do it only while stationary? Moving slowly is fine
+- [x] SLAM and planning can be developed independently
+
+## Considerations
+- [ ] Estimating Sigma_m does it depend on distance?
+- [ ] Estimating Sigma_n does it depend on controls?
+- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
 
 ## Demos
 - [ ] Check the command line compilation
