@@ -75,7 +75,10 @@ class SLAM : PApplet() {
         sigma_T = CommonOps_FDRM.identity(3) * 0f
         // Init obstacle and landmark extractor
         extractor = RANSACLeastSquares(this)
-        // Starts the robot
+        // Keep track of the path
+        truePath.add(FMatrix2(initialTruePose.a1, initialTruePose.a2))
+        estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
+        // Start the robot
         propagatedUntil = 0f
         lastMeasured = System.currentTimeMillis()
         sim!!.applyControl(u)
@@ -134,11 +137,6 @@ class SLAM : PApplet() {
         x_T = x_TPDT
         sigma_T = sigma_TPDT
 
-        // Keep track of path
-        val truePose = sim!!.getTruePose()
-        truePath.add(FMatrix2(truePose.a1, truePose.a2))
-        estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
-
         val (distances, timestamp) = sim!!.getLaserMeasurement()
         if (timestamp > lastMeasured) {
             // Get the estimate of laser source position
@@ -184,6 +182,11 @@ class SLAM : PApplet() {
             // Update last measured
             lastMeasured = timestamp
         }
+
+        // Keep track of path
+        val truePose = sim!!.getTruePose()
+        truePath.add(FMatrix2(truePose.a1, truePose.a2))
+        estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
 
         /* Draw */
         sim!!.draw()
