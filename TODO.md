@@ -32,6 +32,17 @@
     - [x] No need for checking intersections separately due to IEP
     - [x] Loose end detection in first stage
     - [x] Intersection detection in second stage
+
+## Observations
+- [x] Use time elapsed for robot to calculate dt for propagation, augment and update
+- [x] RK4 vs Eular stability vs dt graph
+- [x] Ignore measurements while moving, do it only while stationary? Moving slowly is fine
+- [x] SLAM and planning can be developed independently
+
+## Considerations
+- [ ] Estimating Sigma_m does it depend on distance?
+- [ ] Estimating Sigma_n does it depend on controls?
+- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
 - [ ] Advanced landmark detection
     - [ ] Intersection landmarks
         - [ ] use perpendicular projections points
@@ -39,25 +50,16 @@
     - [ ] Loose endpoints
         - [ ] Sense line check (almost parallel to wall case)
 
-## Add time elapsed to simulator
-- [x] Use time passed for robot to calculate dt for propagation, augment and update
-
-## Considerations
-- [ ] Estimating Sigma_m does it depend on distance?
-- [ ] Estimating Sigma_n does it depend on controls?
-- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
-- [ ] Ignore measurements while moving? maybe. Try doing it only while stationary
-- [ ] Move slowly and take frequent stops for landmark measurements
-- [ ] SLAM and planning can be developed independently
-
 ## Estimation
 - [ ] Estimate Sigma_N and Sigma_M from simulator
     - [ ] Give a control for some time and not errors, fit a gaussian with that
     - [ ] Sigma_M needs the RANSAC/LS/Corner detector
-- [ ] Handle smooth differential drive agent
 
 ## SLAM
 - [ ] SLAM
+    - [ ] Propogation
+    - [ ] Augement
+    - [ ] Update
 - [ ] Handle smooth differential drive agent
 
 ## Planning
@@ -80,13 +82,11 @@
 - [ ] Planning
     - [ ] RRT for some time. Start going to furthest node until a new obstacle is detected?
     - [ ] Planning not the top priority rn
-- [ ] Handle smooth differential drive agent
-
-## Advanced
-- [ ] Circular obstacles
-- [ ] Dynamic human obstacles
 
 ## Optimizations
 - [ ] Use proper += -= implementations
 - [ ] Merge A * B^T operation as one
 - [ ] Don't create new memory for get block??
+
+## Future work
+- [ ] Circular obstacles

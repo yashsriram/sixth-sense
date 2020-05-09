@@ -75,7 +75,7 @@ class LaserSensor internal constructor(private val applet: PApplet) {
                 for (i in newMeasurements.indices) {
                     distances[i] = newMeasurements[i]
                 }
-                timestamp = System.nanoTime()
+                timestamp = System.currentTimeMillis()
             }
         }
     }

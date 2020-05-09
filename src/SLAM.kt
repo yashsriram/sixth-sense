@@ -40,8 +40,9 @@ class SLAM : PApplet() {
     // Control
     private val u = FMatrix2(4f, 0.15f)
 
-    // Clock
-    private var timePropagatedTo = 0f
+    // Propagated/Measured until
+    private var propagatedUntil = 0f
+    private var lastMeasured = 0L
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -73,7 +74,8 @@ class SLAM : PApplet() {
         // Init obstacle and landmark extractor
         extractor = RANSACLeastSquares(this)
         // Starts the robot
-        timePropagatedTo = 0f
+        propagatedUntil = 0f
+        lastMeasured = System.currentTimeMillis()
         sim!!.applyControl(u)
     }
 
@@ -122,8 +124,8 @@ class SLAM : PApplet() {
         /* Update */
         // Get time elapsed
         val latestTimeElapsed = sim!!.getTimeElapsed()
-        val dt = latestTimeElapsed - timePropagatedTo
-        timePropagatedTo = latestTimeElapsed
+        val dt = latestTimeElapsed - propagatedUntil
+        propagatedUntil = latestTimeElapsed
 
         // Run an EKFSLAMPropagation step
         val (x_TPDT, sigma_TPDT) = propagateEKFSLAM(x_T, sigma_T, u, sigma_N, dt)
@@ -134,6 +136,13 @@ class SLAM : PApplet() {
         val truePose = sim!!.getTruePose()
         truePath.add(FMatrix2(truePose.a1, truePose.a2))
         estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
+
+        kotlin.io.println("dot")
+        val (distances, timestamp) = sim!!.getLaserMeasurement()
+        if (timestamp > lastMeasured) {
+            kotlin.io.println("msmt")
+            lastMeasured = timestamp
+        }
 
         /* Draw */
         sim!!.draw()
