@@ -40,10 +40,10 @@
 - [ ] Estimating Sigma_m does it depend on distance?
 - [ ] Estimating Sigma_n does it depend on controls?
 - [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
-- [ ] Estimate Sigma_N
-    - [ ] Give a control for some time and not errors, fit a gaussian with that
-- [ ] Estimate Sigma_M
-    - [ ] Sigma_M needs the RANSAC/LS/Corner detector
+- [x] Estimate Sigma_N
+    - [x] Give a control for some time and not errors, fit a gaussian with that
+- [x] Estimate Sigma_M
+    - [x] Sigma_M needs the RANSAC/LS/Corner detector
 
 ## SLAM
 - [ ] SLAM
@@ -52,6 +52,7 @@
     - [x] Update
     - [x] Do all updates first and then augment all new landmarks
     - [x] Periodically clean landmarks which have very less number of hits
+    - [ ] Use estimated sigmas
 
 ## Planning
 - [ ] Keep track of obstacles detected
