@@ -32,7 +32,7 @@ class Simulation : PApplet() {
         var DRAW_ESTIMATED_PATH = true
         var DRAW_PLANNED_PATH = true
         var DRAW_TRUE_PATH = true
-        var DRAW_BRESENHAM_POINTS = true
+        var DRAW_BRESENHAM_POINTS = false
     }
 
     private var sim: Simulator? = null
@@ -296,7 +296,7 @@ class Simulation : PApplet() {
         }
         //BresenHam: Drawing
         if (DRAW_BRESENHAM_POINTS) {
-            val sensedPts = mutableListOf<FMatrix2>()g
+            val sensedPts = mutableListOf<FMatrix2>()
             val tail = FMatrix2(0.0F, 0.0F)
             bresenham2(tail.a1.toInt(), tail.a2.toInt(),  900, 500, sensedPts)
             stroke(0f, 0f, 1f)
