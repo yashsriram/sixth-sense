@@ -1,3 +1,5 @@
+package scratch
+
 import camera.QueasyCam
 import extensions.circleXZ
 import extensions.minus
@@ -164,7 +166,7 @@ class Main : PApplet() {
 }
 
 fun main(passedArgs: Array<String>) {
-    val appletArgs = arrayOf("Main")
+    val appletArgs = arrayOf("scratch.Main")
     if (passedArgs != null) {
         PApplet.main(PApplet.concat(appletArgs, passedArgs))
     } else {

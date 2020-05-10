@@ -12,6 +12,6 @@
 - `javac -cp "jars/*" -d build/ $(find -name "*.java")`
 
 # Execution
-- `java -cp "build/:jars/*:jars/ejml-v0.39-libs/*:Main.jar" <package>.<classname>Kt`
+- `java -cp "build/:jars/*:jars/ejml-v0.39-libs/*:sixth-sense.jar" <package>.<classname>Kt`
 - Notice the suffix Kt after class name
 - For example `java -cp "build/:jars/*:jars/ejml-v0.39-libs/*:sixthsense.jar" MainKt`
