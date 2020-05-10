@@ -65,7 +65,7 @@ class Simulation : PApplet() {
     private var hitGrid: HitGrid? = null
     private var plannedCells = mutableListOf<Int>()
     private var plannedPath = mutableListOf<FMatrix2>()
-    private val goal = FMatrix2(450f, 250f)
+    private val goal = FMatrix2()
     private var currentMilestone = 0
 
     override fun settings() {
@@ -108,6 +108,7 @@ class Simulation : PApplet() {
         lastMeasured = System.currentTimeMillis()
         sim!!.applyControl(control)
         // Planning
+        goal.set(x_T[0] + parseFloat(args[1]), x_T[1] + parseFloat(args[2]))
         hitGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 500, 500)
         plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), goal)
         plannedPath = hitGrid!!.coordinatesOf(plannedCells)
@@ -263,8 +264,12 @@ class Simulation : PApplet() {
         sim!!.draw()
         hitGrid!!.draw(this)
         if (DRAW_PLANNED_PATH) {
+            noFill()
             stroke(0f, 1f, 1f)
             pathXZ(plannedPath)
+            if (currentMilestone < plannedPath.size - 1) {
+                circleXZ(plannedPath[currentMilestone + 1].a1, plannedPath[currentMilestone + 1].a2, 5f)
+            }
         }
         if (DRAW_TRUE_PATH) {
             stroke(0f, 1f, 0f)
@@ -273,8 +278,15 @@ class Simulation : PApplet() {
         if (DRAW_ESTIMATED_PATH) {
             // Draw the estimated trajectory
             stroke(0f, 0f, 1f)
+            noFill()
             pathXZ(estimatedPath)
             circleXZ(estimatedPath.last().a1, estimatedPath.last().a2, sim!!.getRobotRadius())
+            val position = FMatrix2(x_T[0], x_T[1])
+            val orientation = x_T[2]
+            val centerToHead = FMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
+            centerToHead *= sim!!.getRobotRadius()
+            val head = position + centerToHead
+            line(x_T[0], 0f, x_T[1], head.a1, 0f, head.a2)
         }
         // Draw the uncertainty of the robot
         covarianceXZ(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
@@ -337,6 +349,7 @@ class Simulation : PApplet() {
         }
         if (key == 'i') {
             DRAW_TRUE_PATH = !DRAW_TRUE_PATH
+            Simulator.DRAW_ROBOT = !Simulator.DRAW_ROBOT
         }
     }
 }

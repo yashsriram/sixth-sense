@@ -12,6 +12,6 @@ fun main() {
     Simulator.GHOST_MODE = true
     RANSACLeastSquares.DISCONTINUITY_THRESHOLD = 60.0
     // Scene
-    val appletArgs = arrayOf("demos.Simulation", "data/apartment.scn")
+    val appletArgs = arrayOf("demos.Simulation", "data/apartment.scn", "50f", "30f")
     PApplet.main(appletArgs)
 }

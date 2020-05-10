@@ -23,6 +23,7 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
         const val LASER_SCAN_FREQUENCY = 10
         const val SCALE = 100f
         var DRAW_OBSTACLES = true
+        var DRAW_ROBOT = true
         var GHOST_MODE = false
     }
 
@@ -190,7 +191,9 @@ class Simulator(private val applet: PApplet, sceneFilepath: String) {
                 l.draw()
             }
         }
-        // Draw robot
-        robot.draw()
+        if (DRAW_ROBOT) {
+            // Draw robot
+            robot.draw()
+        }
     }
 }
