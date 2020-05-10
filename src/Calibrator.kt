@@ -5,8 +5,8 @@ import org.ejml.data.FMatrix3
 import org.ejml.data.FMatrixRMaj
 import processing.core.PApplet
 import processing.core.PConstants
-import robot.calibaration.RK4Integrator
-import robot.sensing.HitGrid
+import robot.RK4Integrator
+import robot.planning.HitGrid
 import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor

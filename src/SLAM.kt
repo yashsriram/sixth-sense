@@ -5,8 +5,8 @@ import org.ejml.data.FMatrixRMaj
 import org.ejml.dense.row.CommonOps_FDRM
 import processing.core.PApplet
 import processing.core.PConstants
-import robot.calibaration.RK4Integrator
-import robot.sensing.HitGrid
+import robot.RK4Integrator
+import robot.planning.HitGrid
 import robot.sensing.IEP
 import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
@@ -65,15 +65,12 @@ class SLAM : PApplet() {
         colorMode(PConstants.RGB, 1.0f)
         rectMode(PConstants.CENTER)
         cam = QueasyCam(this)
-        LaserSensor.DRAW_LASERS = false
-        RANSACLeastSquares.DRAW_PARTITIONS = false
         reset()
     }
 
     private fun reset() {
-        Simulator.GHOST_MODE = true
         // Start simulator
-        val sceneName = "data/simple_block.scn"
+        val sceneName = args[0]
         sim = Simulator(this, sceneName)
         val initialTruePose = sim!!.getTruePose()
         // Init estimates with zero uncertainty
@@ -519,14 +516,5 @@ class SLAM : PApplet() {
         if (key == 'v') {
             HitGrid.DRAW = !HitGrid.DRAW
         }
-    }
-}
-
-fun main(passedArgs: Array<String>) {
-    val appletArgs = arrayOf("SLAM")
-    if (passedArgs != null) {
-        PApplet.main(PApplet.concat(appletArgs, passedArgs))
-    } else {
-        PApplet.main(appletArgs)
     }
 }

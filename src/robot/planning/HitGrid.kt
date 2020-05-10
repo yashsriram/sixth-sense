@@ -1,4 +1,4 @@
-package robot.sensing
+package robot.planning
 
 import extensions.minus
 import org.ejml.data.FMatrix2

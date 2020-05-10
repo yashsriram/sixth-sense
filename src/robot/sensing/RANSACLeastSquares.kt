@@ -12,12 +12,13 @@ import kotlin.math.sqrt
 
 class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtractor {
     companion object {
-        private const val DISCONTINUITY_THRESHOLD = 60.0
+        var DISCONTINUITY_THRESHOLD = 60.0
 
-        private const val RANSAC_ITER = 1000
-        private const val RANSAC_THRESHOLD = 4f
-        private const val RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 8
-        private const val VERTICAL_LINE_THRESHOLD = 20f
+        var RANSAC_ITER = 1000
+        var RANSAC_THRESHOLD = 4f
+        var RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 8
+
+        var VERTICAL_LINE_THRESHOLD = 20f
 
         var USE_LEAST_SQUARE_FITTING = true
         var DRAW_PARTITIONS = true

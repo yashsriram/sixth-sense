@@ -6,7 +6,7 @@ import extensions.timesAssign
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
-import robot.sensing.HitGrid
+import robot.planning.HitGrid
 import robot.sensing.IEP
 import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
