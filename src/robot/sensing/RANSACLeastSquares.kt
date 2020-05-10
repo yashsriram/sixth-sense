@@ -17,6 +17,7 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
         private const val RANSAC_ITER = 1000
         private const val RANSAC_THRESHOLD = 4f
         private const val RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT = 8
+        private const val VERTICAL_LINE_THRESHOLD = 20f
 
         var USE_LEAST_SQUARE_FITTING = true
         var DRAW_PARTITIONS = true
@@ -54,7 +55,7 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
                 minX = inlier.a1
             }
         }
-        if (maxX - minX < 20) {
+        if (maxX - minX < VERTICAL_LINE_THRESHOLD) {
             val x = (maxX + minX) / 2f
             val e1 = FMatrix2(x, bestInliers.first().a2)
             val e2 = FMatrix2(x, bestInliers.last().a2)

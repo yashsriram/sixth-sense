@@ -33,7 +33,8 @@
         - [ ] use perpendicular projections points
         - [x] check distances (IEP shortcoming)
     - [ ] Loose endpoints
-        - [ ] Sense line check (almost parallel to wall case)
+        - [x] Almost parallel to a long wall case. Just increase DISCONTINUITY THREASHOLD
+        - [ ] Simple block bug
 
 ## Estimation
 - [ ] Estimating Sigma_m does it depend on distance?
@@ -49,7 +50,7 @@
     - [x] Propogation
     - [x] Augement
     - [x] Update
-    - [ ] Use better augment update like bobby's
+    - [x] Do all updates first and then augment all new landmarks
     - [x] Periodically clean landmarks which have very less number of hits
 
 ## Planning
