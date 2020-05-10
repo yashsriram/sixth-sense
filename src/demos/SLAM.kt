@@ -1,3 +1,5 @@
+package demos
+
 import camera.QueasyCam
 import extensions.*
 import org.ejml.data.FMatrix2

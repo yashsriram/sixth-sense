@@ -1,3 +1,5 @@
+package demos
+
 import processing.core.PApplet
 import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor
@@ -10,6 +12,6 @@ fun main() {
     Simulator.GHOST_MODE = true
     RANSACLeastSquares.DISCONTINUITY_THRESHOLD = 60.0
     // Scene
-    val appletArgs = arrayOf("SLAM", "data/simple_rectangle.scn")
+    val appletArgs = arrayOf("demos.SLAM", "data/simple_rectangle.scn")
     PApplet.main(appletArgs)
 }
