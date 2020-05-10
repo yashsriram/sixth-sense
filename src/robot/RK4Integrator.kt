@@ -1,4 +1,4 @@
-package robot.calibaration
+package robot
 
 import extensions.plus
 import extensions.plusAssign

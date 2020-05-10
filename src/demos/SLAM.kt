@@ -1,3 +1,5 @@
+package demos
+
 import camera.QueasyCam
 import extensions.*
 import org.ejml.data.FMatrix2
@@ -5,8 +7,8 @@ import org.ejml.data.FMatrixRMaj
 import org.ejml.dense.row.CommonOps_FDRM
 import processing.core.PApplet
 import processing.core.PConstants
-import robot.calibaration.RK4Integrator
-import robot.sensing.HitGrid
+import robot.RK4Integrator
+import robot.planning.HitGrid
 import robot.sensing.IEP
 import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
@@ -22,9 +24,9 @@ class SLAM : PApplet() {
         const val UPDATE_THRESHOLD = 20
         const val AUGMENT_THRESHOLD = 200
         const val PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES = 25
-        const val PERIODICAL_CLEAN_THRESHOLD = 5
+        const val PERIODICAL_CLEAN_THRESHOLD = 3
         var DRAW_OBSTACLES_LANDMARKS = true
-        var DRAW_ESTIMATED_LASERS = true
+        var DRAW_ESTIMATED_LASERS = false
     }
 
     private var sim: Simulator? = null
@@ -35,6 +37,8 @@ class SLAM : PApplet() {
     // State estimate
     private var x_T = FMatrixRMaj()
     private var sigma_T = FMatrixRMaj()
+    private var landmarkHitMap = mutableListOf<Int>()
+    private var numAugmentUpdates = 1
 
     // Propagation covariance
     private val std_N = 0.10f
@@ -43,8 +47,6 @@ class SLAM : PApplet() {
     // Measurement covariance
     private val std_M = 1f
     private val sigma_M = CommonOps_FDRM.identity(2) * (std_M * std_M)
-    private var landmarkHitMap = mutableListOf<Int>()
-    private var numAugmentUpdates = 1
 
     // Obstacle and landmark extractor
     private var extractor: ObstacleLandmarkExtractor? = null
@@ -69,9 +71,8 @@ class SLAM : PApplet() {
     }
 
     private fun reset() {
-        Simulator.GHOST_MODE = true
         // Start simulator
-        val sceneName = "data/simple_rectangle.scn"
+        val sceneName = args[0]
         sim = Simulator(this, sceneName)
         val initialTruePose = sim!!.getTruePose()
         // Init estimates with zero uncertainty
@@ -83,9 +84,13 @@ class SLAM : PApplet() {
                 )
         )
         sigma_T = CommonOps_FDRM.identity(3) * 0f
+        landmarkHitMap = mutableListOf()
+        numAugmentUpdates = 1
         // Init obstacle and landmark extractor
         extractor = RANSACLeastSquares(this)
         // Keep track of the path
+        truePath.clear()
+        estimatedPath.clear()
         truePath.add(FMatrix2(initialTruePose.a1, initialTruePose.a2))
         estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
         // Start the robot
@@ -138,13 +143,14 @@ class SLAM : PApplet() {
                                            sigma_Ms: MutableList<FMatrixRMaj>): Pair<FMatrixRMaj, FMatrixRMaj> {
         var x_Plus = FMatrixRMaj(x_T)
         var sigma_Plus = FMatrixRMaj(sigma_x_T)
+        val newLandmarks = mutableListOf<Int>()
         // For each measurement
         for (i in 0 until rel_pos_msmts.size) {
             val rel_pos_msmt = rel_pos_msmts[i]
             val sigma_M = sigma_Ms[i]
 
             // Best match quantities
-            var min_distance = Float.POSITIVE_INFINITY
+            var minDistance = Float.POSITIVE_INFINITY
             var best_H = FMatrixRMaj()
             var best_h_x_hat_0 = FMatrixRMaj()
             var best_S = FMatrixRMaj()
@@ -196,8 +202,8 @@ class SLAM : PApplet() {
                 assert(distance.numElements == 1)
 
                 // Track the most likely landmark
-                if (distance[0, 0] < min_distance) {
-                    min_distance = distance[0, 0]
+                if (distance[0, 0] < minDistance) {
+                    minDistance = distance[0, 0]
                     best_H = H
                     best_h_x_hat_0 = h_x_hat_0
                     best_S = S
@@ -206,7 +212,7 @@ class SLAM : PApplet() {
             }
 
             // Check if it matches any already in the state, and run an update for it.
-            if (min_distance <= UPDATE_THRESHOLD) {
+            if (minDistance <= UPDATE_THRESHOLD) {
                 // EKF Update
                 val K = sigma_Plus * best_H.transpose() * best_S.inverse()
                 val I = CommonOps_FDRM.identity(x_Plus.numRows)
@@ -215,82 +221,84 @@ class SLAM : PApplet() {
                 sigma_Plus = term * sigma_Plus * term.transpose() + K * sigma_M * K.transpose()
                 // Update number of hits map
                 landmarkHitMap[(best_j - 3) / 2]++
-                continue
+            } else if (minDistance > AUGMENT_THRESHOLD) {
+                newLandmarks.add(i)
             }
+        }
+        // For unmatched measurement make sure it's sufficiently novel, then add to the state.
+        for (i in newLandmarks) {
+            val rel_pos_msmt = rel_pos_msmts[i]
+            val sigma_M = sigma_Ms[i]
 
-            // For unmatched measurement make sure it's sufficiently novel, then add to the state.
-            if (min_distance > AUGMENT_THRESHOLD) {
-                // EKF Augment
-                val x_R_T = x_Plus[0, 0]
-                val y_R_T = x_Plus[1, 0]
-                val theta_T = x_Plus[2, 0]
-                val G_p_R = FMatrixRMaj(
-                        arrayOf(
-                                floatArrayOf(x_R_T),
-                                floatArrayOf(y_R_T)
-                        )
-                )
-                val sinTheta_T = sin(theta_T)
-                val cosTheta_T = cos(theta_T)
-                val H_L_new = FMatrixRMaj(
-                        arrayOf(
-                                floatArrayOf(cosTheta_T, sinTheta_T),
-                                floatArrayOf(-sinTheta_T, cosTheta_T)
-                        )
-                )
+            // EKF Augment
+            val x_R_T = x_Plus[0, 0]
+            val y_R_T = x_Plus[1, 0]
+            val theta_T = x_Plus[2, 0]
+            val G_p_R = FMatrixRMaj(
+                    arrayOf(
+                            floatArrayOf(x_R_T),
+                            floatArrayOf(y_R_T)
+                    )
+            )
+            val sinTheta_T = sin(theta_T)
+            val cosTheta_T = cos(theta_T)
+            val H_L_new = FMatrixRMaj(
+                    arrayOf(
+                            floatArrayOf(cosTheta_T, sinTheta_T),
+                            floatArrayOf(-sinTheta_T, cosTheta_T)
+                    )
+            )
 
-                // Expected value
-                // Copy previous state
-                val prevX = x_Plus
-                x_Plus = FMatrixRMaj(x_Plus.numRows + 2, 1)
-                for (t in 0 until prevX.numRows) {
-                    x_Plus[t, 0] = prevX[t, 0]
-                }
-                // Add new landmark estimate
-                val h_x_hat_0 = H_L_new * (FMatrixRMaj(2, 1) - G_p_R)
-                x_Plus[prevX.numRows, 0, 2, 1] = H_L_new.inverse() * (rel_pos_msmt - h_x_hat_0)
-
-                // Covariance
-                // Copy previous state
-                val prevSigma = sigma_Plus
-                sigma_Plus = FMatrixRMaj(sigma_Plus.numRows + 2, sigma_Plus.numCols + 2)
-                for (t in 0 until prevSigma.numRows) {
-                    for (s in 0 until prevSigma.numCols) {
-                        sigma_Plus[t, s] = prevSigma[t, s]
-                    }
-                }
-                // Augmentation
-                val H_R = FMatrixRMaj(
-                        arrayOf(
-                                floatArrayOf(-cosTheta_T, -sinTheta_T, -(0 - x_R_T) * sinTheta_T + (0 - y_R_T) * cosTheta_T),
-                                floatArrayOf(sinTheta_T, -cosTheta_T, -(0 - x_R_T) * cosTheta_T - (0 - y_R_T) * sinTheta_T)
-                        )
-                )
-                val H_L_new_inv = H_L_new.inverse()
-                val top3x3 = prevSigma[0, 0, 3, 3]
-                // Top right block
-                sigma_Plus[0, prevSigma.numCols, 3, 2] =
-                        top3x3 * H_R.transpose() * H_L_new_inv.transpose() * -1f
-                // Bottom left block
-                sigma_Plus[prevSigma.numRows, 0, 2, 3] =
-                        H_L_new_inv * H_R * top3x3 * -1f
-                // Bottom right block
-                sigma_Plus[prevSigma.numRows, prevSigma.numCols, 2, 2] =
-                        H_L_new_inv * (H_R * top3x3 * H_R.transpose() + sigma_M) * H_L_new_inv.transpose()
-                // Bottom row
-                for (col in 3 until prevSigma.numCols step 2) {
-                    sigma_Plus[prevSigma.numRows, col, 2, 2] =
-                            H_L_new_inv * H_R * prevSigma[0, col, 3, 2] * -1f
-                }
-                // Right row
-                for (row in 3 until prevSigma.numRows step 2) {
-                    sigma_Plus[row, prevSigma.numCols, 2, 2] =
-                            prevSigma[row, 0, 2, 3] * H_R.transpose() * H_L_new_inv.transpose() * -1f
-                }
-                // Add to number of hits map
-                landmarkHitMap.add(1)
-                continue
+            // Expected value
+            // Copy previous state
+            val prevX = x_Plus
+            x_Plus = FMatrixRMaj(x_Plus.numRows + 2, 1)
+            for (t in 0 until prevX.numRows) {
+                x_Plus[t, 0] = prevX[t, 0]
             }
+            // Add new landmark estimate
+            val h_x_hat_0 = H_L_new * (FMatrixRMaj(2, 1) - G_p_R)
+            x_Plus[prevX.numRows, 0, 2, 1] = H_L_new.inverse() * (rel_pos_msmt - h_x_hat_0)
+
+            // Covariance
+            // Copy previous state
+            val prevSigma = sigma_Plus
+            sigma_Plus = FMatrixRMaj(sigma_Plus.numRows + 2, sigma_Plus.numCols + 2)
+            for (t in 0 until prevSigma.numRows) {
+                for (s in 0 until prevSigma.numCols) {
+                    sigma_Plus[t, s] = prevSigma[t, s]
+                }
+            }
+            // Augmentation
+            val H_R = FMatrixRMaj(
+                    arrayOf(
+                            floatArrayOf(-cosTheta_T, -sinTheta_T, -(0 - x_R_T) * sinTheta_T + (0 - y_R_T) * cosTheta_T),
+                            floatArrayOf(sinTheta_T, -cosTheta_T, -(0 - x_R_T) * cosTheta_T - (0 - y_R_T) * sinTheta_T)
+                    )
+            )
+            val H_L_new_inv = H_L_new.inverse()
+            val top3x3 = prevSigma[0, 0, 3, 3]
+            // Top right block
+            sigma_Plus[0, prevSigma.numCols, 3, 2] =
+                    top3x3 * H_R.transpose() * H_L_new_inv.transpose() * -1f
+            // Bottom left block
+            sigma_Plus[prevSigma.numRows, 0, 2, 3] =
+                    H_L_new_inv * H_R * top3x3 * -1f
+            // Bottom right block
+            sigma_Plus[prevSigma.numRows, prevSigma.numCols, 2, 2] =
+                    H_L_new_inv * (H_R * top3x3 * H_R.transpose() + sigma_M) * H_L_new_inv.transpose()
+            // Bottom row
+            for (col in 3 until prevSigma.numCols step 2) {
+                sigma_Plus[prevSigma.numRows, col, 2, 2] =
+                        H_L_new_inv * H_R * prevSigma[0, col, 3, 2] * -1f
+            }
+            // Right row
+            for (row in 3 until prevSigma.numRows step 2) {
+                sigma_Plus[row, prevSigma.numCols, 2, 2] =
+                        prevSigma[row, 0, 2, 3] * H_R.transpose() * H_L_new_inv.transpose() * -1f
+            }
+            // Add to number of hits map
+            landmarkHitMap.add(1)
         }
         numAugmentUpdates++
         // Periodically remove measurements with very low hit rate
@@ -320,11 +328,13 @@ class SLAM : PApplet() {
             }
             // sigma_Plus_Corrected
             val bad_sigma_Plus_Mask = sigma_Plus.createLike()
-            for (i in 0 until bad_sigma_Plus_Mask.numRows) {
-                for (j in 0 until bad_sigma_Plus_Mask.numCols) {
-                    if (((i - 3) / 2 >= 0 && badLandmarkMask[(i - 3) / 2])
-                            || ((j - 3) / 2 >= 0 && badLandmarkMask[(j - 3) / 2])) {
-                        bad_sigma_Plus_Mask[i, j] = 1f
+            if (badLandmarkMask.isNotEmpty()) {
+                for (i in 0 until bad_sigma_Plus_Mask.numRows) {
+                    for (j in 0 until bad_sigma_Plus_Mask.numCols) {
+                        if (((i - 3) / 2 >= 0 && badLandmarkMask[(i - 3) / 2])
+                                || ((j - 3) / 2 >= 0 && badLandmarkMask[(j - 3) / 2])) {
+                            bad_sigma_Plus_Mask[i, j] = 1f
+                        }
                     }
                 }
             }
@@ -508,14 +518,5 @@ class SLAM : PApplet() {
         if (key == 'v') {
             HitGrid.DRAW = !HitGrid.DRAW
         }
-    }
-}
-
-fun main(passedArgs: Array<String>) {
-    val appletArgs = arrayOf("SLAM")
-    if (passedArgs != null) {
-        PApplet.main(PApplet.concat(appletArgs, passedArgs))
-    } else {
-        PApplet.main(appletArgs)
     }
 }

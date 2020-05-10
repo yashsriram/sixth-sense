@@ -1,3 +1,5 @@
+package scratch
+
 import camera.QueasyCam
 import extensions.circleXZ
 import extensions.minus
@@ -6,7 +8,7 @@ import extensions.timesAssign
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
-import robot.sensing.HitGrid
+import robot.planning.HitGrid
 import robot.sensing.IEP
 import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
@@ -164,7 +166,7 @@ class Main : PApplet() {
 }
 
 fun main(passedArgs: Array<String>) {
-    val appletArgs = arrayOf("Main")
+    val appletArgs = arrayOf("scratch.Main")
     if (passedArgs != null) {
         PApplet.main(PApplet.concat(appletArgs, passedArgs))
     } else {
