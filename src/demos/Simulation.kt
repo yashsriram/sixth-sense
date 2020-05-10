@@ -24,8 +24,13 @@ class Simulation : PApplet() {
         const val AUGMENT_THRESHOLD = 200
         const val PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES = 25
         const val PERIODICAL_CLEAN_THRESHOLD = 3
+        const val ORIENTATION_SLACK = 0.01f
+        const val MILESTONE_SLACK = 1f
         var DRAW_OBSTACLES_LANDMARKS = true
         var DRAW_ESTIMATED_LASERS = false
+        var DRAW_ESTIMATED_PATH = true
+        var DRAW_PLANNED_PATH = true
+        var DRAW_TRUE_PATH = true
     }
 
     private var sim: Simulator? = null
@@ -50,7 +55,7 @@ class Simulation : PApplet() {
     private var extractor: ObstacleLandmarkExtractor? = null
 
     // Control
-    private val u = FMatrix2(4f, 0.15f)
+    private val control = FMatrix2(0f, 0f)
 
     // Propagated/Measured until
     private var propagatedUntil = 0f
@@ -61,6 +66,7 @@ class Simulation : PApplet() {
     private var plannedCells = mutableListOf<Int>()
     private var plannedPath = mutableListOf<FMatrix2>()
     private val goal = FMatrix2(450f, 250f)
+    private var currentMilestone = 0
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -100,11 +106,57 @@ class Simulation : PApplet() {
         // Start the robot
         propagatedUntil = 0f
         lastMeasured = System.currentTimeMillis()
-        sim!!.applyControl(u)
+        sim!!.applyControl(control)
         // Planning
         hitGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 500, 500)
         plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), goal)
         plannedPath = hitGrid!!.coordinatesOf(plannedCells)
+        currentMilestone = 0
+    }
+
+    private fun rePlan() {
+        var replan = false
+        for (cell in plannedCells) {
+            if (hitGrid!!.hitsAt[cell] > 0) {
+                replan = true
+                break
+            }
+        }
+        if (replan) {
+            plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), goal)
+            plannedPath = hitGrid!!.coordinatesOf(plannedCells)
+            currentMilestone = 0
+        }
+    }
+
+    private fun updateControl() {
+        if (currentMilestone < plannedPath.size - 1) {
+            // Pull towards next milestone
+            val toGoal = plannedPath[currentMilestone + 1] - FMatrix2(x_T[0], x_T[1])
+            val goalOrientation = atan2(toGoal.a2, toGoal.a1)
+            val toOrientation = goalOrientation - x_T[2]
+            // Orient towards goal
+            if (abs(toOrientation) > ORIENTATION_SLACK) {
+                if (toOrientation > 0) {
+                    control.set(0f, 0.1f)
+                } else {
+                    control.set(0f, -0.1f)
+                }
+                sim!!.applyControl(control)
+                return
+            }
+            // Reached next milestone
+            if (toGoal.norm() < MILESTONE_SLACK) {
+                currentMilestone++
+                return
+            }
+            // Move towards next milestone
+            control.set(4f, 0f)
+            sim!!.applyControl(control)
+        } else {
+            control.set(0f, 0f)
+            sim!!.applyControl(control)
+        }
     }
 
     override fun draw() {
@@ -118,9 +170,14 @@ class Simulation : PApplet() {
         propagatedUntil = latestTimeElapsed
 
         // Run an EKFSLAMPropagation step
-        val (x_TPDT, sigma_TPDT) = slam.propagateEKFSLAM(x_T, sigma_T, u, sigma_N, dt)
+        val (x_TPDT, sigma_TPDT) = slam.propagateEKFSLAM(x_T, sigma_T, control, sigma_N, dt)
         x_T = x_TPDT
         sigma_T = sigma_TPDT
+
+        // Re plan if path has obstacle in it
+        rePlan()
+        // Update control based on plan
+        updateControl()
 
         val (distances, timestamp) = sim!!.getLaserMeasurement()
         if (timestamp > lastMeasured) {
@@ -147,7 +204,7 @@ class Simulation : PApplet() {
             if (DRAW_ESTIMATED_LASERS) {
                 noFill()
                 for (laserEnd in laserEnds) {
-                    stroke(1f, 1f, 0f)
+                    stroke(0f, 0f, 1f)
                     line(tail.a1, 0f, tail.a2, laserEnd.a1, 0f, laserEnd.a2)
                     stroke(1f, 0f, 0f)
                     circleXZ(laserEnd.a1, laserEnd.a2, 1f)
@@ -197,37 +254,28 @@ class Simulation : PApplet() {
             // Update last measured
             lastMeasured = timestamp
         }
-
         // Keep track of path
         val truePose = sim!!.getTruePose()
         truePath.add(FMatrix2(truePose.a1, truePose.a2))
         estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
 
-        // Replan if path has obstacle in it
-        var replan = false
-        for (cell in plannedCells) {
-            if (hitGrid!!.hitsAt[cell] > 0) {
-                replan = true
-                break
-            }
-        }
-        if (replan) {
-            plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), goal)
-            plannedPath = hitGrid!!.coordinatesOf(plannedCells)
-        }
-
         /* Draw */
         sim!!.draw()
         hitGrid!!.draw(this)
-        // Draw the true trajectory
-        stroke(0f, 1f, 1f)
-        pathXZ(plannedPath)
-        stroke(0f, 1f, 0f)
-        pathXZ(truePath)
-        // Draw the estimated trajectory
-        stroke(0f, 0f, 1f)
-        pathXZ(estimatedPath)
-        circleXZ(estimatedPath.last().a1, estimatedPath.last().a2, sim!!.getRobotRadius())
+        if (DRAW_PLANNED_PATH) {
+            stroke(0f, 1f, 1f)
+            pathXZ(plannedPath)
+        }
+        if (DRAW_TRUE_PATH) {
+            stroke(0f, 1f, 0f)
+            pathXZ(truePath)
+        }
+        if (DRAW_ESTIMATED_PATH) {
+            // Draw the estimated trajectory
+            stroke(0f, 0f, 1f)
+            pathXZ(estimatedPath)
+            circleXZ(estimatedPath.last().a1, estimatedPath.last().a2, sim!!.getRobotRadius())
+        }
         // Draw the uncertainty of the robot
         covarianceXZ(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
         // Draw the uncertainty of all the landmarks in the state
@@ -280,6 +328,15 @@ class Simulation : PApplet() {
         }
         if (key == 'v') {
             HitGrid.DRAW = !HitGrid.DRAW
+        }
+        if (key == 'y') {
+            DRAW_PLANNED_PATH = !DRAW_PLANNED_PATH
+        }
+        if (key == 'u') {
+            DRAW_ESTIMATED_PATH = !DRAW_ESTIMATED_PATH
+        }
+        if (key == 'i') {
+            DRAW_TRUE_PATH = !DRAW_TRUE_PATH
         }
     }
 }
