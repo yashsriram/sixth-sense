@@ -15,6 +15,7 @@ import simulator.LaserSensor
 import simulator.Simulator
 import java.util.*
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
 class Simulation : PApplet() {
     companion object {
@@ -31,6 +32,7 @@ class Simulation : PApplet() {
         var DRAW_ESTIMATED_PATH = true
         var DRAW_PLANNED_PATH = true
         var DRAW_TRUE_PATH = true
+        var DRAW_BRESENHAM_POINTS = true
     }
 
     private var sim: Simulator? = null
@@ -159,7 +161,44 @@ class Simulation : PApplet() {
             sim!!.applyControl(control)
         }
     }
+    fun swap(a:Any, b: Any): Pair<Any, Any> {
+//        a = a + b
+//        b = a - b
+//        a = a - b
+        return Pair(b,a)
+    }
 
+    fun bresenham2(x1:Int, y1:Int, x2:Int, y2:Int, sensedPts:MutableList<FMatrix2>)
+    {
+        if(PApplet.abs(y2 - y1) > PApplet.abs(x2 - x1))
+        { //If the line is steep then it would be converted to non steep by changing coordinate
+            val(x1,y1) = Pair(y1,x1)
+            val(x2,y2) = Pair(y2,x2)
+        }
+        if(x1 >x2) {
+            val (x1, x2) =  Pair(x2,x1)
+            val (y1, y2) =  Pair(y2,y1)
+        }
+        var dx = PApplet.abs(x2 - x1)                              // Distance to travel in x-direction
+        var dy = PApplet.abs(y2 - y1)                               //Distance to travel in y-direction
+        var sx = sign(x2 - x1.toFloat())                                    //sx indicates direction of travel in X-dir
+        var sy = sign(y2.toFloat() - y1.toFloat())                                     //Ensures positive slope line
+        var x = x1
+        var y = y1
+        var param = 2*dy - dx
+        val stepx = hitGrid!!.cellSizeX.toInt()
+        val stepy = hitGrid!!.cellSizeY.toInt()
+
+        for (i in 0 until ((dx - 1)/stepx).toInt()) {
+            sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
+            param = param + 2 * dy                                     //parameter value is modified
+            if (param > 0) {                                          //if parameter value is exceeded
+                y = y + (stepy * sy).toInt()                                  //then y coordinate is increased
+                param = param - 2 * (dx)                             //and parameter value is decreased
+            }
+            x = x + (stepx*sx).toInt()
+        }
+    }
     override fun draw() {
         /* Clear screen */
         background(0)
@@ -179,7 +218,6 @@ class Simulation : PApplet() {
         rePlan()
         // Update control based on plan
         updateControl()
-
         val (distances, timestamp) = sim!!.getLaserMeasurement()
         if (timestamp > lastMeasured) {
             // Get the estimate of laser source position
@@ -223,6 +261,7 @@ class Simulation : PApplet() {
                     circleXZ(landmark.a1, landmark.a2, 2f)
                 }
             }
+
             // If > 0 landmarks detected
             // Run an EKFSLAMAugmentUpdate step
             val rel_pos_msmts = mutableListOf<FMatrixRMaj>()
@@ -254,6 +293,19 @@ class Simulation : PApplet() {
             sigma_T = sigma_Plus
             // Update last measured
             lastMeasured = timestamp
+        }
+        //BresenHam: Drawing
+        if (DRAW_BRESENHAM_POINTS) {
+            val sensedPts = mutableListOf<FMatrix2>()g
+            val tail = FMatrix2(0.0F, 0.0F)
+            bresenham2(tail.a1.toInt(), tail.a2.toInt(),  900, 500, sensedPts)
+            stroke(0f, 0f, 1f)
+            line(tail.a1, 0f, tail.a2, tail.a1+ 900F, 0f, tail.a2+500F)
+            stroke(1f, 0.5f, 0.5f)
+            for (pts in sensedPts) {
+                hitGrid!!.addHit(pts, sim!!.getRobotRadius())
+                circleXZ(pts.a1, pts.a2, 2f)
+            }
         }
         // Keep track of path
         val truePose = sim!!.getTruePose()

@@ -12,8 +12,8 @@ import kotlin.math.ceil
 
 class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
               private val numCellsX: Int, private val numCellsY: Int) {
-    private val cellSizeX = (maxCorner.a1 - minCorner.a1) / numCellsX
-    private val cellSizeY = (maxCorner.a2 - minCorner.a2) / numCellsY
+    val cellSizeX = (maxCorner.a1 - minCorner.a1) / numCellsX
+    val cellSizeY = (maxCorner.a2 - minCorner.a2) / numCellsY
     val hitsAt = MutableList(numCellsX * numCellsY) { 0 }
     private var maxCount = 0
 

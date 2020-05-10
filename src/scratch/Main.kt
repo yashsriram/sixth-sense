@@ -159,10 +159,10 @@ class Main : PApplet() {
         }
 
 //        if(prePoseCopy -poseCopy != FMatrix3(0.0F, 0.0F, 0.0F)){
-        for(i in  0 until 15)
-        {
-            bresenham2(tail, sensedEnds[i])
-        }
+//        for(i in  0 until 15)
+//        {
+//            bresenham2(tail, sensedEnds[i])
+//        }
 //        }
 //        print("Max hits: " + hitGrid!!.maxCount + "\r")
 //        noFill()
