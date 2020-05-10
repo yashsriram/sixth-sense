@@ -135,7 +135,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         fringe.add(neighbour)
     }
 
-    private fun search(fringe: Queue<Int>, start: Int, goal: Int): List<FMatrix2> {
+    private fun search(fringe: Queue<Int>, start: Int, goal: Int): MutableList<FMatrix2> {
         var numVerticesExplored = 0
         // Add start to fringe
         searchStateAt[start] = SearchState(0f, dist(start, goal), mutableListOf())
@@ -163,14 +163,27 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         return Collections.singletonList(coordinateOf(start))
     }
 
-    fun aStar(xStart: Int, yStart: Int, xGoal: Int, yGoal: Int): List<FMatrix2> {
-        println("BFS")
+    fun indexOf(position: FMatrix2): Int {
+        if (position.a1 < minCorner.a1
+                || position.a2 < minCorner.a2
+                || position.a1 > maxCorner.a1
+                || position.a2 > maxCorner.a2) {
+            throw IllegalAccessException("Out of range position")
+        }
+        val relativePosition = position - minCorner
+        val xStart = (relativePosition.a1 / cellSizeX).toInt()
+        val yStart = (relativePosition.a2 / cellSizeY).toInt()
+        return xStart + yStart * numCellsX
+    }
+
+    fun aStar(start: FMatrix2, goal: FMatrix2): MutableList<FMatrix2> {
+        println("A*")
         println("Resetting search states of vertices")
         searchStateAt.clear()
         return search(PriorityQueue<Int>(kotlin.Comparator { v1, v2 ->
             ((searchStateAt[v1]!!.distanceFromStart + searchStateAt[v1]!!.heuristicDistanceToFinish)
                     - (searchStateAt[v2]!!.distanceFromStart + searchStateAt[v2]!!.heuristicDistanceToFinish)).toInt()
-        }), xStart + yStart * numCellsX, xGoal + yGoal * numCellsX)
+        }), indexOf(start), indexOf(goal))
     }
 
     companion object {
@@ -196,7 +209,11 @@ fun main() {
     println(hitGrid.dist(0, 10))
     println(hitGrid.dist(0, 11))
     println(hitGrid.coordinateOf(99).prettyPrint())
-    val path = hitGrid.aStar(0, 0, 99, 0)
+    val start = FMatrix2(-10f, -5f)
+    val goal = FMatrix2(9.9f, 4.9f)
+    println(hitGrid.indexOf(start))
+    println(hitGrid.indexOf(goal))
+    val path = hitGrid.aStar(start, goal)
     for (milestone in path) {
         println(milestone.prettyPrint())
     }

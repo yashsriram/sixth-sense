@@ -58,6 +58,7 @@ class Simulation : PApplet() {
 
     // Planning
     private var hitGrid: HitGrid? = null
+    var path = mutableListOf<FMatrix2>()
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -99,7 +100,9 @@ class Simulation : PApplet() {
         lastMeasured = System.currentTimeMillis()
         sim!!.applyControl(u)
         // Planning
-        hitGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
+        hitGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 500, 500)
+        path = hitGrid!!.aStar(FMatrix2(0f, 0f), FMatrix2(500f, 400f))
+        path = hitGrid!!.aStar(FMatrix2(0f, 0f), FMatrix2(200f, 100f))
     }
 
     override fun draw() {
@@ -203,6 +206,7 @@ class Simulation : PApplet() {
         hitGrid!!.draw(this)
         // Draw the true trajectory
         stroke(0f, 1f, 0f)
+        pathXZ(path)
         pathXZ(truePath)
         // Draw the estimated trajectory
         stroke(0f, 0f, 1f)
