@@ -1,3 +1,5 @@
+package demos
+
 import camera.QueasyCam
 import extensions.*
 import org.ejml.data.FMatrix2
@@ -180,7 +182,7 @@ class Calibrator : PApplet() {
 }
 
 fun main(passedArgs: Array<String>) {
-    val appletArgs = arrayOf("Calibrator")
+    val appletArgs = arrayOf("demos.Calibrator")
     if (passedArgs != null) {
         PApplet.main(PApplet.concat(appletArgs, passedArgs))
     } else {
