@@ -13,7 +13,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
               private val numCellsX: Int, private val numCellsY: Int) {
     private val cellSizeX = (maxCorner.a1 - minCorner.a1) / numCellsX
     private val cellSizeY = (maxCorner.a2 - minCorner.a2) / numCellsY
-    private val hitsAt = MutableList(numCellsX * numCellsY) { 0 }
+    val hitsAt = MutableList(numCellsX * numCellsY) { 0 }
     private var maxCount = 0
 
     private data class SearchState(val distanceFromStart: Float,
@@ -123,6 +123,14 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         return FMatrix2(x, y)
     }
 
+    fun coordinatesOf(cells: List<Int>): MutableList<FMatrix2> {
+        val path = mutableListOf<FMatrix2>()
+        for (cell in cells) {
+            path.add(coordinateOf(cell))
+        }
+        return path
+    }
+
     private fun addToFringe(fringe: Queue<Int>, current: Int, neighbour: Int, goal: Int) {
         val currentSearchState = searchStateAt[current]
         val pathFromStartToNeighbour = currentSearchState!!.pathFromStart.toMutableList()
@@ -135,7 +143,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         fringe.add(neighbour)
     }
 
-    private fun search(fringe: Queue<Int>, start: Int, goal: Int): MutableList<FMatrix2> {
+    private fun search(fringe: Queue<Int>, start: Int, goal: Int): MutableList<Int> {
         var numVerticesExplored = 0
         // Add start to fringe
         searchStateAt[start] = SearchState(0f, dist(start, goal), mutableListOf())
@@ -146,11 +154,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
             // Check if finish
             if (current == goal) {
                 println("Reached finish, # vertices explored: $numVerticesExplored")
-                val path = mutableListOf<FMatrix2>()
-                for (milestone in searchStateAt[current]!!.pathFromStart) {
-                    path.add(coordinateOf(milestone))
-                }
-                return path
+                return searchStateAt[current]!!.pathFromStart
             }
             // Update fringe
             for (neighbour in neighbours(current)) {
@@ -160,7 +164,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
             }
         }
         println("Could not reach finish, # vertices explored: $numVerticesExplored")
-        return Collections.singletonList(coordinateOf(start))
+        return Collections.singletonList(start)
     }
 
     fun indexOf(position: FMatrix2): Int {
@@ -176,7 +180,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         return xStart + yStart * numCellsX
     }
 
-    fun aStar(start: FMatrix2, goal: FMatrix2): MutableList<FMatrix2> {
+    fun aStar(start: FMatrix2, goal: FMatrix2): MutableList<Int> {
         println("A*")
         println("Resetting search states of vertices")
         searchStateAt.clear()
@@ -213,7 +217,8 @@ fun main() {
     val goal = FMatrix2(9.9f, 4.9f)
     println(hitGrid.indexOf(start))
     println(hitGrid.indexOf(goal))
-    val path = hitGrid.aStar(start, goal)
+    val cells = hitGrid.aStar(start, goal)
+    val path = hitGrid.coordinatesOf(cells)
     for (milestone in path) {
         println(milestone.prettyPrint())
     }
