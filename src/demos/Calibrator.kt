@@ -139,7 +139,8 @@ class Calibrator : PApplet() {
             positionNoise.add(positionNoiseCounter, 0, estimatedPose.a1 - pose.a1)
             positionNoise.add(positionNoiseCounter, 1, estimatedPose.a2 - pose.a2)
             positionNoise.add(positionNoiseCounter, 2, estimatedPose.a3 - pose.a3)
-            positionNoiseCounter += 1
+            positionNoiseCounter+=1
+            baselinePose = pose
 
             if (measurementNoiseCounter < 100) {
                 val roomLandmarks = sim!!.getPossibleLandmarks()
