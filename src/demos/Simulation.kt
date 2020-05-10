@@ -7,7 +7,6 @@ import org.ejml.data.FMatrixRMaj
 import org.ejml.dense.row.CommonOps_FDRM
 import processing.core.PApplet
 import processing.core.PConstants
-import robot.RK4Integrator
 import robot.planning.HitGrid
 import robot.sensing.IEP
 import robot.sensing.ObstacleLandmarkExtractor
@@ -138,6 +137,7 @@ class Simulation : PApplet() {
                 laserBeam *= distances[i]
                 val laserEnd = tail + laserBeam
                 laserEnds.add(laserEnd)
+                hitGrid!!.addHit(laserEnd)
             }
             if (DRAW_ESTIMATED_LASERS) {
                 noFill()
@@ -200,6 +200,7 @@ class Simulation : PApplet() {
 
         /* Draw */
         sim!!.draw()
+        hitGrid!!.draw()
         // Draw the true trajectory
         stroke(0f, 1f, 0f)
         pathXZ(truePath)
