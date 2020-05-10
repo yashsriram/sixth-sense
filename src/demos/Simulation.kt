@@ -220,7 +220,7 @@ class Simulation : PApplet() {
         sim!!.draw()
         hitGrid!!.draw(this)
         // Draw the true trajectory
-        stroke(1f, 1f, 0f)
+        stroke(0f, 1f, 1f)
         pathXZ(plannedPath)
         stroke(0f, 1f, 0f)
         pathXZ(truePath)

@@ -38,9 +38,10 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         val position = point - minCorner
         val x = (position.a1 / cellSizeX).toInt()
         val y = (position.a2 / cellSizeY).toInt()
-        val upperBoundRange = ceil(agentRadius / min(cellSizeX, cellSizeY)).toInt()
-        for (i in x - upperBoundRange..x + upperBoundRange) {
-            for (j in y - upperBoundRange..y + upperBoundRange) {
+        val upperBoundRangeX = ceil(agentRadius / cellSizeX).toInt()
+        val upperBoundRangeY = ceil(agentRadius / cellSizeY).toInt()
+        for (i in x - upperBoundRangeX..x + upperBoundRangeX) {
+            for (j in y - upperBoundRangeY..y + upperBoundRangeY) {
                 if ((i in 0 until numCellsX) && (j in 0 until  numCellsY)) {
                     this[i, j]++
                     if (this[i, j] > maxCount) {
