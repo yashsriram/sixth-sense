@@ -6,6 +6,7 @@ import extensions.minus
 import extensions.plus
 import extensions.timesAssign
 import org.ejml.data.FMatrix2
+import org.ejml.data.FMatrix3
 import processing.core.PApplet
 import processing.core.PConstants
 import robot.planning.HitGrid
@@ -16,18 +17,22 @@ import simulator.LaserSensor
 import simulator.Simulator
 import java.util.*
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
 class Main : PApplet() {
     companion object {
         const val WIDTH = 900
         const val HEIGHT = 900
         var DRAW_OBSTACLES_LANDMARKS = true
+        var DRAW_SENSED_POINTS = true
     }
 
     private var sim: Simulator? = null
     private var cam: QueasyCam? = null
     private var hitGrid: HitGrid? = null
+    private var sensedPts = mutableListOf<FMatrix2>()
     private var extractor: ObstacleLandmarkExtractor? = null
+    var prePoseCopy:FMatrix3 = FMatrix3(0.0F, 0.0F, 0.0F)
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -49,6 +54,79 @@ class Main : PApplet() {
         Simulator.GHOST_MODE = true
     }
 
+    private fun swap(a:Any, b: Any): Pair<Any, Any> {
+        var x = a
+        var y = b
+        return Pair(y,x)
+    }
+    private fun bresenham2(st: FMatrix2, end:FMatrix2)
+    {
+        var x1 = st.a1.toInt()
+        var y1 = st.a2.toInt()
+        var x2 = end.a1.toInt()
+        var y2 = end.a2.toInt()
+
+        if(abs(y2-y1)>abs(x2-x1))
+        { //If the line is steep then it would be converted to non steep by changing coordinate
+            val(x1,y1) = swap(x1, y1)
+            val(x2,y2) = swap(x2, y2)
+        }
+        if(x1 >x2) {
+            val (x1, x2) =  swap(x1, x2)
+            val (y1, y2) =  swap(y1,y2)
+        }
+        var dx = abs(x2 - x1)                              // Distance to travel in x-direction
+        var dy = abs(y2 - y1)                               //Distance to travel in y-direction
+        var sx = sign(x2.toFloat() - x1.toFloat())                                    //sx indicates direction of travel in X-dir
+        var sy = sign(y2.toFloat() - y1.toFloat())                                     //Ensures positive slope line
+        var x = x1
+        var y = y1
+        var param = 2*dy - dx
+
+
+        for (i in 0 until (dx - 1)/10) {
+            sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
+            param = param + 2 * dy                                     //parameter value is modified
+            if (param > 0) {                                          //if parameter value is exceeded
+                var temp = y + 10 * sy                                      //then y coordinate is increased
+                y = temp.toInt()
+                param = param - 2 * (dx)                             //and parameter value is decreased
+            }
+            var temp = x + 10*sx
+            x = temp.toInt()
+
+//                print(x, y)
+//                print("\n")
+        }
+    }
+
+    private fun bresenham(st: FMatrix2, end:FMatrix2) {
+        val x1 = st.a1.toInt()
+        val y1 = st.a2.toInt()
+        val x2 = end.a1.toInt()
+        val y2 = end.a2.toInt()
+        val dy = (y2 - y1)
+        val dx = (x2 - x1)
+        val mNew = 2 * dy
+        var slopeErrorNew = mNew - dx
+        var x = x1
+        var y = y1
+        while (x <= x2) {
+
+            sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
+            if(slopeErrorNew>=0){
+                y = (y.toInt()) + 50
+                slopeErrorNew += mNew -2*dx
+            }
+            else
+            {
+                slopeErrorNew += mNew
+                x = x.toInt() + 50
+            }
+//            print(x, y)
+//            print("\n")
+        }
+    }
     override fun draw() {
         /* Clear screen */
         background(0)
@@ -63,18 +141,29 @@ class Main : PApplet() {
 
         val (distances, timestamp) = sim!!.getLaserMeasurement()
         val laserEnds: MutableList<FMatrix2> = ArrayList(LaserSensor.COUNT)
+        val sensedEnds: MutableList<FMatrix2> = ArrayList(LaserSensor.COUNT)
         for (i in distances.indices) {
-            if (distances[i] == LaserSensor.INVALID_DISTANCE) {
-                continue
-            }
+
             val percentage = i / (LaserSensor.COUNT - 1f)
             val theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage
             val laserBeam = FMatrix2(kotlin.math.cos(orientation + theta), kotlin.math.sin(orientation + theta))
             laserBeam *= distances[i]
             val laserEnd = tail + laserBeam
-            laserEnds.add(laserEnd)
-//            hitGrid!!.addHit(laserEnd)
+            sensedEnds.add(laserEnd)
+            if (distances[i] != LaserSensor.INVALID_DISTANCE) {
+                laserEnds.add(laserEnd)
+//              hitGrid!!.addHit(laserEnd)
+            }
+
+//            print(sensedPts[0])
         }
+
+//        if(prePoseCopy -poseCopy != FMatrix3(0.0F, 0.0F, 0.0F)){
+        for(i in  0 until 15)
+        {
+            bresenham2(tail, sensedEnds[i])
+        }
+//        }
 //        print("Max hits: " + hitGrid!!.maxCount + "\r")
 //        noFill()
 //        for (laserEnd in laserEnds) {
@@ -97,6 +186,12 @@ class Main : PApplet() {
             }
         }
 
+        if (DRAW_SENSED_POINTS) {
+            stroke(1f, 0.5f, 0.5f)
+            for (pt in sensedPts) {
+                circleXZ(pt.a1, pt.a2, 2f)
+            }
+        }
         /* Draw */
         sim!!.draw()
 //        hitGrid!!.draw()
@@ -105,6 +200,7 @@ class Main : PApplet() {
                 " extractor=${extractor!!.getName()}" +
                 " #obs=${obstacles.size} #land=${landmarks.size}"
         )
+        prePoseCopy = poseCopy
     }
 
     override fun keyPressed() {
