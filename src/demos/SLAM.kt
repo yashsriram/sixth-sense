@@ -1,109 +1,26 @@
 package demos
 
-import camera.QueasyCam
 import extensions.*
 import org.ejml.data.FMatrix2
 import org.ejml.data.FMatrixRMaj
 import org.ejml.dense.row.CommonOps_FDRM
 import processing.core.PApplet
-import processing.core.PConstants
 import robot.RK4Integrator
-import robot.planning.HitGrid
-import robot.sensing.IEP
-import robot.sensing.ObstacleLandmarkExtractor
-import robot.sensing.RANSACLeastSquares
-import simulator.LaserSensor
-import simulator.Simulator
-import java.util.*
-import kotlin.math.roundToInt
 
-class SLAM : PApplet() {
-    companion object {
-        const val WIDTH = 900
-        const val HEIGHT = 900
-        const val UPDATE_THRESHOLD = 20
-        const val AUGMENT_THRESHOLD = 200
-        const val PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES = 25
-        const val PERIODICAL_CLEAN_THRESHOLD = 3
-        var DRAW_OBSTACLES_LANDMARKS = true
-        var DRAW_ESTIMATED_LASERS = false
-    }
-
-    private var sim: Simulator? = null
-    private var cam: QueasyCam? = null
-    private val truePath = mutableListOf<FMatrix2>()
-    private val estimatedPath = mutableListOf<FMatrix2>()
-
-    // State estimate
-    private var x_T = FMatrixRMaj()
-    private var sigma_T = FMatrixRMaj()
+class SLAM {
     private var landmarkHitMap = mutableListOf<Int>()
     private var numAugmentUpdates = 1
 
-    // Propagation covariance
-    private val std_N = 0.10f
-    private val sigma_N = CommonOps_FDRM.identity(2) * (std_N * std_N)
-
-    // Measurement covariance
-    private val std_M = 1f
-    private val sigma_M = CommonOps_FDRM.identity(2) * (std_M * std_M)
-
-    // Obstacle and landmark extractor
-    private var extractor: ObstacleLandmarkExtractor? = null
-
-    // Control
-    private val u = FMatrix2(4f, 0.15f)
-
-    // Propagated/Measured until
-    private var propagatedUntil = 0f
-    private var lastMeasured = 0L
-
-    override fun settings() {
-        size(WIDTH, HEIGHT, PConstants.P3D)
-    }
-
-    override fun setup() {
-        surface.setTitle("Processing")
-        colorMode(PConstants.RGB, 1.0f)
-        rectMode(PConstants.CENTER)
-        cam = QueasyCam(this)
-        reset()
-    }
-
-    private fun reset() {
-        // Start simulator
-        val sceneName = args[0]
-        sim = Simulator(this, sceneName)
-        val initialTruePose = sim!!.getTruePose()
-        // Init estimates with zero uncertainty
-        x_T = FMatrixRMaj(
-                arrayOf(
-                        floatArrayOf(initialTruePose.a1),
-                        floatArrayOf(initialTruePose.a2),
-                        floatArrayOf(initialTruePose.a3)
-                )
-        )
-        sigma_T = CommonOps_FDRM.identity(3) * 0f
+    fun reset() {
         landmarkHitMap = mutableListOf()
         numAugmentUpdates = 1
-        // Init obstacle and landmark extractor
-        extractor = RANSACLeastSquares(this)
-        // Keep track of the path
-        truePath.clear()
-        estimatedPath.clear()
-        truePath.add(FMatrix2(initialTruePose.a1, initialTruePose.a2))
-        estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
-        // Start the robot
-        propagatedUntil = 0f
-        lastMeasured = System.currentTimeMillis()
-        sim!!.applyControl(u)
     }
 
-    private fun propagateEKFSLAM(x_T: FMatrixRMaj,
-                                 sigma_T: FMatrixRMaj,
-                                 u: FMatrix2,
-                                 sigma_N: FMatrixRMaj,
-                                 dt: Float): Pair<FMatrixRMaj, FMatrixRMaj> {
+    fun propagateEKFSLAM(x_T: FMatrixRMaj,
+                         sigma_T: FMatrixRMaj,
+                         u: FMatrix2,
+                         sigma_N: FMatrixRMaj,
+                         dt: Float): Pair<FMatrixRMaj, FMatrixRMaj> {
         val x_TPDT = RK4Integrator.updatePose(x_T, u, dt, 1)
 
         val sigma_TPDT = FMatrixRMaj(sigma_T)
@@ -111,15 +28,15 @@ class SLAM : PApplet() {
         val v = u.a1
         val A = FMatrixRMaj(
                 arrayOf(
-                        floatArrayOf(1f, 0f, -dt * v * sin(theta_t)),
-                        floatArrayOf(0f, 1f, dt * v * cos(theta_t)),
+                        floatArrayOf(1f, 0f, -dt * v * PApplet.sin(theta_t)),
+                        floatArrayOf(0f, 1f, dt * v * PApplet.cos(theta_t)),
                         floatArrayOf(0f, 0f, 1f)
                 )
         )
         val N = FMatrixRMaj(
                 arrayOf(
-                        floatArrayOf(dt * cos(theta_t), 0f),
-                        floatArrayOf(dt * sin(theta_t), 0f),
+                        floatArrayOf(dt * PApplet.cos(theta_t), 0f),
+                        floatArrayOf(dt * PApplet.sin(theta_t), 0f),
                         floatArrayOf(0f, dt)
                 )
         )
@@ -137,10 +54,10 @@ class SLAM : PApplet() {
         return Pair(x_TPDT, sigma_TPDT)
     }
 
-    private fun augmentUpdateRelPosEKFSLAM(x_T: FMatrixRMaj,
-                                           sigma_x_T: FMatrixRMaj,
-                                           rel_pos_msmts: MutableList<FMatrixRMaj>,
-                                           sigma_Ms: MutableList<FMatrixRMaj>): Pair<FMatrixRMaj, FMatrixRMaj> {
+    fun augmentUpdateRelPosEKFSLAM(x_T: FMatrixRMaj,
+                                   sigma_x_T: FMatrixRMaj,
+                                   rel_pos_msmts: MutableList<FMatrixRMaj>,
+                                   sigma_Ms: MutableList<FMatrixRMaj>): Pair<FMatrixRMaj, FMatrixRMaj> {
         var x_Plus = FMatrixRMaj(x_T)
         var sigma_Plus = FMatrixRMaj(sigma_x_T)
         val newLandmarks = mutableListOf<Int>()
@@ -167,8 +84,8 @@ class SLAM : PApplet() {
                                 floatArrayOf(y_R_T)
                         )
                 )
-                val sinTheta_T = sin(theta_T)
-                val cosTheta_T = cos(theta_T)
+                val sinTheta_T = PApplet.sin(theta_T)
+                val cosTheta_T = PApplet.cos(theta_T)
                 val H_L_new = FMatrixRMaj(
                         arrayOf(
                                 floatArrayOf(cosTheta_T, sinTheta_T),
@@ -212,7 +129,7 @@ class SLAM : PApplet() {
             }
 
             // Check if it matches any already in the state, and run an update for it.
-            if (minDistance <= UPDATE_THRESHOLD) {
+            if (minDistance <= Simulation.UPDATE_THRESHOLD) {
                 // EKF Update
                 val K = sigma_Plus * best_H.transpose() * best_S.inverse()
                 val I = CommonOps_FDRM.identity(x_Plus.numRows)
@@ -221,7 +138,7 @@ class SLAM : PApplet() {
                 sigma_Plus = term * sigma_Plus * term.transpose() + K * sigma_M * K.transpose()
                 // Update number of hits map
                 landmarkHitMap[(best_j - 3) / 2]++
-            } else if (minDistance > AUGMENT_THRESHOLD) {
+            } else if (minDistance > Simulation.AUGMENT_THRESHOLD) {
                 newLandmarks.add(i)
             }
         }
@@ -240,8 +157,8 @@ class SLAM : PApplet() {
                             floatArrayOf(y_R_T)
                     )
             )
-            val sinTheta_T = sin(theta_T)
-            val cosTheta_T = cos(theta_T)
+            val sinTheta_T = PApplet.sin(theta_T)
+            val cosTheta_T = PApplet.cos(theta_T)
             val H_L_new = FMatrixRMaj(
                     arrayOf(
                             floatArrayOf(cosTheta_T, sinTheta_T),
@@ -302,13 +219,13 @@ class SLAM : PApplet() {
         }
         numAugmentUpdates++
         // Periodically remove measurements with very low hit rate
-        if (numAugmentUpdates % PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES == 0) {
-            kotlin.io.println("cleaning")
+        if (numAugmentUpdates % Simulation.PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES == 0) {
+            println("cleaning")
             // Collect indices to be kept
             val correctLandmarkIndices = mutableListOf<Int>()
             val badLandmarkMask = mutableListOf<Boolean>()
             for ((i, hits) in landmarkHitMap.withIndex()) {
-                if (hits > PERIODICAL_CLEAN_THRESHOLD) {
+                if (hits > Simulation.PERIODICAL_CLEAN_THRESHOLD) {
                     correctLandmarkIndices.add(i)
                     badLandmarkMask.add(false)
                 } else {
@@ -359,164 +276,5 @@ class SLAM : PApplet() {
         }
 
         return Pair(x_Plus, sigma_Plus)
-    }
-
-    override fun draw() {
-        /* Clear screen */
-        background(0)
-
-        /* Update */
-        // Get time elapsed
-        val latestTimeElapsed = sim!!.getTimeElapsed()
-        val dt = latestTimeElapsed - propagatedUntil
-        propagatedUntil = latestTimeElapsed
-
-        // Run an EKFSLAMPropagation step
-        val (x_TPDT, sigma_TPDT) = propagateEKFSLAM(x_T, sigma_T, u, sigma_N, dt)
-        x_T = x_TPDT
-        sigma_T = sigma_TPDT
-
-        val (distances, timestamp) = sim!!.getLaserMeasurement()
-        if (timestamp > lastMeasured) {
-            // Get the estimate of laser source position
-            val position = FMatrix2(x_T[0], x_T[1])
-            val orientation = x_T[2]
-            val centerToHead = FMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
-            centerToHead *= sim!!.getRobotRadius()
-            val tail = position - centerToHead
-            // Get the estimate of laser ends
-            val laserEnds: MutableList<FMatrix2> = ArrayList(LaserSensor.COUNT)
-            for (i in distances.indices) {
-                if (distances[i] == LaserSensor.INVALID_DISTANCE) {
-                    continue
-                }
-                val percentage = i / (LaserSensor.COUNT - 1f)
-                val theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage
-                val laserBeam = FMatrix2(kotlin.math.cos(orientation + theta), kotlin.math.sin(orientation + theta))
-                laserBeam *= distances[i]
-                val laserEnd = tail + laserBeam
-                laserEnds.add(laserEnd)
-            }
-            if (DRAW_ESTIMATED_LASERS) {
-                noFill()
-                for (laserEnd in laserEnds) {
-                    stroke(1f, 1f, 0f)
-                    line(tail.a1, 0f, tail.a2, laserEnd.a1, 0f, laserEnd.a2)
-                    stroke(1f, 0f, 0f)
-                    circleXZ(laserEnd.a1, laserEnd.a2, 1f)
-                }
-            }
-            // Extract obstacles and landmarks
-            val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
-            if (DRAW_OBSTACLES_LANDMARKS) {
-                stroke(1f, 0f, 1f)
-                for (segment in obstacles) {
-                    line(segment.first.a1, 0f, segment.first.a2, segment.second.a1, 0f, segment.second.a2)
-                }
-                stroke(0f, 1f, 1f)
-                for (landmark in landmarks) {
-                    circleXZ(landmark.a1, landmark.a2, 2f)
-                }
-            }
-            // If > 0 landmarks detected
-            // Run an EKFSLAMAugmentUpdate step
-            val rel_pos_msmts = mutableListOf<FMatrixRMaj>()
-            val sigma_Ms = mutableListOf<FMatrixRMaj>()
-            if (landmarks.isNotEmpty()) {
-                for (G_P_L in landmarks) {
-                    val G_P_L__G_P_R_FMat2 = G_P_L - position
-                    val G_P_L__G_P_R = FMatrixRMaj(
-                            arrayOf(
-                                    floatArrayOf(G_P_L__G_P_R_FMat2.a1),
-                                    floatArrayOf(G_P_L__G_P_R_FMat2.a2)
-                            )
-                    )
-                    val sinTheta = sin(orientation)
-                    val cosTheta = cos(orientation)
-                    val C_T = FMatrixRMaj(
-                            arrayOf(
-                                    floatArrayOf(cosTheta, sinTheta),
-                                    floatArrayOf(-sinTheta, cosTheta)
-                            )
-                    )
-                    val R_P_L = C_T * G_P_L__G_P_R
-                    rel_pos_msmts.add(R_P_L)
-                    sigma_Ms.add(sigma_M)
-                }
-            }
-            val (x_Plus, sigma_Plus) = augmentUpdateRelPosEKFSLAM(x_T, sigma_T, rel_pos_msmts, sigma_Ms)
-            x_T = x_Plus
-            sigma_T = sigma_Plus
-            // Update last measured
-            lastMeasured = timestamp
-        }
-
-        // Keep track of path
-        val truePose = sim!!.getTruePose()
-        truePath.add(FMatrix2(truePose.a1, truePose.a2))
-        estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
-
-        /* Draw */
-        sim!!.draw()
-        // Draw the true trajectory
-        stroke(0f, 1f, 0f)
-        pathXZ(truePath)
-        // Draw the estimated trajectory
-        stroke(0f, 0f, 1f)
-        pathXZ(estimatedPath)
-        circleXZ(estimatedPath.last().a1, estimatedPath.last().a2, sim!!.getRobotRadius())
-        // Draw the uncertainty of the robot
-        covarianceXZ(x_T[0, 0, 2, 1], sigma_T[0, 0, 2, 2])
-        // Draw the uncertainty of all the landmarks in the state
-        for (j in 3 until x_T.numRows step 2) {
-            covarianceXZ(x_T[j, 0, 2, 1], sigma_T[j, j, 2, 2])
-        }
-
-        surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}"
-                + " extractor=${extractor!!.getName()}"
-                + " #landmarks=${(x_T.numRows - 3) / 2}"
-        )
-    }
-
-    override fun keyPressed() {
-        if (key == '1') {
-            extractor = IEP(this)
-        }
-        if (key == '2') {
-            extractor = RANSACLeastSquares(this)
-            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = false
-        }
-        if (key == '3') {
-            extractor = RANSACLeastSquares(this)
-            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = true
-        }
-        if (key == 'r') {
-            reset()
-        }
-        if (key == 'p') {
-            sim!!.togglePaused()
-        }
-        if (key == 'c') {
-            cam!!.controllable = !cam!!.controllable
-        }
-        if (key == 'z') {
-            DRAW_ESTIMATED_LASERS = !DRAW_ESTIMATED_LASERS
-        }
-        if (key == 'x') {
-            LaserSensor.DRAW_LASERS = !LaserSensor.DRAW_LASERS
-        }
-        if (key == 'l') {
-            Simulator.DRAW_OBSTACLES = !Simulator.DRAW_OBSTACLES
-        }
-        if (key == 'f') {
-            RANSACLeastSquares.DRAW_PARTITIONS = !RANSACLeastSquares.DRAW_PARTITIONS
-            IEP.DRAW_PARTITIONS = !IEP.DRAW_PARTITIONS
-        }
-        if (key == 'm') {
-            DRAW_OBSTACLES_LANDMARKS = !DRAW_OBSTACLES_LANDMARKS
-        }
-        if (key == 'v') {
-            HitGrid.DRAW = !HitGrid.DRAW
-        }
     }
 }
