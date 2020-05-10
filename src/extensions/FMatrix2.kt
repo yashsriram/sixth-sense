@@ -69,5 +69,5 @@ fun FMatrix2.normalizeInPlace(): FMatrix2 {
 }
 
 fun FMatrix2.prettyPrint(): String {
-    return "Dense 32-bit float Mat 2 x 1 =\n${a1}\n${a2}"
+    return "FMat2={${a1}, ${a2}}"
 }

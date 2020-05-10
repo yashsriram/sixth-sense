@@ -99,7 +99,7 @@ class Simulation : PApplet() {
         lastMeasured = System.currentTimeMillis()
         sim!!.applyControl(u)
         // Planning
-        hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
+        hitGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
     }
 
     override fun draw() {
@@ -200,7 +200,7 @@ class Simulation : PApplet() {
 
         /* Draw */
         sim!!.draw()
-        hitGrid!!.draw()
+        hitGrid!!.draw(this)
         // Draw the true trajectory
         stroke(0f, 1f, 0f)
         pathXZ(truePath)

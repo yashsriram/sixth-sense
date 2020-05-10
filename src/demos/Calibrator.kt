@@ -26,7 +26,6 @@ class Calibrator : PApplet() {
     private var sim: Simulator? = null
     private var extractor: ObstacleLandmarkExtractor? = null
     private var cam: QueasyCam? = null
-    private var hitGrid: HitGrid? = null
     private var propagatedUntil = 0f
     private var velocity = 100
     private var distanceThreshold = 2f
@@ -57,7 +56,6 @@ class Calibrator : PApplet() {
     private fun reset() {
         val sceneName = "data/simple_rectangle.scn"
         sim = Simulator(this, sceneName)
-        hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
         extractor = RANSACLeastSquares(this)
         Simulator.GHOST_MODE = true
         baselinePose = sim!!.getTruePose();
@@ -173,7 +171,6 @@ class Calibrator : PApplet() {
 
         /* Draw */
         sim!!.draw()
-//        hitGrid!!.draw()
 
         surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}" +
                 " extractor=${extractor!!.getName()}" +
