@@ -60,6 +60,7 @@ class Simulation : PApplet() {
     private var hitGrid: HitGrid? = null
     private var plannedCells = mutableListOf<Int>()
     private var plannedPath = mutableListOf<FMatrix2>()
+    private val goal = FMatrix2(450f, 250f)
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -102,7 +103,7 @@ class Simulation : PApplet() {
         sim!!.applyControl(u)
         // Planning
         hitGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 500, 500)
-        plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), FMatrix2(500f, 500f))
+        plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), goal)
         plannedPath = hitGrid!!.coordinatesOf(plannedCells)
     }
 
@@ -141,7 +142,7 @@ class Simulation : PApplet() {
                 laserBeam *= distances[i]
                 val laserEnd = tail + laserBeam
                 laserEnds.add(laserEnd)
-                hitGrid!!.addHit(laserEnd)
+                hitGrid!!.addHit(laserEnd, sim!!.getRobotRadius())
             }
             if (DRAW_ESTIMATED_LASERS) {
                 noFill()
@@ -202,6 +203,7 @@ class Simulation : PApplet() {
         truePath.add(FMatrix2(truePose.a1, truePose.a2))
         estimatedPath.add(FMatrix2(x_T[0], x_T[1]))
 
+        // Replan if path has obstacle in it
         var replan = false
         for (cell in plannedCells) {
             if (hitGrid!!.hitsAt[cell] > 0) {
@@ -210,7 +212,7 @@ class Simulation : PApplet() {
             }
         }
         if (replan) {
-            plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), FMatrix2(500f, 500f))
+            plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), goal)
             plannedPath = hitGrid!!.coordinatesOf(plannedCells)
         }
 

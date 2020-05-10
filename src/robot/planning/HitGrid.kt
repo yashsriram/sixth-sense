@@ -7,6 +7,7 @@ import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import java.lang.Float.min
 import java.util.*
+import kotlin.math.ceil
 
 
 class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
@@ -30,16 +31,23 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         hitsAt[y * numCellsX + x] = value
     }
 
-    fun addHit(point: FMatrix2) {
+    fun addHit(point: FMatrix2, agentRadius: Float) {
         if (point.a1 < minCorner.a1 || point.a2 < minCorner.a2 || point.a1 > maxCorner.a1 || point.a2 > maxCorner.a2) {
             return
         }
         val position = point - minCorner
         val x = (position.a1 / cellSizeX).toInt()
         val y = (position.a2 / cellSizeY).toInt()
-        this[x, y]++
-        if (this[x, y] > maxCount) {
-            maxCount = this[x, y]
+        val upperBoundRange = ceil(agentRadius / min(cellSizeX, cellSizeY)).toInt()
+        for (i in x - upperBoundRange..x + upperBoundRange) {
+            for (j in y - upperBoundRange..y + upperBoundRange) {
+                if ((i in 0 until numCellsX) && (j in 0 until  numCellsY)) {
+                    this[i, j]++
+                    if (this[i, j] > maxCount) {
+                        maxCount = this[i, j]
+                    }
+                }
+            }
         }
     }
 
