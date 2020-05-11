@@ -23,8 +23,8 @@ class Simulation : PApplet() {
         const val HEIGHT = 900
         const val UPDATE_THRESHOLD = 20
         const val AUGMENT_THRESHOLD = 200
-        const val PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES = 25
-        const val PERIODICAL_CLEAN_THRESHOLD = 3
+        var PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES = 25
+        var PERIODICAL_CLEAN_THRESHOLD = 3
         const val ORIENTATION_SLACK = 0.01f
         const val MILESTONE_SLACK = 1f
         var DRAW_OBSTACLES_LANDMARKS = true

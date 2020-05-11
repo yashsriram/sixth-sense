@@ -11,7 +11,8 @@ fun main() {
     RANSACLeastSquares.DRAW_PARTITIONS = false
     Simulator.GHOST_MODE = true
     RANSACLeastSquares.DISCONTINUITY_THRESHOLD = 60.0
+    Simulation.PERIODICAL_CLEAN_THRESHOLD = 5
     // Scene
-    val appletArgs = arrayOf("demos.Simulation", "data/apartment.scn", "-100f", "50f")
+    val appletArgs = arrayOf("demos.Simulation", "data/apartment.scn", "-700f", "500f")
     PApplet.main(appletArgs)
 }
