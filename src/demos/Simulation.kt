@@ -170,6 +170,7 @@ class Simulation : PApplet() {
 
     fun lineBresenham(x1:Int, y1:Int, x2:Int, y2:Int, sensedPts: MutableList<FMatrix2>)
     {
+
         var dx = x2-x1
         var dy = y2-y1
         var stepy = 0
@@ -197,7 +198,7 @@ class Simulation : PApplet() {
         if(dx > dy)
         {
             var fraction = dy -(dx/2)
-            while (x< x2)
+            while ((x1<x2 && x< x2) || (x1>x2 && x >x2))
             {
                 x += stepx
                 if(fraction>=0)
@@ -213,7 +214,7 @@ class Simulation : PApplet() {
         else
         {
             var fraction = dx -(dy/2)
-            while (y< y2)
+            while ((y1<y2 && y< y2) || (y1>y2 && y >y2))
             {
                 if(fraction>=0)
                 {
@@ -318,13 +319,13 @@ class Simulation : PApplet() {
                     circleXZ(laserEnd.a1, laserEnd.a2, 1f)
                 }
             }
-            if(position-prePos != FMatrix2(0.0F,0.0F) || tail-preTail != FMatrix2(0.0F,0.0F) ) {
-                for (i in laserEnds.indices) {
-                    lineBresenham(tail.a1.toInt(), tail.a2.toInt(),laserEnds[i].a1.toInt(), laserEnds[i].a2.toInt(), sensedPts)
-                    stroke(0.5f, 0.5f, 1f)
-                    line(tail.a1, 0f, tail.a2, laserEnds[i].a1, 0f, laserEnds[i].a2)
-                }
+
+            for (i in laserEnds.indices) {
+                lineBresenham(tail.a1.toInt(), tail.a2.toInt(),laserEnds[i].a1.toInt(), laserEnds[i].a2.toInt(), sensedPts)
+                stroke(0.5f, 0.5f, 1f)
+                line(tail.a1, 0f, tail.a2, laserEnds[i].a1, 0f, laserEnds[i].a2)
             }
+
 
             // Extract obstacles and landmarks
             val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
@@ -370,17 +371,15 @@ class Simulation : PApplet() {
             sigma_T = sigma_Plus
             // Update last measured
             lastMeasured = timestamp
-            prePos = position
-            preTail = tail
         }
         //BresenHam: Drawing
-        if (DRAW_BRESENHAM_POINTS) {
-            for (pt in sensedPts) {
-//                senseGrid!!.addHit(pts, sim!!.getRobotRadius())
-                stroke(0.5f, 0.5f, 1f)
-                circleXZ(pt.a1, pt.a2, 2f)
-            }
-        }
+//        if (DRAW_BRESENHAM_POINTS) {
+//            for (pt in sensedPts) {
+////                senseGrid!!.addHit(pts, sim!!.getRobotRadius())
+//                stroke(0.5f, 0.5f, 1f)
+//                circleXZ(pt.a1, pt.a2, 2f)
+//            }
+//        }
         // Keep track of path
         val truePose = sim!!.getTruePose()
         truePath.add(FMatrix2(truePose.a1, truePose.a2))
