@@ -37,9 +37,6 @@
         - [ ] Simple block bug
 
 ## Estimation
-- [ ] Estimating Sigma_m does it depend on distance?
-- [ ] Estimating Sigma_n does it depend on controls?
-- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
 - [x] Estimate Sigma_N
     - [x] Give a control for some time and not errors, fit a gaussian with that
 - [x] Estimate Sigma_M
@@ -55,28 +52,15 @@
     - [ ] Use estimated sigmas
 
 ## Planning
-- [ ] Keep track of obstacles detected
-- [ ] HitGrid
-    - [ ] Octa map
+- [x] HitGrid
+    - [x] Keep track of obstacles detected
     - [x] Is long needed for count? No.
-    - [ ] Use multiple measrurements over time to form a robot.sensing hitmap from which extract landmarks
-    - [ ] Use two hitgrids, one for planning one for robot.sensing
-    - Policy
-        - Initially no noise assumption, No more noise while staying stationary
-        - 0 control -> doesn't add more drift
-        - While true
-            - Come to stop and measure
-            - Find landmarks with good uncertainity (augment/update)
-            - Find obstacles with good uncertainity
-            - Plan a path
-            - Small valued controls -> less noise, move very slowly (propogate)
-    - [ ] Revert v, w, vdot_max, wdot_max to good values before proceeding
-- [ ] Planning
-    - [ ] RRT for some time. Start going to furthest node until a new obstacle is detected?
-    - [ ] Planning not the top priority rn
+    - [x] PRM/A* on Hitgrid
+    - [x] Control
+    - [x] Path smoothing
 
 ## Smooth differential agent
-- [ ] Handle smooth differential drive agent. Maybe just use small speeds?
+- [x] Handle smooth differential drive agent. Maybe just use small speeds?
 
 ## Observations
 - [x] SLAM is not as transparent as first half due to matrix gymnastics
@@ -84,11 +68,23 @@
     - [x] Here corners are landmarks and stored in slam state
     - [x] Lines are obstacles, endpoints stored only for planning
 - [x] Use time elapsed for robot to calculate dt for propagation, augment and update
-- [x] RK4 vs Eular stability vs dt graph
 - [x] Ignore measurements while moving, do it only while stationary? Moving slowly is fine
 - [x] SLAM and planning can be developed independently
+- Policy
+    - Initially no noise assumption, No more noise while staying stationary
+    - 0 control -> doesn't add more drift
+    - While true
+        - Come to stop and measure
+        - Find landmarks with good uncertainity (augment/update)
+        - Find obstacles with good uncertainity
+        - Plan a path
+        - Small valued controls -> less noise, move very slowly (propogate)
 
-## Demos
+## Report and demos
+- [x] RK4 vs Eular stability vs dt graph
+- [ ] Estimating Sigma_m does it depend on distance?
+- [ ] Estimating Sigma_n does it depend on controls?
+- [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
 - [ ] Check the command line compilation
 - [ ] Simple rectangle
 - [ ] Simple block

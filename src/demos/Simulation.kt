@@ -16,14 +16,15 @@ import simulator.Simulator
 import java.util.*
 import kotlin.math.roundToInt
 
+
 class Simulation : PApplet() {
     companion object {
         const val WIDTH = 900
         const val HEIGHT = 900
         const val UPDATE_THRESHOLD = 20
         const val AUGMENT_THRESHOLD = 200
-        const val PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES = 25
-        const val PERIODICAL_CLEAN_THRESHOLD = 3
+        var PERIODICAL_CLEAN_EVERY_N_AUGMENT_UPDATES = 25
+        var PERIODICAL_CLEAN_THRESHOLD = 3
         const val ORIENTATION_SLACK = 0.01f
         const val MILESTONE_SLACK = 1f
         var DRAW_OBSTACLES_LANDMARKS = true
@@ -136,26 +137,35 @@ class Simulation : PApplet() {
     private fun updateControl() {
         if (currentMilestone < plannedPath.size - 1) {
             // Pull towards next milestone
-            val toGoal = plannedPath[currentMilestone + 1] - FMatrix2(x_T[0], x_T[1])
-            val goalOrientation = atan2(toGoal.a2, toGoal.a1)
+            val toLocalGoal = plannedPath[currentMilestone + 1] - FMatrix2(x_T[0], x_T[1])
+            val goalOrientation = atan2(toLocalGoal.a2, toLocalGoal.a1)
             val toOrientation = goalOrientation - x_T[2]
             // Orient towards goal
             if (abs(toOrientation) > ORIENTATION_SLACK) {
                 if (toOrientation > 0) {
-                    control.set(0f, 0.1f)
+                    control.set(0f, 0.5f)
                 } else {
-                    control.set(0f, -0.1f)
+                    control.set(0f, -0.5f)
                 }
                 sim!!.applyControl(control)
                 return
             }
             // Reached next milestone
-            if (toGoal.norm() < MILESTONE_SLACK) {
+            if (toLocalGoal.norm() < MILESTONE_SLACK) {
                 currentMilestone++
+                // Next milestone lookup
+                val prev = currentMilestone
+                for (i in currentMilestone + 1 until plannedPath.size - 1) {
+                    val blocked = hitGrid!!.areHitsOn(plannedCells[i], plannedCells[prev])
+                    if (blocked) {
+                        break
+                    }
+                    currentMilestone++
+                }
                 return
             }
             // Move towards next milestone
-            control.set(4f, 0f)
+            control.set(10f, 0f)
             sim!!.applyControl(control)
         } else {
             control.set(0f, 0f)

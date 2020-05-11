@@ -15,7 +15,6 @@ import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor
 import simulator.Simulator
-import java.util.*
 import kotlin.math.roundToInt
 import kotlin.math.sign
 
@@ -32,7 +31,7 @@ class Main : PApplet() {
     private var hitGrid: HitGrid? = null
     private var sensedPts = mutableListOf<FMatrix2>()
     private var extractor: ObstacleLandmarkExtractor? = null
-    var prePoseCopy:FMatrix3 = FMatrix3(0.0F, 0.0F, 0.0F)
+    var prePoseCopy: FMatrix3 = FMatrix3(0.0F, 0.0F, 0.0F)
 
     override fun settings() {
         size(WIDTH, HEIGHT, PConstants.P3D)
@@ -47,33 +46,70 @@ class Main : PApplet() {
     }
 
     private fun reset() {
-        val sceneName = "data/simple_rectangle.scn"
+        val sceneName = "data/apartment.scn"
         sim = Simulator(this, sceneName)
-//        hitGrid = HitGrid(this, FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
+        hitGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 1000, 1000)
         extractor = RANSACLeastSquares(this)
         Simulator.GHOST_MODE = true
+        HitGrid.THRESHOLD_COUNT = 500
     }
 
-    private fun swap(a:Any, b: Any): Pair<Any, Any> {
+    private fun drawLine(x1: Int, y1: Int, x2: Int, y2: Int) {
+        val dy = abs(y2 - y1)
+        val dx = abs(x2 - x1)
+        val dyPower2 = dy shl 1
+        val dxPower2 = dx shl 1
+        val xIncrement = if (x1 < x2) 1 else -1
+        val yIncrement = if (y1 < y2) 1 else -1
+
+        var d = 0
+        var cursorX = x1
+        var cursorY = y1
+
+        if (dy <= dx) {
+            while (true) {
+                point(cursorX.toFloat(), 0f, cursorY.toFloat())
+                if (cursorX == x2) break
+                cursorX += xIncrement
+                d += dyPower2
+                if (d > dx) {
+                    cursorY += yIncrement
+                    d -= dxPower2
+                }
+            }
+        } else {
+            while (true) {
+                point(cursorX.toFloat(), 0f, cursorY.toFloat())
+                if (cursorY == y2) break
+                cursorY += yIncrement
+                d += dxPower2
+                if (d > dy) {
+                    cursorX += xIncrement
+                    d -= dyPower2
+                }
+            }
+        }
+    }
+
+    private fun swap(a: Any, b: Any): Pair<Any, Any> {
         var x = a
         var y = b
-        return Pair(y,x)
+        return Pair(y, x)
     }
-    private fun bresenham2(st: FMatrix2, end:FMatrix2)
-    {
+
+    private fun bresenham2(st: FMatrix2, end: FMatrix2) {
         var x1 = st.a1.toInt()
         var y1 = st.a2.toInt()
         var x2 = end.a1.toInt()
         var y2 = end.a2.toInt()
 
-        if(abs(y2-y1)>abs(x2-x1))
-        { //If the line is steep then it would be converted to non steep by changing coordinate
-            val(x1,y1) = swap(x1, y1)
-            val(x2,y2) = swap(x2, y2)
+        if (abs(y2 - y1) > abs(x2 - x1)) { //If the line is steep then it would be converted to non steep by changing coordinate
+            val (x1, y1) = swap(x1, y1)
+            val (x2, y2) = swap(x2, y2)
         }
-        if(x1 >x2) {
-            val (x1, x2) =  swap(x1, x2)
-            val (y1, y2) =  swap(y1,y2)
+        if (x1 > x2) {
+            val (x1, x2) = swap(x1, x2)
+            val (y1, y2) = swap(y1, y2)
         }
         var dx = abs(x2 - x1)                              // Distance to travel in x-direction
         var dy = abs(y2 - y1)                               //Distance to travel in y-direction
@@ -81,10 +117,10 @@ class Main : PApplet() {
         var sy = sign(y2.toFloat() - y1.toFloat())                                     //Ensures positive slope line
         var x = x1
         var y = y1
-        var param = 2*dy - dx
+        var param = 2 * dy - dx
 
 
-        for (i in 0 until (dx - 1)/10) {
+        for (i in 0 until (dx - 1) / 10) {
             sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
             param = param + 2 * dy                                     //parameter value is modified
             if (param > 0) {                                          //if parameter value is exceeded
@@ -92,7 +128,7 @@ class Main : PApplet() {
                 y = temp.toInt()
                 param = param - 2 * (dx)                             //and parameter value is decreased
             }
-            var temp = x + 10*sx
+            var temp = x + 10 * sx
             x = temp.toInt()
 
 //                print(x, y)
@@ -100,7 +136,7 @@ class Main : PApplet() {
         }
     }
 
-    private fun bresenham(st: FMatrix2, end:FMatrix2) {
+    private fun bresenham(st: FMatrix2, end: FMatrix2) {
         val x1 = st.a1.toInt()
         val y1 = st.a2.toInt()
         val x2 = end.a1.toInt()
@@ -114,12 +150,10 @@ class Main : PApplet() {
         while (x <= x2) {
 
             sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
-            if(slopeErrorNew>=0){
+            if (slopeErrorNew >= 0) {
                 y = (y.toInt()) + 50
-                slopeErrorNew += mNew -2*dx
-            }
-            else
-            {
+                slopeErrorNew += mNew - 2 * dx
+            } else {
                 slopeErrorNew += mNew
                 x = x.toInt() + 50
             }
@@ -127,9 +161,33 @@ class Main : PApplet() {
 //            print("\n")
         }
     }
+
     override fun draw() {
         /* Clear screen */
         background(0)
+//        noFill()
+//        stroke(1)
+//        strokeWeight(1f)
+//        circleXZ(0f, 0f, 10f)
+//        line(0f, 0f, 0f, 10f, 0f, 0f)
+//        strokeWeight(4f)
+//        drawLine(0, 0, 10, 0)
+//        drawLine(0, 0, 10, 5)
+//        drawLine(0, 0, 10, 10)
+//        drawLine(0, 0, 5, 10)
+//        drawLine(0, 0, 0, 10)
+//        drawLine(0, 0, -10, 0)
+//        drawLine(0, 0, -10, -5)
+//        drawLine(0, 0, -10, -10)
+//        drawLine(0, 0, -5, -10)
+//        drawLine(0, 0, 0, -10)
+//        drawLine(0, 0, 10, -5)
+//        drawLine(0, 0, 10, -10)
+//        drawLine(0, 0, 5, -10)
+//        drawLine(0, 0, 0, 10)
+//        drawLine(0, 0, -10, 5)
+//        drawLine(0, 0, -10, 10)
+//        drawLine(0, 0, -5, 10)
 
         /* Update */
         val poseCopy = sim!!.getTruePose() // FIXME: should use estimated pose here later
@@ -152,10 +210,8 @@ class Main : PApplet() {
             sensedEnds.add(laserEnd)
             if (distances[i] != LaserSensor.INVALID_DISTANCE) {
                 laserEnds.add(laserEnd)
-//              hitGrid!!.addHit(laserEnd)
+                hitGrid!!.addHit(laserEnd, sim!!.getRobotRadius())
             }
-
-//            print(sensedPts[0])
         }
 
 //        if(prePoseCopy -poseCopy != FMatrix3(0.0F, 0.0F, 0.0F)){
@@ -165,7 +221,7 @@ class Main : PApplet() {
 //        }
 //        }
 //        print("Max hits: " + hitGrid!!.maxCount + "\r")
-//        noFill()
+        noFill()
 //        for (laserEnd in laserEnds) {
 //            stroke(1f, 0f, 1f)
 //            line(tail.a1, 0f, tail.a2, laserEnd.a1, 0f, laserEnd.a2)
@@ -194,11 +250,11 @@ class Main : PApplet() {
         }
         /* Draw */
         sim!!.draw()
-//        hitGrid!!.draw()
+        hitGrid!!.draw(this, true)
 
-        surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}" +
-                " extractor=${extractor!!.getName()}" +
-                " #obs=${obstacles.size} #land=${landmarks.size}"
+        surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}"
+                + " extractor=${extractor!!.getName()}"
+//                + " #obs=${obstacles.size} #land=${landmarks.size}"
         )
         prePoseCopy = poseCopy
     }

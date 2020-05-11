@@ -205,14 +205,74 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         }), indexOf(start), indexOf(goal))
     }
 
-    companion object {
-        const val THRESHOLD_COUNT = 50
+    fun areHitsOn(end1Index: Int, end2Index: Int): Boolean {
+        val x1 = end1Index % numCellsX
+        val y1 = end1Index / numCellsX
+        val x2 = end2Index % numCellsX
+        val y2 = end2Index / numCellsX
+
+        val dy = PApplet.abs(y2 - y1)
+        val dx = PApplet.abs(x2 - x1)
+        val dyPower2 = dy shl 1
+        val dxPower2 = dx shl 1
+        val xIncrement = if (x1 < x2) 1 else -1
+        val yIncrement = if (y1 < y2) 1 else -1
+
+        var d = 0
+        var cursorX = x1
+        var cursorY = y1
+
+        if (dy <= dx) {
+            while (true) {
+                if (hitsAt[cursorX + cursorY * numCellsX] > 0) {
+                    return true
+                }
+                if (cursorX == x2) break
+                cursorX += xIncrement
+                d += dyPower2
+                if (d > dx) {
+                    cursorY += yIncrement
+                    d -= dxPower2
+                }
+            }
+        } else {
+            while (true) {
+                if (hitsAt[cursorX + cursorY * numCellsX] > 0) {
+                    return true
+                }
+                if (cursorY == y2) break
+                cursorY += yIncrement
+                d += dxPower2
+                if (d > dy) {
+                    cursorX += xIncrement
+                    d -= dyPower2
+                }
+            }
+        }
+        return false
     }
 
+    fun prettyPrint() {
+        for (i in 0 until numCellsX) {
+            for (j in 0 until numCellsY) {
+                if (hitsAt[i + j * numCellsX] > 0) {
+                    print("x")
+                } else {
+                    print("_")
+                }
+            }
+            println()
+        }
+    }
+
+    companion object {
+        var DRAW = true
+        var THRESHOLD_COUNT = 50
+    }
 }
 
 fun main() {
-    val hitGrid = HitGrid(FMatrix2(-10f, -5f), FMatrix2(10f, 5f), 10, 10)
+    val hitGrid = HitGrid(FMatrix2(-10f, -10f), FMatrix2(10f, 10f), 10, 10)
     println(hitGrid.neighbours(0))
     println(hitGrid.neighbours(1))
     println(hitGrid.neighbours(10))
@@ -227,8 +287,8 @@ fun main() {
     println(hitGrid.dist(0, 10))
     println(hitGrid.dist(0, 11))
     println(hitGrid.coordinateOf(99).prettyPrint())
-    val start = FMatrix2(-10f, -5f)
-    val goal = FMatrix2(9.9f, 4.9f)
+    val start = FMatrix2(-10f, -10f)
+    val goal = FMatrix2(9.9f, 9.9f)
     println(hitGrid.indexOf(start))
     println(hitGrid.indexOf(goal))
     val cells = hitGrid.aStar(start, goal)
@@ -236,4 +296,14 @@ fun main() {
     for (milestone in path) {
         println(milestone.prettyPrint())
     }
+    hitGrid.addHit(FMatrix2(0f, 0f), 1f)
+    hitGrid.prettyPrint()
+    println(hitGrid.areHitsOn(0, 1))
+    println(hitGrid.areHitsOn(0, 11))
+    println(hitGrid.areHitsOn(0, 22))
+    println(hitGrid.areHitsOn(0, 33))
+    println(hitGrid.areHitsOn(0, 44))
+    println(hitGrid.areHitsOn(41, 44))
+    println(hitGrid.areHitsOn(49, 47))
+    println(hitGrid.areHitsOn(48, 46))
 }
