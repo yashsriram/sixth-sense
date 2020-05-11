@@ -3,7 +3,6 @@ package demos
 import camera.QueasyCam
 import extensions.*
 import org.ejml.data.FMatrix2
-import org.ejml.data.FMatrix3
 import org.ejml.data.FMatrixRMaj
 import org.ejml.dense.row.CommonOps_FDRM
 import processing.core.PApplet
@@ -16,7 +15,6 @@ import simulator.LaserSensor
 import simulator.Simulator
 import java.util.*
 import kotlin.math.roundToInt
-import kotlin.math.sign
 
 class Simulation : PApplet() {
     companion object {
@@ -164,110 +162,56 @@ class Simulation : PApplet() {
             sim!!.applyControl(control)
         }
     }
-    fun swap(a:Any, b: Any): Pair<Any, Any> {
-        return Pair(b,a)
-    }
 
-    fun lineBresenham(x1:Int, y1:Int, x2:Int, y2:Int, sensedPts: MutableList<FMatrix2>)
-    {
+    fun lineBresenham(x1: Int, y1: Int, x2: Int, y2: Int, sensedPts: MutableList<FMatrix2>) {
 
-        var dx = x2-x1
-        var dy = y2-y1
+        var dx = x2 - x1
+        var dy = y2 - y1
         var stepy = 0
         var stepx = 0
-        if(dy < 0)
-        {
+        if (dy < 0) {
             dy = -dy
-            stepy = -1*hitGrid!!.cellSizeY.toInt()
-        }
-        else if(dy > 0)
+            stepy = -1 * hitGrid!!.cellSizeY.toInt()
+        } else if (dy > 0)
             stepy = hitGrid!!.cellSizeY.toInt()
-        if (dx < 0)
-        {
+        if (dx < 0) {
             dx = -dx
-            stepx = -1*hitGrid!!.cellSizeX.toInt()
-        }
-        else if(dx >0)
+            stepx = -1 * hitGrid!!.cellSizeX.toInt()
+        } else if (dx > 0)
             stepx = hitGrid!!.cellSizeX.toInt()
-        dy = dy*2
-        dx =  dx*2
+        dy = dy * 2
+        dx = dx * 2
         var x = x1
-        var y= y1
+        var y = y1
         sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
-        senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), sim!!.getRobotRadius())
-        if(dx > dy)
-        {
-            var fraction = dy -(dx/2)
-            while ((x1<x2 && x< x2) || (x1>x2 && x >x2))
-            {
+        senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), 0f)
+        if (dx > dy) {
+            var fraction = dy - (dx / 2)
+            while ((x1 < x2 && x < x2) || (x1 > x2 && x > x2)) {
                 x += stepx
-                if(fraction>=0)
-                {
+                if (fraction >= 0) {
                     y += stepy
                     fraction -= dx
                 }
                 fraction += dy
                 sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
-                senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), sim!!.getRobotRadius())
+                senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), 0f)
             }
-        }
-        else
-        {
-            var fraction = dx -(dy/2)
-            while ((y1<y2 && y< y2) || (y1>y2 && y >y2))
-            {
-                if(fraction>=0)
-                {
+        } else {
+            var fraction = dx - (dy / 2)
+            while ((y1 < y2 && y < y2) || (y1 > y2 && y > y2)) {
+                if (fraction >= 0) {
                     x += stepx
                     fraction -= dy
                 }
                 y += stepy
                 fraction += dx
                 sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
-                senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), sim!!.getRobotRadius())
+                senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), 0f)
             }
         }
     }
-//    fun bresenham(x1:Int, y1:Int, x2:Int, y2:Int, sensedPts: MutableList<FMatrix2>)
-//    {
-//        if(PApplet.abs(y2 - y1) > PApplet.abs(x2 - x1))
-//        { //If the line is steep then it would be converted to non steep by changing coordinate
-//            val(x1,y1) = swap(x1,y1)//Pair(y1,x1)
-//            val(x2,y2) = swap(x2,y2)//Pair(y2,x2)
-//        }
-//        if(x1 >x2) {
-//            val (x1, x2) =  swap(x1,x2)//Pair(x2,x1)
-//            val (y1, y2) =  swap(y1,y2)//Pair(y2,y1)
-//        }
-//        var dx = PApplet.abs(x2 - x1)                              // Distance to travel in x-direction
-//        var dy = PApplet.abs(y2 - y1)
-//        var sx = 0
-//        if(x2>x1)
-//            sx = 1
-//        else if(x2<x1)
-//            sx = -1
-//        var sy = 0
-//        if(y2>y1)
-//            sy = 1
-//        else if(y2<y1)
-//            sy = -1
-//        var x = x1
-//        var y = y1
-//        var param = 2*dy - dx
-//        val stepx = hitGrid!!.cellSizeX.toInt()
-//        val stepy = hitGrid!!.cellSizeY.toInt()
-//
-//        for (i in 0 until ((dx - 1)/stepx).toInt()) {
-//            sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
-//            senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), sim!!.getRobotRadius())
-//            param = param + 2 * dy                                     //parameter value is modified
-//            if (param > 0) {                                          //if parameter value is exceeded
-//                y = y + (stepy * sy)                                 //then y coordinate is increased
-//                param = param - 2 * (dx)                             //and parameter value is decreased
-//            }
-//            x = x + (stepx*sx)
-//        }
-//    }
+
     override fun draw() {
         /* Clear screen */
         background(0)
@@ -277,8 +221,6 @@ class Simulation : PApplet() {
         val latestTimeElapsed = sim!!.getTimeElapsed()
         val dt = latestTimeElapsed - propagatedUntil
         propagatedUntil = latestTimeElapsed
-        var preTail = FMatrix2(0.0F,0.0F)
-        var prePos = FMatrix2(0.0F, 0.0F)
         // Run an EKFSLAMPropagation step
         val (x_TPDT, sigma_TPDT) = slam.propagateEKFSLAM(x_T, sigma_T, control, sigma_N, dt)
         x_T = x_TPDT
@@ -321,7 +263,7 @@ class Simulation : PApplet() {
             }
 
             for (i in laserEnds.indices) {
-                lineBresenham(tail.a1.toInt(), tail.a2.toInt(),laserEnds[i].a1.toInt(), laserEnds[i].a2.toInt(), sensedPts)
+                lineBresenham(tail.a1.toInt(), tail.a2.toInt(), laserEnds[i].a1.toInt(), laserEnds[i].a2.toInt(), sensedPts)
                 stroke(0.5f, 0.5f, 1f)
                 line(tail.a1, 0f, tail.a2, laserEnds[i].a1, 0f, laserEnds[i].a2)
             }
@@ -372,14 +314,6 @@ class Simulation : PApplet() {
             // Update last measured
             lastMeasured = timestamp
         }
-        //BresenHam: Drawing
-//        if (DRAW_BRESENHAM_POINTS) {
-//            for (pt in sensedPts) {
-////                senseGrid!!.addHit(pts, sim!!.getRobotRadius())
-//                stroke(0.5f, 0.5f, 1f)
-//                circleXZ(pt.a1, pt.a2, 2f)
-//            }
-//        }
         // Keep track of path
         val truePose = sim!!.getTruePose()
         truePath.add(FMatrix2(truePose.a1, truePose.a2))
