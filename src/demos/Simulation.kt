@@ -3,6 +3,7 @@ package demos
 import camera.QueasyCam
 import extensions.*
 import org.ejml.data.FMatrix2
+import org.ejml.data.FMatrix3
 import org.ejml.data.FMatrixRMaj
 import org.ejml.dense.row.CommonOps_FDRM
 import processing.core.PApplet
@@ -65,6 +66,7 @@ class Simulation : PApplet() {
 
     // Planning
     private var hitGrid: HitGrid? = null
+    private var senseGrid: HitGrid? = null
     private var plannedCells = mutableListOf<Int>()
     private var plannedPath = mutableListOf<FMatrix2>()
     private val goal = FMatrix2()
@@ -112,6 +114,7 @@ class Simulation : PApplet() {
         // Planning
         goal.set(x_T[0] + parseFloat(args[1]), x_T[1] + parseFloat(args[2]))
         hitGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 500, 500)
+        senseGrid = HitGrid(FMatrix2(-1000f, -1000f), FMatrix2(1000f, 1000f), 500, 500)
         plannedCells = hitGrid!!.aStar(FMatrix2(x_T[0], x_T[1]), goal)
         plannedPath = hitGrid!!.coordinatesOf(plannedCells)
         currentMilestone = 0
@@ -162,43 +165,108 @@ class Simulation : PApplet() {
         }
     }
     fun swap(a:Any, b: Any): Pair<Any, Any> {
-//        a = a + b
-//        b = a - b
-//        a = a - b
         return Pair(b,a)
     }
 
-    fun bresenham2(x1:Int, y1:Int, x2:Int, y2:Int, sensedPts:MutableList<FMatrix2>)
+    fun lineBresenham(x1:Int, y1:Int, x2:Int, y2:Int, sensedPts: MutableList<FMatrix2>)
     {
-        if(PApplet.abs(y2 - y1) > PApplet.abs(x2 - x1))
-        { //If the line is steep then it would be converted to non steep by changing coordinate
-            val(x1,y1) = Pair(y1,x1)
-            val(x2,y2) = Pair(y2,x2)
+        var dx = x2-x1
+        var dy = y2-y1
+        var stepy = 0
+        var stepx = 0
+        if(dy < 0)
+        {
+            dy = -dy
+            stepy = -1*hitGrid!!.cellSizeY.toInt()
         }
-        if(x1 >x2) {
-            val (x1, x2) =  Pair(x2,x1)
-            val (y1, y2) =  Pair(y2,y1)
+        else if(dy > 0)
+            stepy = hitGrid!!.cellSizeY.toInt()
+        if (dx < 0)
+        {
+            dx = -dx
+            stepx = -1*hitGrid!!.cellSizeX.toInt()
         }
-        var dx = PApplet.abs(x2 - x1)                              // Distance to travel in x-direction
-        var dy = PApplet.abs(y2 - y1)                               //Distance to travel in y-direction
-        var sx = sign(x2 - x1.toFloat())                                    //sx indicates direction of travel in X-dir
-        var sy = sign(y2.toFloat() - y1.toFloat())                                     //Ensures positive slope line
+        else if(dx >0)
+            stepx = hitGrid!!.cellSizeX.toInt()
+        dy = dy*2
+        dx =  dx*2
         var x = x1
-        var y = y1
-        var param = 2*dy - dx
-        val stepx = hitGrid!!.cellSizeX.toInt()
-        val stepy = hitGrid!!.cellSizeY.toInt()
-
-        for (i in 0 until ((dx - 1)/stepx).toInt()) {
-            sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
-            param = param + 2 * dy                                     //parameter value is modified
-            if (param > 0) {                                          //if parameter value is exceeded
-                y = y + (stepy * sy).toInt()                                  //then y coordinate is increased
-                param = param - 2 * (dx)                             //and parameter value is decreased
+        var y= y1
+        sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
+        senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), sim!!.getRobotRadius())
+        if(dx > dy)
+        {
+            var fraction = dy -(dx/2)
+            while (x< x2)
+            {
+                x += stepx
+                if(fraction>=0)
+                {
+                    y += stepy
+                    fraction -= dx
+                }
+                fraction += dy
+                sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
+                senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), sim!!.getRobotRadius())
             }
-            x = x + (stepx*sx).toInt()
+        }
+        else
+        {
+            var fraction = dx -(dy/2)
+            while (y< y2)
+            {
+                if(fraction>=0)
+                {
+                    x += stepx
+                    fraction -= dy
+                }
+                y += stepy
+                fraction += dx
+                sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
+                senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), sim!!.getRobotRadius())
+            }
         }
     }
+//    fun bresenham(x1:Int, y1:Int, x2:Int, y2:Int, sensedPts: MutableList<FMatrix2>)
+//    {
+//        if(PApplet.abs(y2 - y1) > PApplet.abs(x2 - x1))
+//        { //If the line is steep then it would be converted to non steep by changing coordinate
+//            val(x1,y1) = swap(x1,y1)//Pair(y1,x1)
+//            val(x2,y2) = swap(x2,y2)//Pair(y2,x2)
+//        }
+//        if(x1 >x2) {
+//            val (x1, x2) =  swap(x1,x2)//Pair(x2,x1)
+//            val (y1, y2) =  swap(y1,y2)//Pair(y2,y1)
+//        }
+//        var dx = PApplet.abs(x2 - x1)                              // Distance to travel in x-direction
+//        var dy = PApplet.abs(y2 - y1)
+//        var sx = 0
+//        if(x2>x1)
+//            sx = 1
+//        else if(x2<x1)
+//            sx = -1
+//        var sy = 0
+//        if(y2>y1)
+//            sy = 1
+//        else if(y2<y1)
+//            sy = -1
+//        var x = x1
+//        var y = y1
+//        var param = 2*dy - dx
+//        val stepx = hitGrid!!.cellSizeX.toInt()
+//        val stepy = hitGrid!!.cellSizeY.toInt()
+//
+//        for (i in 0 until ((dx - 1)/stepx).toInt()) {
+//            sensedPts.add(FMatrix2(x.toFloat(), y.toFloat()))
+//            senseGrid!!.addHit(FMatrix2(x.toFloat(), y.toFloat()), sim!!.getRobotRadius())
+//            param = param + 2 * dy                                     //parameter value is modified
+//            if (param > 0) {                                          //if parameter value is exceeded
+//                y = y + (stepy * sy)                                 //then y coordinate is increased
+//                param = param - 2 * (dx)                             //and parameter value is decreased
+//            }
+//            x = x + (stepx*sx)
+//        }
+//    }
     override fun draw() {
         /* Clear screen */
         background(0)
@@ -208,12 +276,13 @@ class Simulation : PApplet() {
         val latestTimeElapsed = sim!!.getTimeElapsed()
         val dt = latestTimeElapsed - propagatedUntil
         propagatedUntil = latestTimeElapsed
-
+        var preTail = FMatrix2(0.0F,0.0F)
+        var prePos = FMatrix2(0.0F, 0.0F)
         // Run an EKFSLAMPropagation step
         val (x_TPDT, sigma_TPDT) = slam.propagateEKFSLAM(x_T, sigma_T, control, sigma_N, dt)
         x_T = x_TPDT
         sigma_T = sigma_TPDT
-
+        val sensedPts = mutableListOf<FMatrix2>()
         // Re plan if path has obstacle in it
         rePlan()
         // Update control based on plan
@@ -249,6 +318,14 @@ class Simulation : PApplet() {
                     circleXZ(laserEnd.a1, laserEnd.a2, 1f)
                 }
             }
+            if(position-prePos != FMatrix2(0.0F,0.0F) || tail-preTail != FMatrix2(0.0F,0.0F) ) {
+                for (i in laserEnds.indices) {
+                    lineBresenham(tail.a1.toInt(), tail.a2.toInt(),laserEnds[i].a1.toInt(), laserEnds[i].a2.toInt(), sensedPts)
+                    stroke(0.5f, 0.5f, 1f)
+                    line(tail.a1, 0f, tail.a2, laserEnds[i].a1, 0f, laserEnds[i].a2)
+                }
+            }
+
             // Extract obstacles and landmarks
             val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
             if (DRAW_OBSTACLES_LANDMARKS) {
@@ -293,18 +370,15 @@ class Simulation : PApplet() {
             sigma_T = sigma_Plus
             // Update last measured
             lastMeasured = timestamp
+            prePos = position
+            preTail = tail
         }
         //BresenHam: Drawing
         if (DRAW_BRESENHAM_POINTS) {
-            val sensedPts = mutableListOf<FMatrix2>()
-            val tail = FMatrix2(0.0F, 0.0F)
-            bresenham2(tail.a1.toInt(), tail.a2.toInt(),  900, 500, sensedPts)
-            stroke(0f, 0f, 1f)
-            line(tail.a1, 0f, tail.a2, tail.a1+ 900F, 0f, tail.a2+500F)
-            stroke(1f, 0.5f, 0.5f)
-            for (pts in sensedPts) {
-                hitGrid!!.addHit(pts, sim!!.getRobotRadius())
-                circleXZ(pts.a1, pts.a2, 2f)
+            for (pt in sensedPts) {
+//                senseGrid!!.addHit(pts, sim!!.getRobotRadius())
+                stroke(0.5f, 0.5f, 1f)
+                circleXZ(pt.a1, pt.a2, 2f)
             }
         }
         // Keep track of path
@@ -314,7 +388,8 @@ class Simulation : PApplet() {
 
         /* Draw */
         sim!!.draw()
-        hitGrid!!.draw(this)
+        hitGrid!!.draw(this, true)
+        senseGrid!!.draw(this, false)
         if (DRAW_PLANNED_PATH) {
             noFill()
             stroke(0f, 1f, 1f)
@@ -391,7 +466,10 @@ class Simulation : PApplet() {
             DRAW_OBSTACLES_LANDMARKS = !DRAW_OBSTACLES_LANDMARKS
         }
         if (key == 'v') {
-            HitGrid.DRAW = !HitGrid.DRAW
+            hitGrid!!.DRAW = !hitGrid!!.DRAW
+        }
+        if (key == 'b') {
+            senseGrid!!.DRAW = !senseGrid!!.DRAW
         }
         if (key == 'y') {
             DRAW_PLANNED_PATH = !DRAW_PLANNED_PATH

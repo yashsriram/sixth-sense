@@ -16,6 +16,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
     val cellSizeY = (maxCorner.a2 - minCorner.a2) / numCellsY
     val hitsAt = MutableList(numCellsX * numCellsY) { 0 }
     private var maxCount = 0
+    var DRAW = true
 
     private data class SearchState(val distanceFromStart: Float,
                                    val heuristicDistanceToFinish: Float,
@@ -52,7 +53,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
         }
     }
 
-    fun draw(applet: PApplet) {
+    fun draw(applet: PApplet, hit: Boolean) {
         if (!DRAW) {
             return
         }
@@ -75,7 +76,10 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
                     continue
                 }
                 val r = min(count.toFloat() / THRESHOLD_COUNT, 1f)
-                applet.fill(r, 0f, 0f)
+                if (hit)
+                    applet.fill(r, 0f, 0f)
+                else
+                    applet.fill(0f, 0.5f, 1f)
                 val topLeftX = minCorner.a1 + i * cellSizeX
                 val topLeftZ = minCorner.a2 + j * cellSizeY
                 applet.vertex(topLeftX, 0f, topLeftZ)
@@ -200,7 +204,6 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
     }
 
     companion object {
-        var DRAW = true
         const val THRESHOLD_COUNT = 50
     }
 

@@ -256,7 +256,7 @@ class Main : PApplet() {
             DRAW_OBSTACLES_LANDMARKS = !DRAW_OBSTACLES_LANDMARKS
         }
         if (key == 'v') {
-            HitGrid.DRAW = !HitGrid.DRAW
+            hitGrid!!.DRAW = !hitGrid!!.DRAW
         }
     }
 }
