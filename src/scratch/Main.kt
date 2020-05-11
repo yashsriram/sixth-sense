@@ -2,9 +2,6 @@ package scratch
 
 import camera.QueasyCam
 import extensions.circleXZ
-import extensions.minus
-import extensions.plus
-import extensions.timesAssign
 import org.ejml.data.FMatrix2
 import processing.core.PApplet
 import processing.core.PConstants
@@ -14,7 +11,6 @@ import robot.sensing.ObstacleLandmarkExtractor
 import robot.sensing.RANSACLeastSquares
 import simulator.LaserSensor
 import simulator.Simulator
-import java.util.*
 import kotlin.math.roundToInt
 
 class Main : PApplet() {
@@ -49,32 +45,92 @@ class Main : PApplet() {
         Simulator.GHOST_MODE = true
     }
 
+    private fun drawLine(x1: Int, y1: Int, x2: Int, y2: Int) {
+        val dy = abs(y2 - y1)
+        val dx = abs(x2 - x1)
+        val dyPower2 = dy shl 1
+        val dxPower2 = dx shl 1
+        val xIncrement = if (x1 < x2) 1 else -1
+        val yIncrement = if (y1 < y2) 1 else -1
+
+        var d = 0
+        var cursorX = x1
+        var cursorY = y1
+
+        if (dy <= dx) {
+            while (true) {
+                point(cursorX.toFloat(), 0f, cursorY.toFloat())
+                if (cursorX == x2) break
+                cursorX += xIncrement
+                d += dyPower2
+                if (d > dx) {
+                    cursorY += yIncrement
+                    d -= dxPower2
+                }
+            }
+        } else {
+            while (true) {
+                point(cursorX.toFloat(), 0f, cursorY.toFloat())
+                if (cursorY == y2) break
+                cursorY += yIncrement
+                d += dxPower2
+                if (d > dy) {
+                    cursorX += xIncrement
+                    d -= dyPower2
+                }
+            }
+        }
+    }
+
     override fun draw() {
         /* Clear screen */
         background(0)
+        noFill()
+        stroke(1)
+        strokeWeight(1f)
+        circleXZ(0f, 0f, 10f)
+        line(0f, 0f, 0f, 10f, 0f, 0f)
+        strokeWeight(4f)
+        drawLine(0, 0, 10, 0)
+        drawLine(0, 0, 10, 5)
+        drawLine(0, 0, 10, 10)
+        drawLine(0, 0, 5, 10)
+        drawLine(0, 0, 0, 10)
+        drawLine(0, 0, -10, 0)
+        drawLine(0, 0, -10, -5)
+        drawLine(0, 0, -10, -10)
+        drawLine(0, 0, -5, -10)
+        drawLine(0, 0, 0, -10)
+        drawLine(0, 0, 10, -5)
+        drawLine(0, 0, 10, -10)
+        drawLine(0, 0, 5, -10)
+        drawLine(0, 0, 0, 10)
+        drawLine(0, 0, -10, 5)
+        drawLine(0, 0, -10, 10)
+        drawLine(0, 0, -5, 10)
 
         /* Update */
-        val poseCopy = sim!!.getTruePose() // FIXME: should use estimated pose here later
-        val position = FMatrix2(poseCopy.a1, poseCopy.a2)
-        val orientation = poseCopy.a3
-        val centerToHead = FMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
-        centerToHead *= sim!!.getRobotRadius()
-        val tail = position - centerToHead
-
-        val (distances, timestamp) = sim!!.getLaserMeasurement()
-        val laserEnds: MutableList<FMatrix2> = ArrayList(LaserSensor.COUNT)
-        for (i in distances.indices) {
-            if (distances[i] == LaserSensor.INVALID_DISTANCE) {
-                continue
-            }
-            val percentage = i / (LaserSensor.COUNT - 1f)
-            val theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage
-            val laserBeam = FMatrix2(kotlin.math.cos(orientation + theta), kotlin.math.sin(orientation + theta))
-            laserBeam *= distances[i]
-            val laserEnd = tail + laserBeam
-            laserEnds.add(laserEnd)
+//        val poseCopy = sim!!.getTruePose() // FIXME: should use estimated pose here later
+//        val position = FMatrix2(poseCopy.a1, poseCopy.a2)
+//        val orientation = poseCopy.a3
+//        val centerToHead = FMatrix2(kotlin.math.cos(orientation), kotlin.math.sin(orientation))
+//        centerToHead *= sim!!.getRobotRadius()
+//        val tail = position - centerToHead
+//
+//        val (distances, timestamp) = sim!!.getLaserMeasurement()
+//        val laserEnds: MutableList<FMatrix2> = ArrayList(LaserSensor.COUNT)
+//        for (i in distances.indices) {
+//            if (distances[i] == LaserSensor.INVALID_DISTANCE) {
+//                continue
+//            }
+//            val percentage = i / (LaserSensor.COUNT - 1f)
+//            val theta = LaserSensor.MIN_THETA + (LaserSensor.MAX_THETA - LaserSensor.MIN_THETA) * percentage
+//            val laserBeam = FMatrix2(kotlin.math.cos(orientation + theta), kotlin.math.sin(orientation + theta))
+//            laserBeam *= distances[i]
+//            val laserEnd = tail + laserBeam
+//            laserEnds.add(laserEnd)
 //            hitGrid!!.addHit(laserEnd)
-        }
+//        }
 //        print("Max hits: " + hitGrid!!.maxCount + "\r")
 //        noFill()
 //        for (laserEnd in laserEnds) {
@@ -84,26 +140,26 @@ class Main : PApplet() {
 //            circleXZ(laserEnd.a1, laserEnd.a2, 1f)
 //        }
 
-        val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
-
-        if (DRAW_OBSTACLES_LANDMARKS) {
-            stroke(1f, 0f, 1f)
-            for (segment in obstacles) {
-                line(segment.first.a1, 0f, segment.first.a2, segment.second.a1, 0f, segment.second.a2)
-            }
-            stroke(0f, 1f, 1f)
-            for (landmark in landmarks) {
-                circleXZ(landmark.a1, landmark.a2, 2f)
-            }
-        }
+//        val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
+//
+//        if (DRAW_OBSTACLES_LANDMARKS) {
+//            stroke(1f, 0f, 1f)
+//            for (segment in obstacles) {
+//                line(segment.first.a1, 0f, segment.first.a2, segment.second.a1, 0f, segment.second.a2)
+//            }
+//            stroke(0f, 1f, 1f)
+//            for (landmark in landmarks) {
+//                circleXZ(landmark.a1, landmark.a2, 2f)
+//            }
+//        }
 
         /* Draw */
-        sim!!.draw()
+//        sim!!.draw()
 //        hitGrid!!.draw()
 
-        surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}" +
-                " extractor=${extractor!!.getName()}" +
-                " #obs=${obstacles.size} #land=${landmarks.size}"
+        surface.setTitle("Processing - FPS: ${frameRate.roundToInt()}"
+                + " extractor=${extractor!!.getName()}"
+//                + " #obs=${obstacles.size} #land=${landmarks.size}"
         )
     }
 
