@@ -272,12 +272,10 @@ class Simulation : PApplet() {
                 }
             }
 
+            // Update seen region
             for (i in laserEnds.indices) {
                 lineBresenham(tail.a1.toInt(), tail.a2.toInt(), laserEnds[i].a1.toInt(), laserEnds[i].a2.toInt(), sensedPts)
-                stroke(0.5f, 0.5f, 1f)
-                line(tail.a1, 0f, tail.a2, laserEnds[i].a1, 0f, laserEnds[i].a2)
             }
-
 
             // Extract obstacles and landmarks
             val (obstacles, landmarks) = extractor!!.getObservedObstaclesAndLandmarks(laserEnds, distances)
