@@ -261,7 +261,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
 
     companion object {
         var DRAW = true
-        const val THRESHOLD_COUNT = 50
+        var THRESHOLD_COUNT = 50
     }
 }
 

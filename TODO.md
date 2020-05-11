@@ -68,7 +68,6 @@
     - [x] Here corners are landmarks and stored in slam state
     - [x] Lines are obstacles, endpoints stored only for planning
 - [x] Use time elapsed for robot to calculate dt for propagation, augment and update
-- [x] RK4 vs Eular stability vs dt graph
 - [x] Ignore measurements while moving, do it only while stationary? Moving slowly is fine
 - [x] SLAM and planning can be developed independently
 - Policy
@@ -80,11 +79,12 @@
         - Find obstacles with good uncertainity
         - Plan a path
         - Small valued controls -> less noise, move very slowly (propogate)
+
+## Report and demos
+- [x] RK4 vs Eular stability vs dt graph
 - [ ] Estimating Sigma_m does it depend on distance?
 - [ ] Estimating Sigma_n does it depend on controls?
 - [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
-
-## Demos
 - [ ] Check the command line compilation
 - [ ] Simple rectangle
 - [ ] Simple block
