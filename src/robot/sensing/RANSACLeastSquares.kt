@@ -22,14 +22,19 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
 
         var USE_LEAST_SQUARE_FITTING = true
         var DRAW_PARTITIONS = true
+        var USE_IEP = true
     }
 
     override fun getName(): String {
-        return if (USE_LEAST_SQUARE_FITTING) {
-            "IEP/RANSAC/LS"
-        } else {
-            "IEP/RANSAC"
+        var name = ""
+        if (USE_IEP) {
+            name += "IEP/"
         }
+        name += "RANSAC/"
+        if (USE_LEAST_SQUARE_FITTING) {
+            name += "LS"
+        }
+        return name
     }
 
     private fun projectPointOnLine(m: Float, c: Float, point: FMatrix2): FMatrix2 {
@@ -234,28 +239,36 @@ class RANSACLeastSquares(private val applet: PApplet) : ObstacleLandmarkExtracto
             landmarks.add(partition.last().first)
         }
         // IEP refinement for the second stage
-        val secondStagePartitions = mutableListOf<List<FMatrix2>>()
-        for (partitionWithDistances in firstStagePartitions) {
-            val iepPartitions = iep(partitionWithDistances.map { pointDistancePair -> pointDistancePair.first }, 15f)
-            secondStagePartitions.addAll(iepPartitions)
-            // Detect intersection landmarks, simpler case all such inner intersections can be considered landmarks
-            // For each intersection of lines
-            for (j in 1 until iepPartitions.size) {
-                val iepPartition = iepPartitions[j]
-                // If points less than enough to find at least one line eventually do not consider this partition for landmarks
-                if (iepPartition.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
-                    continue
+        if (USE_IEP) {
+            val secondStagePartitions = mutableListOf<List<FMatrix2>>()
+            for (partitionWithDistances in firstStagePartitions) {
+                val iepPartitions = iep(partitionWithDistances.map { pointDistancePair -> pointDistancePair.first }, 15f)
+                secondStagePartitions.addAll(iepPartitions)
+                // Detect intersection landmarks, simpler case all such inner intersections can be considered landmarks
+                // For each intersection of lines
+                for (j in 1 until iepPartitions.size) {
+                    val iepPartition = iepPartitions[j]
+                    // If points less than enough to find at least one line eventually do not consider this partition for landmarks
+                    if (iepPartition.size < RANSAC_MIN_INLIERS_FOR_LINE_SEGMENT) {
+                        continue
+                    }
+                    val prevIEPPartition = iepPartitions[j - 1]
+                    // If two partitions are far off then there might not be an intersection
+                    if (prevIEPPartition.last().minus(iepPartition.first()).norm() > RANSAC_THRESHOLD) {
+                        continue
+                    }
+                    // If all checks passed add landmark
+                    landmarks.add(iepPartition.first())
                 }
-                val prevIEPPartition = iepPartitions[j - 1]
-                // If two partitions are far off then there might not be an intersection
-                if (prevIEPPartition.last().minus(iepPartition.first()).norm() > RANSAC_THRESHOLD) {
-                    continue
-                }
-                // If all checks passed add landmark
-                landmarks.add(iepPartition.first())
             }
+            return Pair(secondStagePartitions, landmarks)
+        } else {
+            val secondStagePartitions = mutableListOf<List<FMatrix2>>()
+            for (partitionWithDistances in firstStagePartitions) {
+                secondStagePartitions.add(partitionWithDistances.map { pointDistancePair -> pointDistancePair.first })
+            }
+            return Pair(secondStagePartitions, landmarks)
         }
-        return Pair(secondStagePartitions, landmarks)
     }
 
     override fun getObservedObstaclesAndLandmarks(inputPoints: List<FMatrix2>, distances: List<Float>): Pair<List<Pair<FMatrix2, FMatrix2>>, List<FMatrix2>> {

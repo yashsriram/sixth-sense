@@ -32,7 +32,6 @@ class Simulation : PApplet() {
         var DRAW_ESTIMATED_PATH = true
         var DRAW_PLANNED_PATH = true
         var DRAW_TRUE_PATH = true
-        var DRAW_BRESENHAM_POINTS = false
     }
 
     private var sim: Simulator? = null
@@ -407,10 +406,10 @@ class Simulation : PApplet() {
             DRAW_OBSTACLES_LANDMARKS = !DRAW_OBSTACLES_LANDMARKS
         }
         if (key == 'v') {
-            hitGrid!!.DRAW = !hitGrid!!.DRAW
+            hitGrid!!.draw = !hitGrid!!.draw
         }
         if (key == 'b') {
-            senseGrid!!.DRAW = !senseGrid!!.DRAW
+            senseGrid!!.draw = !senseGrid!!.draw
         }
         if (key == 'y') {
             DRAW_PLANNED_PATH = !DRAW_PLANNED_PATH

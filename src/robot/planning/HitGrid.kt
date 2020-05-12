@@ -16,7 +16,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
     val cellSizeY = (maxCorner.a2 - minCorner.a2) / numCellsY
     val hitsAt = MutableList(numCellsX * numCellsY) { 0 }
     private var maxCount = 0
-    var DRAW = true
+    var draw = false
 
     private data class SearchState(val distanceFromStart: Float,
                                    val heuristicDistanceToFinish: Float,
@@ -54,7 +54,7 @@ class HitGrid(private val minCorner: FMatrix2, private val maxCorner: FMatrix2,
     }
 
     fun draw(applet: PApplet, hit: Boolean) {
-        if (!DRAW) {
+        if (!draw) {
             return
         }
         // Boundary

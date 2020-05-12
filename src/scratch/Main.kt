@@ -261,15 +261,10 @@ class Main : PApplet() {
 
     override fun keyPressed() {
         if (key == '1') {
-            extractor = IEP(this)
+            RANSACLeastSquares.USE_IEP = !RANSACLeastSquares.USE_IEP
         }
         if (key == '2') {
-            extractor = RANSACLeastSquares(this)
-            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = false
-        }
-        if (key == '3') {
-            extractor = RANSACLeastSquares(this)
-            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = true
+            RANSACLeastSquares.USE_LEAST_SQUARE_FITTING = !RANSACLeastSquares.USE_LEAST_SQUARE_FITTING
         }
         if (key == 'r') {
             reset()
@@ -312,7 +307,7 @@ class Main : PApplet() {
             DRAW_OBSTACLES_LANDMARKS = !DRAW_OBSTACLES_LANDMARKS
         }
         if (key == 'v') {
-            hitGrid!!.DRAW = !hitGrid!!.DRAW
+            hitGrid!!.draw = !hitGrid!!.draw
         }
     }
 }
