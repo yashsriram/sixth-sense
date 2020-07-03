@@ -86,9 +86,6 @@
 - [ ] Estimating Sigma_n does it depend on controls?
 - [ ] Estimating Sigma_m while stationary only if we are taking measurements while stationary
 - [ ] Check the command line compilation
-- [ ] Simple rectangle
-- [ ] Simple block
-- [ ] Apartment
 - [ ] Tune params
 
 ## Optimizations
