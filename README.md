@@ -30,5 +30,5 @@
     - If you use a distrubution that uses rolling release cycle (like Arch) you might have to install some older version of JRE and mesa (opensource intel openGL driver) that work with processing library.
 ## demonstration
 A walkthrough of important aspects and the system in general.
-[![](http://img.youtube.com/vi/B1wlH_T2Ub0/0.jpg)](https://www.youtube.com/watch?v=B1wlH_T2Ub0)
 
+[![](http://img.youtube.com/vi/B1wlH_T2Ub0/0.jpg)](https://www.youtube.com/watch?v=B1wlH_T2Ub0)
