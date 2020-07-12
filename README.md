@@ -11,8 +11,9 @@
 - Code is written in Kotlin with Java libraries. Kotlin and Java compilers are required.
     - `src/` contains all source code.
     - `jars/` contain all libraries bundled as jars.
-        - processing is used as a rendering library.
-        - emjl is used as a linear algebra library.
+        - `processing` is used as a rendering library.
+        - `queasy cam` is used as a camera library.
+        - `emjl` is used as a linear algebra library.
     - `data/` contains resources such as images, obj, mtl files.
 - JRE 8 is the best as "processing" library recommends it
 ## documentation
@@ -26,6 +27,10 @@
     - `java -cp "build/:jars/*:jars/ejml-v0.39-libs/*:sixth-sense.jar" <package>.<classname>Kt`
     - Notice the suffix Kt after class name
     - For example `java -cp "build/:jars/*:jars/ejml-v0.39-libs/*:sixthsense.jar" MainKt`
+- Common controls
+    - `w a s d` for basic camera movements.
+    - `q e` for camera up and down movements.
+    - `p` for pause/play.
 - Tested on Ubuntu 18.04
     - If you use a distrubution that uses rolling release cycle (like Arch) you might have to install some older version of JRE and mesa (opensource intel openGL driver) that work with processing library.
 ## demonstration
