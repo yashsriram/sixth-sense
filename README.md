@@ -5,8 +5,8 @@
     1. Create a map of the obstacles in the environment leaving no area unexplored.
     2. Simultaneously localize and map the landmarks in the environment.
     3. Not collide with any obstacles while doing so.
-## math
-- Details on core ideas can be found in `report.pdf`
+## roadmap
+- Problems solved until now are documented in `report.pdf`
 ## code
 - Code is written in Kotlin with Java libraries. Kotlin and Java compilers are required.
     - `src/` contains all source code.
