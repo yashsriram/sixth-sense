@@ -1,6 +1,6 @@
 # sixth-sense
 ## description
-- A simple implementation of sense, plan, act loop for a differential drive in unknown static environment.
+- Simple and robust real-time navigation for a noisy differential-drive agent with LIDAR in unknown static environment.
 - Given a differential drive robot with a laser scanner in an static unknown 2D environment, the goal is to
     1. Create a map of the obstacles in the environment leaving no area unexplored.
     2. Simultaneously localize and map the landmarks in the environment.
